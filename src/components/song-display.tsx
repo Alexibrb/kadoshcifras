@@ -11,12 +11,20 @@ export function SongDisplay({ content, className, ...props }: SongDisplayProps) 
   const lines = content.split('\n');
 
   return (
-    <div className={cn("font-code text-base leading-relaxed whitespace-pre-wrap", className)} {...props}>
+    <div className={cn("font-code text-base leading-normal whitespace-pre-wrap", className)} {...props}>
       {lines.map((line, lineIndex) => {
-        const parts: (string | React.ReactNode)[] = [];
-        let lastIndex = 0;
+        // Verifica se a linha contém apenas cifras e espaços
+        const isChordLine = line.trim().length > 0 && line.split(' ').every(part => part.match(CHORD_REGEX) || part.trim() === '');
         
-        // Handle lines with chords first
+        if (isChordLine) {
+            return (
+                <p key={lineIndex} className="font-bold text-primary mb-1">
+                    {line.replace(CHORD_REGEX, ' $1 ').replace(/\s+/g, ' ')}
+                </p>
+            );
+        }
+        
+        // Handle lines with chords and lyrics
         if (line.match(CHORD_REGEX)) {
             const lyricsLine = line.replace(CHORD_REGEX, '').trim();
             const chordsAndPositions: { chord: string, pos: number }[] = [];
@@ -27,19 +35,19 @@ export function SongDisplay({ content, className, ...props }: SongDisplayProps) 
             }
 
             return (
-                <div key={lineIndex} className="relative mb-6">
+                <div key={lineIndex} className="relative mb-4">
                     <div className="text-primary font-bold">
                         {chordsAndPositions.map(({ chord, pos }, i) => (
                             <span key={i} style={{ position: 'absolute', left: `${pos}ch` }}>{chord}</span>
                         ))}
                     </div>
-                    <div className="mt-1">{lyricsLine || <>&nbsp;</>}</div>
+                    <div className="mt-[-2px]">{lyricsLine || <>&nbsp;</>}</div>
                 </div>
             );
         }
 
         // Handle lines without chords (treat as plain text/lyrics)
-        return <p key={lineIndex} className="mb-2">{line || <>&nbsp;</>}</p>;
+        return <p key={lineIndex} className="mb-1">{line || <>&nbsp;</>}</p>;
       })}
     </div>
   );
