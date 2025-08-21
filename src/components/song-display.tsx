@@ -22,7 +22,7 @@ export function SongDisplay({ content, className, ...props }: SongDisplayProps) 
         }
 
         // Verifica se a linha contém APENAS cifras e espaços
-        const isChordLineOnly = trimmedLine.split(/\s+/).every(part => part.match(CHORD_REGEX));
+        const isChordLineOnly = trimmedLine.split(/\s+/).every(part => part.match(/^([A-G][b#]?(maj|min|m|dim|aug|sus)?[2-7]?)$/));
 
         if (isChordLineOnly) {
             return (
