@@ -3,7 +3,10 @@
 const SHARP_SCALE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const FLAT_SCALE = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
-const CHORD_REGEX = /\[([^\]]+)\]/g;
+// Regex para detectar acordes comuns automaticamente (ex: C, Gm, F#m7, Db, etc.)
+// Não mais necessita de colchetes [].
+const CHORD_REGEX = /\b([A-G][b#]?(maj|min|m|dim|aug|sus)?[2-7]?)\b/g;
+
 
 const normalizeChord = (chord: string): { root: string, quality: string } => {
   let root = chord.charAt(0);
@@ -44,8 +47,8 @@ export const transposeChord = (chord: string, semitones: number): string => {
 
 export const transposeContent = (content: string, semitones: number): string => {
   if (semitones === 0) return content;
-  return content.replace(CHORD_REGEX, (match, chord) => {
-    return `[${transposeChord(chord, semitones)}]`;
+  return content.replace(CHORD_REGEX, (match) => {
+    return transposeChord(match, semitones);
   });
 };
 

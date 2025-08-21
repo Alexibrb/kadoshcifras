@@ -5,7 +5,8 @@ interface SongDisplayProps extends React.HTMLAttributes<HTMLDivElement> {
   content: string;
 }
 
-const CHORD_REGEX = /\[([^\]]+)\]/g;
+// Regex para detectar acordes comuns automaticamente (ex: C, Gm, F#m7, Db, etc.)
+const CHORD_REGEX = /\b([A-G][b#]?(maj|min|m|dim|aug|sus)?[2-7]?)\b/g;
 
 export function SongDisplay({ content, className, ...props }: SongDisplayProps) {
   const lines = content.split('\n');
@@ -19,19 +20,22 @@ export function SongDisplay({ content, className, ...props }: SongDisplayProps) 
         if (isChordLine) {
             return (
                 <p key={lineIndex} className="font-bold text-primary mb-1">
-                    {line.replace(CHORD_REGEX, ' $1 ').replace(/\s+/g, ' ')}
+                    {line}
                 </p>
             );
         }
         
         // Handle lines with chords and lyrics
         if (line.match(CHORD_REGEX)) {
-            const lyricsLine = line.replace(CHORD_REGEX, '').trim();
+            const lyricsLine = line.replace(CHORD_REGEX, '').replace(/\s\s+/g, ' ').trim();
             const chordsAndPositions: { chord: string, pos: number }[] = [];
             
             let match;
-            while ((match = CHORD_REGEX.exec(line)) !== null) {
-              chordsAndPositions.push({ chord: match[1], pos: match.index - match[0].length * chordsAndPositions.length });
+            let lastIndex = 0;
+            const lineWithChordsOnly = line.replace(/[^A-G\s#bmajindimugsus2-7]/g, ' ');
+
+            while ((match = CHORD_REGEX.exec(lineWithChordsOnly)) !== null) {
+              chordsAndPositions.push({ chord: match[1], pos: match.index });
             }
 
             return (

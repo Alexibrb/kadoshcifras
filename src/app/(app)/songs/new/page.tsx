@@ -69,12 +69,12 @@ export default function NewSongPage() {
                 id="content"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="Verso 1:&#10;[C]Olha que coisa mais [G]linda, mais cheia de graça"
+                placeholder="Verso 1:&#10;C                      G&#10;Olha que coisa mais linda, mais cheia de graça"
                 className="h-64 font-code"
                 required
               />
                <p className="text-sm text-muted-foreground">
-                Envolva as cifras em colchetes, como [C] ou [Gmaj7].
+                As cifras serão detectadas e formatadas automaticamente.
               </p>
             </div>
             <div className="flex justify-end">
