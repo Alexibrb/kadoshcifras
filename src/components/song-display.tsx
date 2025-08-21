@@ -5,9 +5,8 @@ interface SongDisplayProps extends React.HTMLAttributes<HTMLDivElement> {
   content: string;
 }
 
-// Regex para detectar acordes comuns (ex: C, Gm, F#m7, Db, etc.)
-// E palavras que podem ser confundidas com acordes.
-const CHORD_LIKE_REGEX = /^\b([A-G][b#]?(maj|min|m|dim|aug|sus)?[2-7]?)\b$/;
+// Regex para detectar acordes, incluindo inversões (ex: G/B)
+const CHORD_REGEX = /^[A-G][b#]?(maj|min|m|dim|aug|sus)?[2-9]?(\/[A-G][b#]?)?$/;
 const LYRICS_REGEX = /[a-zA-Z]/;
 
 export function SongDisplay({ content, className, ...props }: SongDisplayProps) {
@@ -19,19 +18,15 @@ export function SongDisplay({ content, className, ...props }: SongDisplayProps) 
       return false;
     }
     const parts = trimmedLine.split(/\s+/);
-    // Para ser uma linha de cifra, não pode conter muitas palavras que não são cifras.
-    // E deve ter pelo menos um item que parece cifra.
-    const chordParts = parts.filter(p => CHORD_LIKE_REGEX.test(p));
-    const nonChordParts = parts.filter(p => !CHORD_LIKE_REGEX.test(p) && LYRICS_REGEX.test(p));
+    // Para ser uma linha de cifra, todas as "palavras" devem ser acordes válidos.
+    const areAllPartsChords = parts.every(p => CHORD_REGEX.test(p));
     
-    // É uma linha de cifra se a maioria das "palavras" são cifras e tem pouca letra.
-    return chordParts.length > 0 && nonChordParts.length < chordParts.length && nonChordParts.length <= 1;
+    return areAllPartsChords;
   };
 
   return (
     <div className={cn("font-code text-base leading-tight whitespace-pre-wrap", className)} {...props}>
       {lines.map((line, lineIndex) => {
-        // Se a linha estiver vazia, apenas adicione um espaço para manter a quebra de linha
         if (line.trim() === '') {
           return <p key={lineIndex} className="mb-2">&nbsp;</p>;
         }
@@ -44,7 +39,6 @@ export function SongDisplay({ content, className, ...props }: SongDisplayProps) 
             );
         }
         
-        // Se nenhuma cifra for encontrada na linha, renderiza como texto/letra normal.
         return <p key={lineIndex} className="mb-2">{line}</p>;
       })}
     </div>

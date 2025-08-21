@@ -3,22 +3,25 @@
 const SHARP_SCALE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const FLAT_SCALE = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
-// Regex para detectar acordes comuns automaticamente (ex: C, Gm, F#m7, Db, etc.)
-// Não mais necessita de colchetes [].
-const CHORD_REGEX = /\b([A-G][b#]?(maj|min|m|dim|aug|sus)?[2-7]?)\b/g;
+// Regex para detectar acordes, incluindo inversões (ex: C, Gm, F#m7, Db, G/B)
+const CHORD_REGEX = /\b([A-G][b#]?(maj|min|m|dim|aug|sus)?[2-9]?(\/[A-G][b#]?)?)\b/g;
 
 
-const normalizeChord = (chord: string): { root: string, quality: string } => {
-  let root = chord.charAt(0);
+const normalizeChord = (chord: string): { root: string, quality: string, bass?: string } => {
+  const parts = chord.split('/');
+  const mainChord = parts[0];
+  const bass = parts[1];
+
+  let root = mainChord.charAt(0);
   let quality = '';
 
-  if (chord.length > 1 && (chord.charAt(1) === '#' || chord.charAt(1) === 'b')) {
-    root += chord.charAt(1);
-    quality = chord.substring(2);
+  if (mainChord.length > 1 && (mainChord.charAt(1) === '#' || mainChord.charAt(1) === 'b')) {
+    root += mainChord.charAt(1);
+    quality = mainChord.substring(2);
   } else {
-    quality = chord.substring(1);
+    quality = mainChord.substring(1);
   }
-  return { root, quality };
+  return { root, quality, bass };
 };
 
 const getNoteIndex = (note: string): number => {
@@ -34,20 +37,37 @@ const getNoteIndex = (note: string): number => {
 export const transposeChord = (chord: string, semitones: number): string => {
   if (semitones === 0) return chord;
   
-  const { root, quality } = normalizeChord(chord);
+  const { root, quality, bass } = normalizeChord(chord);
   const noteIndex = getNoteIndex(root);
-
+  
   if (noteIndex === -1) return chord;
-
+  
   const newIndex = (noteIndex + semitones + 12) % 12;
   const newRoot = SHARP_SCALE[newIndex];
+  
+  let newBass = '';
+  if (bass) {
+    const bassNoteIndex = getNoteIndex(bass);
+    if (bassNoteIndex !== -1) {
+      const newBassIndex = (bassNoteIndex + semitones + 12) % 12;
+      newBass = `/${SHARP_SCALE[newBassIndex]}`;
+    } else {
+       newBass = `/${bass}`;
+    }
+  }
 
-  return `${newRoot}${quality}`;
+  return `${newRoot}${quality}${newBass}`;
 };
 
 export const transposeContent = (content: string, semitones: number): string => {
   if (semitones === 0) return content;
   return content.replace(CHORD_REGEX, (match) => {
+    // Evita transpor palavras que podem ser confundidas com acordes (ex: "Am" em "I Am")
+    // Verificando o contexto da linha. Se a linha contiver letras além das de acordes, não transpõe.
+    // Esta é uma heurística imperfeita, a lógica de detecção de linha de cifra está no SongDisplay.
+    const parts = match.split(/\s+/);
+    if(parts.some(part => /[a-z]/.test(part) && part.length > 2)) return match;
+    
     return transposeChord(match, semitones);
   });
 };
