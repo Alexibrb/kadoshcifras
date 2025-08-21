@@ -5,8 +5,8 @@ interface SongDisplayProps extends React.HTMLAttributes<HTMLDivElement> {
   content: string;
 }
 
-// Regex para detectar acordes, incluindo inversões (ex: G/B)
-const CHORD_REGEX = /^[A-G][b#]?(maj|min|m|dim|aug|sus)?[2-9]?(\/[A-G][b#]?)?$/;
+// Regex para detectar acordes, incluindo inversões e qualidades complexas (ex: G/B, F7M)
+const CHORD_REGEX = /^[A-G][b#]?(maj7?|m7?|min7?|m|dim|aug|sus)?[0-9]?(\/[A-G][b#]?)?$/;
 const LYRICS_REGEX = /[a-zA-Z]/;
 
 export function SongDisplay({ content, className, ...props }: SongDisplayProps) {

@@ -3,8 +3,8 @@
 const SHARP_SCALE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const FLAT_SCALE = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
-// Regex para detectar acordes, incluindo inversões (ex: C, Gm, F#m7, Db, G/B)
-const CHORD_REGEX = /\b([A-G][b#]?(maj|min|m|dim|aug|sus)?[2-9]?(\/[A-G][b#]?)?)\b/g;
+// Regex para detectar acordes, incluindo inversões e qualidades complexas (ex: C, Gm, F#m7, Db, G/B, F7M)
+const CHORD_REGEX = /\b([A-G][b#]?(maj7?|m7?|min7?|m|dim|aug|sus)?[0-9]?(\/[A-G][b#]?)?)\b/g;
 
 
 const normalizeChord = (chord: string): { root: string, quality: string, bass?: string } => {
