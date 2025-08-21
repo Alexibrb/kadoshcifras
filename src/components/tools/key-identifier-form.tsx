@@ -28,7 +28,7 @@ export function KeyIdentifierForm() {
       const res = await identifySongKey({ chordProgression, genre });
       setResult(res);
     } catch (e: any) {
-        setError(e.message || "An unexpected error occurred.");
+        setError(e.message || "Ocorreu um erro inesperado.");
     } finally {
         setLoading(false);
     }
@@ -40,48 +40,48 @@ export function KeyIdentifierForm() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Wand2 className="w-6 h-6 text-primary" />
-            <CardTitle className="font-headline text-xl">Key Identifier</CardTitle>
+            <CardTitle className="font-headline text-xl">Identificador de Tom</CardTitle>
           </div>
           <CardDescription>
-            Enter a chord progression and genre to identify the song&apos;s key using AI.
+            Insira uma progressão de acordes e gênero para identificar o tom da música usando IA.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="chordProgression">Chord Progression</Label>
+            <Label htmlFor="chordProgression">Progressão de Acordes</Label>
             <Textarea
               id="chordProgression"
               name="chordProgression"
-              placeholder="e.g., C G Am F"
+              placeholder="ex: C G Am F"
               required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="genre">Genre (Optional)</Label>
-            <Input id="genre" name="genre" placeholder="e.g., Pop, Rock" />
+            <Label htmlFor="genre">Gênero (Opcional)</Label>
+            <Input id="genre" name="genre" placeholder="ex: Pop, Rock" />
           </div>
         </CardContent>
         <CardFooter className="flex-col items-start gap-4">
           <Button type="submit" disabled={loading}>
-            {loading ? 'Analyzing...' : 'Identify Key'}
+            {loading ? 'Analisando...' : 'Identificar Tom'}
             <Sparkles className="ml-2 h-4 w-4" />
           </Button>
 
           {result && (
             <Alert>
               <Sparkles className="h-4 w-4" />
-              <AlertTitle className="font-bold">AI Analysis Complete</AlertTitle>
+              <AlertTitle className="font-bold">Análise de IA Concluída</AlertTitle>
               <AlertDescription className="space-y-2 mt-2">
-                <p><strong>Identified Key:</strong> {result.key}</p>
-                <p><strong>Confidence:</strong> {Math.round(result.confidence * 100)}%</p>
-                <p><strong>Explanation:</strong> {result.explanation}</p>
+                <p><strong>Tom Identificado:</strong> {result.key}</p>
+                <p><strong>Confiança:</strong> {Math.round(result.confidence * 100)}%</p>
+                <p><strong>Explicação:</strong> {result.explanation}</p>
               </AlertDescription>
             </Alert>
           )}
 
           {error && (
              <Alert variant="destructive">
-                <AlertTitle>Error</AlertTitle>
+                <AlertTitle>Erro</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}

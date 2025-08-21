@@ -13,8 +13,8 @@ export default function LoginPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you'd handle authentication here.
-    // For this prototype, we'll just navigate to the dashboard.
+    // Em um aplicativo real, você lidaria com a autenticação aqui.
+    // Para este protótipo, vamos apenas navegar para o painel.
     router.push('/dashboard');
   };
 
@@ -22,28 +22,28 @@ export default function LoginPage() {
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
         <Logo className="justify-center mb-2" />
-        <CardTitle className="font-headline text-2xl">Welcome Back!</CardTitle>
-        <CardDescription>Enter your credentials to access your account.</CardDescription>
+        <CardTitle className="font-headline text-2xl">Bem-vindo de Volta!</CardTitle>
+        <CardDescription>Insira suas credenciais para acessar sua conta.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="you@example.com" required />
+            <Input id="email" type="email" placeholder="voce@exemplo.com" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Senha</Label>
             <Input id="password" type="password" required />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full font-bold">
-            Log In
+            Entrar
           </Button>
           <p className="text-sm text-center text-muted-foreground">
-            Don't have an account?{' '}
+            Não tem uma conta?{' '}
             <Link href="/signup" className="font-medium text-primary hover:underline">
-              Sign Up
+              Cadastre-se
             </Link>
           </p>
         </CardFooter>

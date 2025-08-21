@@ -2,24 +2,24 @@
 'use server';
 
 /**
- * @fileOverview A chord progression suggestion AI agent.
+ * @fileOverview Um agente de IA para sugestão de progressão de acordes.
  *
- * - suggestChordProgressions - A function that suggests chord progressions based on the genre and initial chords.
- * - SuggestChordProgressionsInput - The input type for the suggestChordProgressions function.
- * - SuggestChordProgressionsOutput - The return type for the suggestChordProgressions function.
+ * - suggestChordProgressions - Uma função que sugere progressões de acordes com base no gênero e nos acordes iniciais.
+ * - SuggestChordProgressionsInput - O tipo de entrada para a função suggestChordProgressions.
+ * - SuggestChordProgressionsOutput - O tipo de retorno para a função suggestChordProgressions.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const SuggestChordProgressionsInputSchema = z.object({
-  genre: z.string().describe('The genre of the music.'),
-  initialChords: z.string().describe('The initial chords of the song.'),
+  genre: z.string().describe('O gênero da música.'),
+  initialChords: z.string().describe('Os acordes iniciais da música.'),
 });
 export type SuggestChordProgressionsInput = z.infer<typeof SuggestChordProgressionsInputSchema>;
 
 const SuggestChordProgressionsOutputSchema = z.object({
-  suggestedProgressions: z.string().describe('Suggested chord progressions based on the genre and initial chords.'),
+  suggestedProgressions: z.string().describe('Progressões de acordes sugeridas com base no gênero e nos acordes iniciais.'),
 });
 export type SuggestChordProgressionsOutput = z.infer<typeof SuggestChordProgressionsOutputSchema>;
 
@@ -31,12 +31,12 @@ const prompt = ai.definePrompt({
   name: 'suggestChordProgressionsPrompt',
   input: {schema: SuggestChordProgressionsInputSchema},
   output: {schema: SuggestChordProgressionsOutputSchema},
-  prompt: `You are a professional songwriter. Based on the genre and initial chords provided, suggest chord progressions that would fit the song.
+  prompt: `Você é um compositor profissional. Com base no gênero e nos acordes iniciais fornecidos, sugira progressões de acordes que se encaixem na música.
 
-Genre: {{{genre}}}
-Initial Chords: {{{initialChords}}}
+Gênero: {{{genre}}}
+Acordes Iniciais: {{{initialChords}}}
 
-Suggested Chord Progressions:`,
+Progressões de Acordes Sugeridas:`,
 });
 
 const suggestChordProgressionsFlow = ai.defineFlow(

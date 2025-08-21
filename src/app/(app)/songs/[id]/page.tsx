@@ -35,7 +35,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
   }
   
   if (!isClient) {
-    return null; // or a loading skeleton
+    return null; // ou um esqueleto de carregamento
   }
 
   const handleSave = () => {
@@ -57,7 +57,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
           <Button asChild variant="outline" size="icon" className="shrink-0">
             <Link href="/songs">
               <ArrowLeft className="h-4 w-4" />
-              <span className="sr-only">Back to songs</span>
+              <span className="sr-only">Voltar para as músicas</span>
             </Link>
           </Button>
           <div>
@@ -71,7 +71,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
               <Minus className="h-4 w-4" />
             </Button>
             <Badge variant="secondary" className="px-3 py-1 text-sm">
-              Key: {transpose >= 0 ? '+' : ''}{transpose}
+              Tom: {transpose >= 0 ? '+' : ''}{transpose}
             </Badge>
             <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose + 1)}>
               <Plus className="h-4 w-4" />
@@ -79,11 +79,11 @@ export default function SongPage({ params }: { params: { id: string } }) {
           </div>
           {isEditing ? (
             <Button onClick={handleSave}>
-              <Save className="mr-2 h-4 w-4" /> Save
+              <Save className="mr-2 h-4 w-4" /> Salvar
             </Button>
           ) : (
             <Button variant="outline" onClick={() => setIsEditing(true)}>
-              <Edit className="mr-2 h-4 w-4" /> Edit
+              <Edit className="mr-2 h-4 w-4" /> Editar
             </Button>
           )}
         </div>

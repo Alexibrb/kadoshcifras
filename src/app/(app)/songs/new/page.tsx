@@ -38,47 +38,47 @@ export default function NewSongPage() {
         <Button asChild variant="outline" size="icon">
           <Link href="/songs">
             <ArrowLeft className="h-4 w-4" />
-            <span className="sr-only">Back to songs</span>
+            <span className="sr-only">Voltar para as músicas</span>
           </Link>
         </Button>
-        <h2 className="text-3xl font-bold font-headline tracking-tight">Add a New Song</h2>
+        <h2 className="text-3xl font-bold font-headline tracking-tight">Adicionar uma Nova Música</h2>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline">Song Details</CardTitle>
+          <CardTitle className="font-headline">Detalhes da Música</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Wonderwall" required />
+                <Label htmlFor="title">Título</Label>
+                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="ex: Garota de Ipanema" required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="artist">Artist</Label>
-                <Input id="artist" value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="e.g., Oasis" required />
+                <Label htmlFor="artist">Artista</Label>
+                <Input id="artist" value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="ex: Tom Jobim" required />
               </div>
             </div>
              <div className="space-y-2">
-                <Label htmlFor="genre">Genre</Label>
-                <Input id="genre" value={genre} onChange={(e) => setGenre(e.target.value)} placeholder="e.g., Pop, Rock" />
+                <Label htmlFor="genre">Gênero</Label>
+                <Input id="genre" value={genre} onChange={(e) => setGenre(e.target.value)} placeholder="ex: Bossa Nova" />
               </div>
             <div className="space-y-2">
-              <Label htmlFor="content">Lyrics & Chords</Label>
+              <Label htmlFor="content">Letra & Cifras</Label>
               <Textarea
                 id="content"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="Verse 1:&#10;[G]Today is gonna be the day that they're gonna [D]throw it back to you"
+                placeholder="Verso 1:&#10;[C]Olha que coisa mais [G]linda, mais cheia de graça"
                 className="h-64 font-code"
                 required
               />
                <p className="text-sm text-muted-foreground">
-                Wrap chords in square brackets, like [C] or [Gmaj7].
+                Envolva as cifras em colchetes, como [C] ou [Gmaj7].
               </p>
             </div>
             <div className="flex justify-end">
-              <Button type="submit">Save Song</Button>
+              <Button type="submit">Salvar Música</Button>
             </div>
           </form>
         </CardContent>

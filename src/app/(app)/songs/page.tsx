@@ -22,11 +22,11 @@ export default function SongsPage() {
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold font-headline tracking-tight">My Songs</h2>
+        <h2 className="text-3xl font-bold font-headline tracking-tight">Minhas Músicas</h2>
         <Button asChild>
           <Link href="/songs/new">
             <PlusCircle className="mr-2 h-4 w-4" />
-            Add New Song
+            Adicionar Nova Música
           </Link>
         </Button>
       </div>
@@ -34,11 +34,11 @@ export default function SongsPage() {
         <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm mt-8 py-24">
           <div className="flex flex-col items-center gap-1 text-center">
             <Music className="h-12 w-12 text-muted-foreground" />
-            <h3 className="text-2xl font-bold tracking-tight">You have no songs</h3>
-            <p className="text-sm text-muted-foreground">Get started by creating a new song.</p>
+            <h3 className="text-2xl font-bold tracking-tight">Você não tem nenhuma música</h3>
+            <p className="text-sm text-muted-foreground">Comece criando uma nova música.</p>
             <Button className="mt-4" asChild>
               <Link href="/songs/new">
-                <PlusCircle className="mr-2 h-4 w-4" /> Add New Song
+                <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Nova Música
               </Link>
             </Button>
           </div>
@@ -54,11 +54,11 @@ export default function SongsPage() {
                 </CardHeader>
                 <CardFooter className="flex justify-between">
                   <Button asChild variant="outline">
-                    <Link href={`/songs/${song.id}`}>Open</Link>
+                    <Link href={`/songs/${song.id}`}>Abrir</Link>
                   </Button>
                   <Button variant="ghost" size="icon" onClick={() => deleteSong(song.id)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
-                    <span className="sr-only">Delete</span>
+                    <span className="sr-only">Excluir</span>
                   </Button>
                 </CardFooter>
               </Card>

@@ -31,34 +31,34 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <SidebarContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === '/dashboard'} tooltip="Dashboard">
+                <SidebarMenuButton asChild isActive={pathname === '/dashboard'} tooltip="Painel">
                   <Link href="/dashboard">
                     <LayoutDashboard />
-                    <span>Dashboard</span>
+                    <span>Painel</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.startsWith('/songs')} tooltip="Songs">
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/songs')} tooltip="Músicas">
                   <Link href="/songs">
                     <Music />
-                    <span>Songs</span>
+                    <span>Músicas</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.startsWith('/setlists')} tooltip="Setlists">
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/setlists')} tooltip="Repertórios">
                   <Link href="/setlists">
                     <ListMusic />
-                    <span>Setlists</span>
+                    <span>Repertórios</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.startsWith('/tools')} tooltip="AI Tools">
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/tools')} tooltip="Ferramentas de IA">
                   <Link href="/tools">
                     <Sparkles />
-                    <span>AI Tools</span>
+                    <span>Ferramentas de IA</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -68,7 +68,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <SidebarFooter>
             <div className="flex items-center gap-3">
               <Avatar>
-                <AvatarImage src="https://placehold.co/100x100.png" alt="User Avatar" data-ai-hint="person music" />
+                <AvatarImage src="https://placehold.co/100x100.png" alt="Avatar do Usuário" data-ai-hint="person music" />
                 <AvatarFallback>
                   <User />
                 </AvatarFallback>
@@ -81,7 +81,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Button asChild variant="ghost" size="icon" className="group-data-[collapsible=icon]:w-full">
               <Link href="/">
                 <LogOut />
-                <span className="sr-only">Log Out</span>
+                <span className="sr-only">Sair</span>
               </Link>
             </Button>
           </SidebarFooter>

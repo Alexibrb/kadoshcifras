@@ -2,7 +2,7 @@ export interface Song {
   id: string;
   title: string;
   artist: string;
-  content: string; // Lyrics and chords, e.g., "Verse 1:\n[C]Lyrics go [G]here"
+  content: string; // Letras e cifras, ex: "Verso 1:\n[C]Letra vai [G]aqui"
   key?: string;
   genre?: string;
 }

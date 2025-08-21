@@ -13,19 +13,19 @@ export default function Home() {
           Music Pal
         </h1>
         <p className="max-w-xl mx-auto text-lg md:text-xl text-foreground/80 font-body">
-          Your ultimate companion for creating, managing, and performing music. Transpose keys, build setlists, and perfect your sound with AI-powered tools.
+          Seu companheiro definitivo para criar, gerenciar e apresentar músicas. Transponha tons, crie repertórios e aperfeiçoe seu som com ferramentas de IA.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button asChild size="lg" className="font-bold">
-            <Link href="/signup">Get Started for Free</Link>
+            <Link href="/signup">Comece Gratuitamente</Link>
           </Button>
           <Button asChild size="lg" variant="outline" className="font-bold">
-            <Link href="/login">I have an account</Link>
+            <Link href="/login">Eu tenho uma conta</Link>
           </Button>
         </div>
       </div>
       <footer className="absolute bottom-4 text-center text-sm text-muted-foreground">
-        <p>&copy; {new Date().getFullYear()} Music Pal. All Rights Reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Music Pal. Todos os Direitos Reservados.</p>
       </footer>
     </main>
   );

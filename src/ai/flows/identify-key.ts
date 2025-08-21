@@ -2,11 +2,11 @@
 'use server';
 
 /**
- * @fileOverview Identifies the key of a song based on its chord progression.
+ * @fileOverview Identifica a tonalidade de uma música com base em sua progressão de acordes.
  *
- * - identifySongKey - A function that identifies the song key.
- * - IdentifySongKeyInput - The input type for the identifySongKey function.
- * - IdentifySongKeyOutput - The return type for the identifySongKey function.
+ * - identifySongKey - Uma função que identifica a tonalidade da música.
+ * - IdentifySongKeyInput - O tipo de entrada para a função identifySongKey.
+ * - IdentifySongKeyOutput - O tipo de retorno para a função identifySongKey.
  */
 
 import {ai} from '@/ai/genkit';
@@ -15,19 +15,19 @@ import {z} from 'genkit';
 const IdentifySongKeyInputSchema = z.object({
   chordProgression: z
     .string()
-    .describe('The chord progression of the song (e.g., C-G-Am-F).'),
-  genre: z.string().optional().describe('The genre of the song (e.g., pop, rock, jazz).'),
+    .describe('A progressão de acordes da música (ex: C-G-Am-F).'),
+  genre: z.string().optional().describe('O gênero da música (ex: pop, rock, jazz).'),
 });
 export type IdentifySongKeyInput = z.infer<typeof IdentifySongKeyInputSchema>;
 
 const IdentifySongKeyOutputSchema = z.object({
-  key: z.string().describe('The identified key of the song (e.g., C Major).'),
+  key: z.string().describe('A tonalidade identificada da música (ex: Dó Maior).'),
   confidence: z
     .number()
-    .describe('The confidence level of the identification (0-1).'),
+    .describe('O nível de confiança da identificação (0-1).'),
   explanation: z
     .string()
-    .describe('An explanation of why the key was identified as such.'),
+    .describe('Uma explicação de por que a tonalidade foi identificada como tal.'),
 });
 export type IdentifySongKeyOutput = z.infer<typeof IdentifySongKeyOutputSchema>;
 
@@ -39,14 +39,14 @@ const identifySongKeyPrompt = ai.definePrompt({
   name: 'identifySongKeyPrompt',
   input: {schema: IdentifySongKeyInputSchema},
   output: {schema: IdentifySongKeyOutputSchema},
-  prompt: `You are an expert music theorist. Given a chord progression and optionally the genre of a song, identify the key of the song. 
+  prompt: `Você é um especialista em teoria musical. Dada uma progressão de acordes e, opcionalmente, o gênero de uma música, identifique a tonalidade da música.
 
-Chord Progression: {{{chordProgression}}}
-Genre: {{genre}}
+Progressão de Acordes: {{{chordProgression}}}
+Gênero: {{genre}}
 
-Analyze the chord progression, considering common key changes and borrowed chords for the genre if available. Provide a confidence level (0-1) for your key identification. Also provide a brief explanation of your reasoning.
+Analise a progressão de acordes, considerando mudanças de tonalidade comuns e acordes emprestados para o gênero, se disponível. Forneça um nível de confiança (0-1) para sua identificação de tonalidade. Forneça também uma breve explicação do seu raciocínio.
 
-Ensure the output is formatted correctly.`,
+Garanta que a saída esteja formatada corretamente.`,
 });
 
 const identifySongKeyFlow = ai.defineFlow(

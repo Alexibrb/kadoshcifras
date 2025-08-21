@@ -27,7 +27,7 @@ export function ProgressionSuggesterForm() {
       const res = await suggestChordProgressions({ initialChords, genre });
       setResult(res);
     } catch (e: any) {
-        setError(e.message || "An unexpected error occurred.");
+        setError(e.message || "Ocorreu um erro inesperado.");
     } finally {
         setLoading(false);
     }
@@ -39,37 +39,37 @@ export function ProgressionSuggesterForm() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Music className="w-6 h-6 text-primary" />
-            <CardTitle className="font-headline text-xl">Progression Suggester</CardTitle>
+            <CardTitle className="font-headline text-xl">Sugeridor de Progressão</CardTitle>
           </div>
           <CardDescription>
-            Get AI-powered chord progression ideas based on a genre and your starting chords.
+            Obtenha ideias de progressão de acordes com IA com base em um gênero e seus acordes iniciais.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="suggester-initialChords">Initial Chords</Label>
+            <Label htmlFor="suggester-initialChords">Acordes Iniciais</Label>
             <Input
               id="suggester-initialChords"
               name="initialChords"
-              placeholder="e.g., Am G C"
+              placeholder="ex: Am G C"
               required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="suggester-genre">Genre</Label>
-            <Input id="suggester-genre" name="genre" placeholder="e.g., Indie Folk" required />
+            <Label htmlFor="suggester-genre">Gênero</Label>
+            <Input id="suggester-genre" name="genre" placeholder="ex: Indie Folk" required />
           </div>
         </CardContent>
         <CardFooter className="flex-col items-start gap-4">
           <Button type="submit" disabled={loading}>
-            {loading ? 'Thinking...' : 'Suggest Progressions'}
+            {loading ? 'Pensando...' : 'Sugerir Progressões'}
             <Sparkles className="ml-2 h-4 w-4" />
           </Button>
 
           {result && (
             <Alert>
               <Sparkles className="h-4 w-4" />
-              <AlertTitle className="font-bold">AI Suggestions</AlertTitle>
+              <AlertTitle className="font-bold">Sugestões da IA</AlertTitle>
               <AlertDescription className="whitespace-pre-wrap mt-2">
                 {result.suggestedProgressions}
               </AlertDescription>
@@ -78,7 +78,7 @@ export function ProgressionSuggesterForm() {
 
           {error && (
              <Alert variant="destructive">
-                <AlertTitle>Error</AlertTitle>
+                <AlertTitle>Erro</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}

@@ -13,8 +13,8 @@ export default function SignupPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you'd handle user creation here.
-    // For this prototype, we'll just navigate to the dashboard.
+    // Em um aplicativo real, você lidaria com a criação do usuário aqui.
+    // Para este protótipo, vamos apenas navegar para o painel.
     router.push('/dashboard');
   };
 
@@ -22,32 +22,32 @@ export default function SignupPage() {
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
         <Logo className="justify-center mb-2" />
-        <CardTitle className="font-headline text-2xl">Create an Account</CardTitle>
-        <CardDescription>Start your musical journey with Music Pal.</CardDescription>
+        <CardTitle className="font-headline text-2xl">Crie uma Conta</CardTitle>
+        <CardDescription>Comece sua jornada musical com o Music Pal.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input id="name" type="text" placeholder="Your Name" required />
+            <Label htmlFor="name">Nome</Label>
+            <Input id="name" type="text" placeholder="Seu Nome" required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="you@example.com" required />
+            <Input id="email" type="email" placeholder="voce@exemplo.com" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Senha</Label>
             <Input id="password" type="password" required />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full font-bold">
-            Sign Up
+            Cadastre-se
           </Button>
           <p className="text-sm text-center text-muted-foreground">
-            Already have an account?{' '}
+            Já tem uma conta?{' '}
             <Link href="/login" className="font-medium text-primary hover:underline">
-              Log In
+              Entrar
             </Link>
           </p>
         </CardFooter>
