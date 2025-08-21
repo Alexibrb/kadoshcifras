@@ -13,12 +13,13 @@ import { SongDisplay } from '@/components/song-display';
 import { Card, CardContent } from '@/components/ui/card';
 
 export default function SongPage({ params }: { params: { id: string } }) {
-  const songId = params.id;
   const router = useRouter();
   const [songs, setSongs] = useLocalStorage<Song[]>('songs', []);
   const [isClient, setIsClient] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [transpose, setTranspose] = useState(0);
+  
+  const songId = params.id;
 
   const song = useMemo(() => songs.find((s) => s.id === songId), [songs, songId]);
   const [editedContent, setEditedContent] = useState(song?.content || '');
@@ -35,7 +36,6 @@ export default function SongPage({ params }: { params: { id: string } }) {
     const contentToTranspose = isEditing ? editedContent : song.content;
     return transposeContent(contentToTranspose, transpose);
   }, [song, editedContent, transpose, isEditing]);
-
 
   if (isClient && !song) {
     notFound();
