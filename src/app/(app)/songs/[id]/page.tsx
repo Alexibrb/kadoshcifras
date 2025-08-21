@@ -20,16 +20,18 @@ export default function SongPage({ params }: { params: { id: string } }) {
   const [transpose, setTranspose] = useState(0);
   
   const songId = params.id;
-
-  const song = useMemo(() => songs.find((s) => s.id === songId), [songs, songId]);
-  const [editedContent, setEditedContent] = useState(song?.content || '');
+  
+  const [song, setSong] = useState<Song | undefined>(undefined);
+  const [editedContent, setEditedContent] = useState('');
 
   useEffect(() => {
     setIsClient(true);
-    if (song) {
-      setEditedContent(song.content);
+    const currentSong = songs.find((s) => s.id === songId);
+    if (currentSong) {
+        setSong(currentSong);
+        setEditedContent(currentSong.content);
     }
-  }, [song]);
+  }, [songs, songId]);
   
   const transposedContent = useMemo(() => {
     if (!song) return '';
