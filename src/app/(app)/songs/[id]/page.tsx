@@ -14,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 export default function SongPage({ params }: { params: { id: string } }) {
   const songId = params.id;
+  const router = useRouter();
   const [songs, setSongs] = useLocalStorage<Song[]>('songs', []);
   const [isClient, setIsClient] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -28,14 +29,19 @@ export default function SongPage({ params }: { params: { id: string } }) {
       setEditedContent(song.content);
     }
   }, [song]);
+  
+  const transposedContent = useMemo(() => {
+    if (!song) return '';
+    const contentToTranspose = isEditing ? editedContent : song.content;
+    return transposeContent(contentToTranspose, transpose);
+  }, [song, editedContent, transpose, isEditing]);
 
-  const router = useRouter();
 
   if (isClient && !song) {
     notFound();
   }
   
-  if (!isClient) {
+  if (!isClient || !song) {
     return null; // ou um esqueleto de carregamento
   }
 
@@ -45,11 +51,6 @@ export default function SongPage({ params }: { params: { id: string } }) {
     );
     setIsEditing(false);
   };
-
-  const transposedContent = useMemo(() => {
-    const contentToTranspose = isEditing ? editedContent : song.content;
-    return transposeContent(contentToTranspose, transpose);
-  }, [song.content, editedContent, transpose, isEditing]);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
