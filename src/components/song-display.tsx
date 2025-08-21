@@ -12,34 +12,41 @@ export function SongDisplay({ content, className, ...props }: SongDisplayProps) 
   const lines = content.split('\n');
 
   return (
-    <div className={cn("font-code text-base leading-normal whitespace-pre-wrap", className)} {...props}>
+    <div className={cn("font-code text-base leading-tight whitespace-pre-wrap", className)} {...props}>
       {lines.map((line, lineIndex) => {
-        // Verifica se a linha contém apenas cifras e espaços
-        const isChordLine = line.trim().length > 0 && line.split(' ').every(part => part.match(CHORD_REGEX) || part.trim() === '');
+        const chordsInLine = line.match(CHORD_REGEX) || [];
         
-        if (isChordLine) {
+        // Verifica se a linha contém APENAS cifras e espaços
+        const isChordLineOnly = line.trim().length > 0 && line.split(' ').every(part => part.match(CHORD_REGEX) || part.trim() === '');
+        
+        if (isChordLineOnly && chordsInLine.length >= 2) {
             return (
-                <p key={lineIndex} className="font-bold text-primary mb-1">
+                <p key={lineIndex} className="font-bold text-primary mb-0">
                     {line}
                 </p>
             );
         }
         
-        // Handle lines with chords and lyrics
-        if (line.match(CHORD_REGEX)) {
+        // Lida com linhas que têm cifras e letras misturadas
+        if (chordsInLine.length > 0) {
             const lyricsLine = line.replace(CHORD_REGEX, '').replace(/\s\s+/g, ' ').trim();
             const chordsAndPositions: { chord: string, pos: number }[] = [];
             
             let match;
-            let lastIndex = 0;
-            const lineWithChordsOnly = line.replace(/[^A-G\s#bmajindimugsus2-7]/g, ' ');
+            // Usamos uma versão da linha com caracteres não-cifra removidos para obter posições corretas
+            const lineForPositions = line.replace(/[^A-G\s#bmajindimugsus2-7]/g, ' ');
 
-            while ((match = CHORD_REGEX.exec(lineWithChordsOnly)) !== null) {
+            while ((match = CHORD_REGEX.exec(lineForPositions)) !== null) {
               chordsAndPositions.push({ chord: match[1], pos: match.index });
+            }
+            
+            // Se não houver letra e tiver menos de 2 acordes, trata como texto normal
+            if (!lyricsLine && chordsAndPositions.length < 2) {
+               return <p key={lineIndex} className="mb-0">{line || <>&nbsp;</>}</p>;
             }
 
             return (
-                <div key={lineIndex} className="relative mb-4">
+                <div key={lineIndex} className="relative mb-2">
                     <div className="text-primary font-bold">
                         {chordsAndPositions.map(({ chord, pos }, i) => (
                             <span key={i} style={{ position: 'absolute', left: `${pos}ch` }}>{chord}</span>
@@ -50,8 +57,8 @@ export function SongDisplay({ content, className, ...props }: SongDisplayProps) 
             );
         }
 
-        // Handle lines without chords (treat as plain text/lyrics)
-        return <p key={lineIndex} className="mb-1">{line || <>&nbsp;</>}</p>;
+        // Lida com linhas sem cifras (trata como texto/letra normal)
+        return <p key={lineIndex} className="mb-0">{line || <>&nbsp;</>}</p>;
       })}
     </div>
   );
