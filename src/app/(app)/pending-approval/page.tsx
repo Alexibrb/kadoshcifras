@@ -34,7 +34,7 @@ export default function PendingApprovalPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Você será notificado por e-mail assim que sua conta for aprovada.
+            Você pode verificar o status da sua aprovação fazendo login novamente mais tarde.
           </p>
            <p className="text-sm">
             Logado como: <span className="font-medium">{user?.email ?? 'Carregando...'}</span>
