@@ -235,8 +235,12 @@ export default function NewSongPage() {
                 <Label htmlFor="key">Tom Original</Label>
                 <Input id="key" value={key} onChange={(e) => setKey(e.target.value)} placeholder="ex: C" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="content">Letra & Cifras</Label>
+
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                  <Label htmlFor="content">Letra &amp; Cifras</Label>
+                  <Button type="submit">Salvar Música</Button>
+              </div>
               <Textarea
                 id="content"
                 value={content}
