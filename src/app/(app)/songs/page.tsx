@@ -110,9 +110,7 @@ export default function SongsPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2 flex-wrap gap-4">
-        <h2 className="text-3xl font-bold font-headline tracking-tight">Minhas Músicas</h2>
-         <div className="flex items-center gap-4">
+       <div className="flex items-center gap-4 mb-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3">
                 <CardTitle className="text-sm font-medium">Total de Músicas</CardTitle>
@@ -132,6 +130,8 @@ export default function SongsPage() {
               </CardContent>
             </Card>
         </div>
+      <div className="flex items-center justify-between space-y-2 flex-wrap gap-4">
+        <h2 className="text-3xl font-bold font-headline tracking-tight">Minhas Músicas</h2>
       </div>
 
        <Card className="p-4">
