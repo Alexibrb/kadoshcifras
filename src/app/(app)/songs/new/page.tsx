@@ -69,12 +69,12 @@ export default function NewSongPage() {
                 id="content"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="Verso 1:&#10;C                      G&#10;Olha que coisa mais linda, mais cheia de graça"
+                placeholder="Verso 1:&#10;C                      G&#10;Olha que coisa mais linda, mais cheia de graça&#10;&#10;---&#10;&#10;Refrão:&#10;F                      C&#10;E o seu balançado é mais que um poema"
                 className="h-64 font-code"
                 required
               />
                <p className="text-sm text-muted-foreground">
-                As cifras serão detectadas e formatadas automaticamente.
+                Use "---" em uma nova linha para dividir a música em várias páginas/seções.
               </p>
             </div>
             <div className="flex justify-end">

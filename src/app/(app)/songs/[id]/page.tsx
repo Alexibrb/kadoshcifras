@@ -11,7 +11,7 @@ import { transposeContent } from '@/lib/music';
 import { Textarea } from '@/components/ui/textarea';
 import { SongDisplay } from '@/components/song-display';
 import { Card, CardContent } from '@/components/ui/card';
-import { ScrollButtons } from '@/components/scroll-buttons';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 export default function SongPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -39,6 +39,11 @@ export default function SongPage({ params }: { params: { id: string } }) {
     const contentToTranspose = isEditing ? editedContent : song.content;
     return transposeContent(contentToTranspose, transpose);
   }, [song, editedContent, transpose, isEditing]);
+
+  const songParts = useMemo(() => {
+    return transposedContent.split(/\n---\n/);
+  }, [transposedContent]);
+
 
   if (isClient && !song) {
     notFound();
@@ -94,20 +99,33 @@ export default function SongPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      <Card>
-        <CardContent className="p-4 md:p-6">
-          {isEditing ? (
-            <Textarea
-              value={editedContent}
-              onChange={(e) => setEditedContent(e.target.value)}
-              className="min-h-[60vh] font-code text-base"
-            />
-          ) : (
-            <SongDisplay content={transposedContent} />
-          )}
-        </CardContent>
-      </Card>
-      {!isEditing && <ScrollButtons />}
+      {isEditing ? (
+        <Card>
+          <CardContent className="p-4 md:p-6">
+              <Textarea
+                value={editedContent}
+                onChange={(e) => setEditedContent(e.target.value)}
+                className="min-h-[60vh] font-code text-base"
+              />
+          </CardContent>
+        </Card>
+      ) : (
+        <Carousel className="w-full">
+            <CarouselContent>
+              {songParts.map((part, index) => (
+                <CarouselItem key={index}>
+                  <Card>
+                    <CardContent className="p-4 md:p-6 min-h-[60vh]">
+                      <SongDisplay content={part} />
+                    </CardContent>
+                  </Card>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="ml-12" />
+            <CarouselNext className="mr-12" />
+          </Carousel>
+      )}
     </div>
   );
 }
