@@ -16,10 +16,16 @@ import { Carousel, CarouselApi, CarouselContent, CarouselItem } from '@/componen
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function SongPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [songs, setSongs] = useLocalStorage<Song[]>('songs', []);
+  const [artists] = useLocalStorage<string[]>('song-artists', []);
+  const [genres] = useLocalStorage<string[]>('song-genres', []);
+  const [categories] = useLocalStorage<string[]>('song-categories', []);
+  
   const [isClient, setIsClient] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [transpose, setTranspose] = useState(0);
@@ -29,6 +35,13 @@ export default function SongPage({ params }: { params: { id: string } }) {
   const songId = use(params).id;
   
   const [song, setSong] = useState<Song | undefined>(undefined);
+  
+  // States for editing
+  const [editedTitle, setEditedTitle] = useState('');
+  const [editedArtist, setEditedArtist] = useState('');
+  const [editedCategory, setEditedCategory] = useState('');
+  const [editedGenre, setEditedGenre] = useState('');
+  const [editedKey, setEditedKey] = useState('');
   const [editedContent, setEditedContent] = useState('');
 
   useEffect(() => {
@@ -36,9 +49,25 @@ export default function SongPage({ params }: { params: { id: string } }) {
     const currentSong = songs.find((s) => s.id === songId);
     if (currentSong) {
         setSong(currentSong);
+        setEditedTitle(currentSong.title);
+        setEditedArtist(currentSong.artist);
+        setEditedCategory(currentSong.category || '');
+        setEditedGenre(currentSong.genre || '');
+        setEditedKey(currentSong.key || '');
         setEditedContent(currentSong.content);
     }
   }, [songs, songId]);
+
+  const handleStartEditing = () => {
+    if (!song) return;
+    setEditedTitle(song.title);
+    setEditedArtist(song.artist);
+    setEditedCategory(song.category || '');
+    setEditedGenre(song.genre || '');
+    setEditedKey(song.key || '');
+    setEditedContent(song.content);
+    setIsEditing(true);
+  }
 
   const handleKeyDown = useCallback(
       (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -55,7 +84,6 @@ export default function SongPage({ params }: { params: { id: string } }) {
   
   const transposedContent = useMemo(() => {
     if (!song) return '';
-    // Usa o conteúdo editado se estiver editando, senão o conteúdo original
     const contentToTranspose = isEditing ? editedContent : song.content;
     return transposeContent(contentToTranspose, transpose);
   }, [song, editedContent, transpose, isEditing]);
@@ -64,7 +92,6 @@ export default function SongPage({ params }: { params: { id: string } }) {
     if (showChords) {
       return transposedContent.split(/\n---\n/);
     }
-    // Quando as cifras estão ocultas, tratamos a música como uma parte única.
     return [transposedContent.replace(/\n---\n/g, '\n\n')];
   }, [transposedContent, showChords]);
 
@@ -74,24 +101,32 @@ export default function SongPage({ params }: { params: { id: string } }) {
   }
   
   if (!isClient || !song) {
-    return null; // ou um esqueleto de carregamento
+    return null; 
   }
 
   const handleSave = () => {
     if (!song) return;
 
-    // Aplica a transposição ao conteúdo antes de salvar
     const newContent = transposeContent(editedContent, transpose);
+    const newKey = transposeContent(editedKey, transpose);
 
-    const newKey = song.key ? transposeContent(song.key, transpose) : undefined;
+    const updatedSong: Song = {
+      ...song,
+      title: editedTitle,
+      artist: editedArtist,
+      category: editedCategory,
+      genre: editedGenre,
+      key: newKey,
+      content: newContent,
+    };
 
     setSongs(
-      songs.map((s) => (s.id === song.id ? { ...s, content: newContent, key: newKey } : s))
+      songs.map((s) => (s.id === song.id ? updatedSong : s))
     );
     
-    // Reseta o estado local
-    setSong(s => s ? { ...s, content: newContent, key: newKey } : undefined);
+    setSong(updatedSong);
     setEditedContent(newContent);
+    setEditedKey(newKey);
     setTranspose(0);
     setIsEditing(false);
   };
@@ -109,11 +144,13 @@ export default function SongPage({ params }: { params: { id: string } }) {
               <span className="sr-only">Voltar para as músicas</span>
             </Link>
           </Button>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold font-headline tracking-tight">{song.title}</h1>
-            <p className="text-muted-foreground text-sm">{song.artist}</p>
-            {song.key && <Badge variant="outline">Tom: {transposeContent(song.key, transpose)}</Badge>}
-          </div>
+          {!isEditing ? (
+            <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold font-headline tracking-tight">{song.title}</h1>
+                <p className="text-muted-foreground text-sm">{song.artist}</p>
+                {song.key && <Badge variant="outline">Tom: {transposeContent(song.key, transpose)}</Badge>}
+            </div>
+           ) : null}
         </div>
         <div className="flex items-center gap-2">
            {isEditing ? (
@@ -121,12 +158,54 @@ export default function SongPage({ params }: { params: { id: string } }) {
               <Save className="mr-2 h-4 w-4" /> Salvar
             </Button>
           ) : (
-            <Button variant="outline" onClick={() => setIsEditing(true)} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button variant="outline" onClick={handleStartEditing} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
               <Edit className="mr-2 h-4 w-4" /> Editar
             </Button>
           )}
         </div>
       </div>
+      
+      {isEditing && (
+        <Card className="mb-4">
+            <CardContent className="p-4 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                 <div className="space-y-2">
+                    <Label htmlFor="title">Título</Label>
+                    <Input id="title" value={editedTitle} onChange={(e) => setEditedTitle(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="artist">Artista</Label>
+                    <Select value={editedArtist} onValueChange={setEditedArtist}>
+                        <SelectTrigger><SelectValue placeholder="Selecione um artista" /></SelectTrigger>
+                        <SelectContent>
+                            {artists.map(art => <SelectItem key={art} value={art}>{art}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="category">Categoria</Label>
+                    <Select value={editedCategory} onValueChange={setEditedCategory}>
+                        <SelectTrigger><SelectValue placeholder="Selecione uma categoria" /></SelectTrigger>
+                        <SelectContent>
+                            {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="genre">Gênero</Label>
+                    <Select value={editedGenre} onValueChange={setEditedGenre}>
+                        <SelectTrigger><SelectValue placeholder="Selecione um gênero" /></SelectTrigger>
+                        <SelectContent>
+                           {genres.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="key">Tom</Label>
+                    <Input id="key" value={transposeContent(editedKey, transpose)} onChange={(e) => setEditedKey(transposeContent(e.target.value, -transpose))} />
+                </div>
+            </CardContent>
+        </Card>
+      )}
 
       <div className="flex justify-center items-center gap-4 my-4">
           <div className="flex items-center gap-2 rounded-md border p-1">
@@ -152,8 +231,6 @@ export default function SongPage({ params }: { params: { id: string } }) {
               <Textarea
                 value={transposedContent}
                 onChange={(e) => {
-                  // Como a transposição é aplicada visualmente, precisamos "destranspor"
-                  // para salvar a alteração de texto corretamente.
                   setEditedContent(transposeContent(e.target.value, -transpose));
                 }}
                 className="min-h-[60vh] font-code text-base"
@@ -176,7 +253,6 @@ export default function SongPage({ params }: { params: { id: string } }) {
             </CarouselContent>
           </Carousel>
       ) : (
-        // Visualização contínua para cantores (sem cifras)
         <Card>
             <CardContent className="p-0">
                 <ScrollArea className="h-[70vh] p-4 md:p-6">
