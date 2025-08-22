@@ -282,7 +282,7 @@ export default function SongPage() {
                 style={{ 
                     whiteSpace: 'pre', 
                     overflowX: 'auto', 
-                    minHeight: '400px',
+                    minHeight: '1000px',
                     fontSize: `${fontSize}px` 
                 }}
                 required
