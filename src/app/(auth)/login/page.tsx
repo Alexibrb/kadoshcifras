@@ -43,8 +43,7 @@ export default function LoginPage() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
-        <Logo className="justify-center mb-2" />
-        <CardTitle className="font-headline text-2xl">Bem-vindo de Volta!</CardTitle>
+        <CardTitle className="font-headline text-2xl">Bem-vindo ao CifraFácil</CardTitle>
         <CardDescription>Insira suas credenciais para acessar sua conta.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
