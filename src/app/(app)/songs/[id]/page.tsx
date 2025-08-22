@@ -164,8 +164,8 @@ export default function SongPage() {
           {!isEditing ? (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                 <div className="flex items-baseline gap-2">
-                    <h1 className="text-xl font-bold font-headline tracking-tight">{song.title}</h1>
-                    <p className="text-muted-foreground text-sm whitespace-nowrap">{song.artist}</p>
+                    <h1 className="text-base font-bold font-headline tracking-tight">{song.title}</h1>
+                    <p className="text-muted-foreground text-[10px] whitespace-nowrap">{song.artist}</p>
                 </div>
                 {song.key && <Badge variant="outline" className="whitespace-nowrap">Tom: {transposeContent(song.key, transpose)}</Badge>}
             </div>
