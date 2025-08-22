@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from '@/components/ui/skeleton';
+import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 
 
 export default function SetlistPage() {
@@ -29,13 +30,24 @@ export default function SetlistPage() {
 
   const [isClient, setIsClient] = useState(false);
   const [selectedSong, setSelectedSong] = useState('');
+  const [orderedSongs, setOrderedSongs] = useState<Song[]>([]);
 
   useEffect(() => { setIsClient(true) }, []);
 
   const songsInSetlist = useMemo(() => {
     if (!setlist || !setlist.songIds) return [];
-    return setlist.songIds.map(id => allSongs.find(s => s.id === id)).filter(Boolean) as Song[];
+    const songMap = new Map(allSongs.map(s => [s.id, s]));
+    return setlist.songIds.map(id => songMap.get(id)).filter(Boolean) as Song[];
   }, [setlist, allSongs]);
+
+  useEffect(() => {
+    if (songsInSetlist.length > 0) {
+      setOrderedSongs(songsInSetlist);
+    } else {
+      setOrderedSongs([]);
+    }
+  }, [songsInSetlist]);
+
 
   const availableSongs = useMemo(() => {
     if (!setlist || !setlist.songIds) return allSongs;
@@ -54,6 +66,19 @@ export default function SetlistPage() {
     if (!setlist) return;
     const newSongIds = (setlist.songIds || []).filter(id => id !== songId);
     await updateDocument(setlistId, { songIds: newSongIds });
+  };
+  
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) {
+      return;
+    }
+    const items = Array.from(orderedSongs);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setOrderedSongs(items);
+    const newSongIds = items.map(song => song.id);
+    updateDocument(setlistId, { songIds: newSongIds });
   };
   
   if (isClient && !loadingSetlist && !setlist) {
@@ -86,7 +111,7 @@ export default function SetlistPage() {
         </Button>
         <div>
             <h2 className="text-3xl font-bold font-headline tracking-tight">{setlist.name}</h2>
-            <p className="text-muted-foreground">{songsInSetlist.length} música(s)</p>
+            <p className="text-muted-foreground">{orderedSongs.length} música(s)</p>
         </div>
       </div>
       
@@ -129,23 +154,40 @@ export default function SetlistPage() {
                 <CardDescription>Arraste para reordenar as músicas.</CardDescription>
             </CardHeader>
             <CardContent>
-                {songsInSetlist.length > 0 ? (
-                    <ul className="space-y-2">
-                        {songsInSetlist.map((song, index) => (
-                            <li key={song.id} className="flex items-center justify-between p-2 rounded-md border bg-background hover:bg-accent/50">
-                                <div className="flex items-center gap-2">
-                                     <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
-                                     <div>
-                                        <Link href={`/songs/${song.id}`} className="font-medium hover:underline">{song.title}</Link>
-                                        <p className="text-sm text-muted-foreground">{song.artist}</p>
-                                     </div>
-                                </div>
-                                <Button variant="ghost" size="icon" onClick={() => handleRemoveSong(song.id)} className="h-8 w-8">
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                            </li>
-                        ))}
-                    </ul>
+                {isClient && orderedSongs.length > 0 ? (
+                    <DragDropContext onDragEnd={onDragEnd}>
+                      <Droppable droppableId="songs">
+                        {(provided) => (
+                          <ul {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+                            {orderedSongs.map((song, index) => (
+                               <Draggable key={song.id} draggableId={song.id} index={index}>
+                                {(provided, snapshot) => (
+                                    <li
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                      className={`flex items-center justify-between p-2 rounded-md border bg-background hover:bg-accent/50 ${snapshot.isDragging ? 'shadow-lg bg-accent/20' : ''}`}
+                                      style={{...provided.draggableProps.style}}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
+                                            <div>
+                                                <Link href={`/songs/${song.id}`} className="font-medium hover:underline">{song.title}</Link>
+                                                <p className="text-sm text-muted-foreground">{song.artist}</p>
+                                            </div>
+                                        </div>
+                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveSong(song.id)} className="h-8 w-8">
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </li>
+                                )}
+                                </Draggable>
+                            ))}
+                            {provided.placeholder}
+                          </ul>
+                        )}
+                      </Droppable>
+                    </DragDropContext>
                 ) : (
                     <div className="flex flex-col items-center gap-2 text-center py-12 border-2 border-dashed rounded-lg">
                         <Music className="h-10 w-10 text-muted-foreground" />
