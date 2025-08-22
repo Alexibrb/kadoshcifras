@@ -41,6 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // If there's no Firebase user, we're done (the other effect handles this)
     if (!user) {
         setAppUser(null);
+        setLoading(false); // Make sure to stop loading
         return;
     }
 
@@ -51,7 +52,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (docSnap.exists()) {
         setAppUser({ id: docSnap.id, ...docSnap.data() } as AppUser);
       } else {
-        // This can happen right after signup before the user doc is created
+        // This can happen right after signup before the user doc is created.
+        // We set it to null and let useRequireAuth handle the logic.
         setAppUser(null);
       }
       setLoading(false); // Finished loading user data
@@ -87,19 +89,20 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
         const isAuthPage = pathname === redirectUrl || pathname === '/signup';
         const isPendingApprovalPage = pathname === '/pending-approval';
 
-        // If no firebase user, and not on an auth page, redirect to login
+        // If there is no authenticated user, redirect to login page, unless they are already on an auth page.
         if (!user && !isAuthPage) {
             router.push(redirectUrl);
             return;
         }
         
-        // This case handles the brief moment after signup where the Firestore doc might not exist yet.
-        // We wait until loading is false to check for appUser.
+        // This is the state right after signup, where the firebase user exists, but the firestore doc might not yet.
+        // In this case, we don't do anything and wait for the doc to be created.
+        // The onSnapshot listener in AuthProvider will update the state, and this hook will re-run.
         if (user && !appUser) {
+           // If the user is authenticated but has no Firestore document,
+           // and they are not on the pending approval page, redirect them there.
+           // This handles the case where the document was just created.
            if (!isPendingApprovalPage) {
-               // This can be a valid state right after signup before the doc exists.
-               // We push them to pending approval as a safe default.
-               // Once the doc is created, the next condition will redirect them if they are approved.
                router.push('/pending-approval');
            }
            return;
@@ -111,7 +114,7 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
                 router.push('/pending-approval');
             }
             
-            // User is approved but is on the pending approval page
+            // User is approved but is on the pending approval page, send them to dashboard
             if (appUser.isApproved && isPendingApprovalPage) {
                 router.push('/dashboard');
             }
