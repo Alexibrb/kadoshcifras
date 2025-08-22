@@ -7,7 +7,7 @@ export function Logo({ className }: { className?: string }) {
     <Link href="/dashboard" className={cn("flex items-center gap-2 text-primary", className)}>
       <Music className="h-6 w-6" />
       <span className="font-headline text-xl font-bold tracking-tight">
-        Music Pal
+        CifraFácil
       </span>
     </Link>
   );

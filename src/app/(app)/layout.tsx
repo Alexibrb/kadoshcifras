@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ThemeToggle } from '@/components/theme-toggle';
 
 
 const navLinks = [
@@ -40,6 +41,7 @@ function Header() {
                                </Link>
                            </Button>
                        ))}
+                       <ThemeToggle />
                     </nav>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

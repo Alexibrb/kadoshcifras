@@ -10,7 +10,7 @@ export default function Home() {
           <Music className="w-16 h-16 text-primary" />
         </div>
         <h1 className="text-5xl md:text-7xl font-headline font-bold text-primary tracking-tighter">
-          Music Pal
+          CifraFácil
         </h1>
         <p className="max-w-xl mx-auto text-lg md:text-xl text-foreground/80 font-body">
           Seu companheiro definitivo para criar, gerenciar e apresentar músicas. Transponha tons, crie repertórios e aperfeiçoe seu som com ferramentas de IA.
@@ -25,7 +25,7 @@ export default function Home() {
         </div>
       </div>
       <footer className="absolute bottom-4 text-center text-sm text-muted-foreground">
-        <p>&copy; {new Date().getFullYear()} Music Pal. Todos os Direitos Reservados.</p>
+        <p>&copy; {new Date().getFullYear()} CifraFácil. Todos os Direitos Reservados.</p>
       </footer>
     </main>
   );

@@ -34,7 +34,7 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
           <CardHeader>
-            <CardTitle className="font-headline">Bem-vindo ao Music Pal!</CardTitle>
+            <CardTitle className="font-headline">Bem-vindo ao CifraFácil!</CardTitle>
             <CardDescription>
               Este é o seu espaço para gerenciar seu mundo musical. Comece adicionando sua primeira música.
             </CardDescription>
