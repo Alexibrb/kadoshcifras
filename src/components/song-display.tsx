@@ -14,11 +14,11 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
     }
     
     // Evita que uma linha em branco ocupe espaço desnecessário quando as cifras estão ocultas.
+    // e a proxima linha também está vazia
     if (text.trim() === '' && !showChords) {
-        const nextLineIsAlsoEmpty = !text;
-        if(nextLineIsAlsoEmpty) return <p className="mb-2">&nbsp;</p>;
-        return null;
+       return <p className="mb-0">&nbsp;</p>;
     }
+
 
     if (text.trim() === '') {
         return <p className="mb-2">&nbsp;</p>;
@@ -37,7 +37,7 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
 }
 
 export function SongDisplay({ content, className, showChords, ...props }: SongDisplayProps) {
-    const lines = content.split('\\n');
+    const lines = content.split('\n');
 
     const containerClasses = cn(
         "font-code text-base leading-tight w-full",
@@ -47,14 +47,28 @@ export function SongDisplay({ content, className, showChords, ...props }: SongDi
 
     return (
         <div className={containerClasses} {...props}>
-            {lines.map((line, lineIndex) => (
-                <Line
-                    key={lineIndex}
-                    text={line}
-                    isChord={isChordLine(line)}
-                    showChords={showChords}
-                />
-            ))}
+            {lines.map((line, lineIndex) => {
+                const isChord = isChordLine(line);
+                // Quando as cifras estão ocultas, não renderize a linha de acordes.
+                if (isChord && !showChords) {
+                    return null;
+                }
+                
+                // Evita renderizar um espaço extra se a linha de letra estiver vazia
+                // e a linha de cifra acima dela foi ocultada.
+                if(line.trim() === '' && !showChords && lineIndex > 0 && isChordLine(lines[lineIndex -1])) {
+                    return null;
+                }
+
+                return (
+                    <Line
+                        key={lineIndex}
+                        text={line}
+                        isChord={isChord}
+                        showChords={showChords}
+                    />
+                );
+            })}
         </div>
     );
 }
