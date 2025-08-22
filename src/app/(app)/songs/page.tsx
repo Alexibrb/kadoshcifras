@@ -1,7 +1,7 @@
 
 'use client';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { type Song } from '@/types';
 import { Music, PlusCircle, Trash2, ArrowUpDown } from 'lucide-react';
@@ -35,20 +35,38 @@ export default function SongsPage() {
   const [isClient, setIsClient] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOption>('title-asc');
-
+  const [selectedArtist, setSelectedArtist] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
     setIsClient(true);
   }, []);
   
+  const uniqueArtists = useMemo(() => {
+    if (!isClient) return [];
+    const artists = new Set(songs.map(song => song.artist).filter(Boolean));
+    return ['all', ...Array.from(artists)];
+  }, [songs, isClient]);
+
+  const uniqueCategories = useMemo(() => {
+    if (!isClient) return [];
+    const categories = new Set(songs.map(song => song.category).filter(Boolean));
+    return ['all', ...Array.from(categories)];
+  }, [songs, isClient]);
+
+
   const filteredAndSortedSongs = useMemo(() => {
     if (!isClient) return [];
 
     return songs
-      .filter((song) =>
-        song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        song.artist.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      .filter((song) => {
+        const searchMatch = song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            song.artist.toLowerCase().includes(searchQuery.toLowerCase());
+        const artistMatch = selectedArtist === 'all' || song.artist === selectedArtist;
+        const categoryMatch = selectedCategory === 'all' || song.category === selectedCategory;
+
+        return searchMatch && artistMatch && categoryMatch;
+      })
       .sort((a, b) => {
         switch (sortOrder) {
           case 'title-asc':
@@ -60,14 +78,14 @@ export default function SongsPage() {
           case 'artist-desc':
             return b.artist.localeCompare(a.artist);
           case 'date-desc':
-            // Se as músicas não tiverem uma data, elas permanecerão na ordem original.
-            // Para uma ordenação real por data, seria necessário adicionar um timestamp ao objeto Song.
+            // This sort is tricky with local storage. A proper timestamp would be better.
+            // For now, we can simulate it by reversing the array as it is.
             return songs.indexOf(b) - songs.indexOf(a);
           default:
             return 0;
         }
       });
-  }, [songs, searchQuery, sortOrder, isClient]);
+  }, [songs, searchQuery, sortOrder, selectedArtist, selectedCategory, isClient]);
 
 
   const deleteSong = (id: string) => {
@@ -78,27 +96,49 @@ export default function SongsPage() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2 flex-wrap gap-4">
         <h2 className="text-3xl font-bold font-headline tracking-tight">Minhas Músicas</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
             <Input
                 placeholder="Buscar por título ou artista..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full md:w-64"
+                className="w-full sm:w-auto md:w-48"
             />
+            <Select onValueChange={setSelectedArtist} value={selectedArtist}>
+                <SelectTrigger className="w-full sm:w-auto md:w-[180px]">
+                    <SelectValue placeholder="Filtrar por artista" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Todos os Artistas</SelectItem>
+                    {uniqueArtists.filter(a => a !== 'all').map(artist => (
+                       <SelectItem key={artist} value={artist}>{artist}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <Select onValueChange={setSelectedCategory} value={selectedCategory}>
+                <SelectTrigger className="w-full sm:w-auto md:w-[180px]">
+                    <SelectValue placeholder="Filtrar por categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Todas as Categorias</SelectItem>
+                     {uniqueCategories.filter(c => c !== 'all').map(category => (
+                       <SelectItem key={category} value={category}>{category}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
             <Select onValueChange={(value) => setSortOrder(value as SortOption)} defaultValue={sortOrder}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-auto md:w-[180px]">
                     <ArrowUpDown className="mr-2 h-4 w-4" />
                     <SelectValue placeholder="Ordenar por" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="date-desc">Mais Recentes</SelectItem>
                     <SelectItem value="title-asc">Título (A-Z)</SelectItem>
                     <SelectItem value="title-desc">Título (Z-A)</SelectItem>
                     <SelectItem value="artist-asc">Artista (A-Z)</SelectItem>
                     <SelectItem value="artist-desc">Artista (Z-A)</SelectItem>
+                    <SelectItem value="date-desc">Mais Recentes</SelectItem>
                 </SelectContent>
             </Select>
-            <Button asChild>
+            <Button asChild className="w-full sm:w-auto">
                 <Link href="/songs/new">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     <span className="hidden md:inline">Nova Música</span>
@@ -147,7 +187,7 @@ export default function SongsPage() {
                             <AlertDialogDescription>
                                 Essa ação não pode ser desfeita. Isso excluirá permanentemente a música
                                 e removerá seus dados de nossos servidores.
-                            </AlertDialogDescription>
+                            </DialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
