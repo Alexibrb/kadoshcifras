@@ -40,16 +40,17 @@ export default function SignupPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      // Garante que o perfil e o documento do Firestore sejam criados
       if (user) {
+        // Atualiza o perfil no Firebase Auth
         await updateProfile(user, {
             displayName: name,
         });
-        // CRUCIAL: Aguarda a criação do documento do usuário no Firestore antes de continuar
+
+        // CRUCIAL: Cria o documento do usuário no Firestore e aguarda a conclusão.
         await createUserDocument(user, { displayName: name });
       }
       
-      // Agora é seguro redirecionar, pois o documento do usuário existe
+      // Agora é seguro redirecionar, pois o documento do usuário foi criado.
       router.push('/pending-approval');
 
     } catch (error: any) {
@@ -60,9 +61,9 @@ export default function SignupPage() {
         } else if (error.code === 'auth/weak-password') {
             setError("A senha é muito fraca. Tente uma mais forte.");
         } else {
-            setError("Ocorreu um erro ao criar a conta.");
+            setError("Ocorreu um erro ao criar a conta. Por favor, tente novamente.");
+            console.error("Signup Error:", error);
         }
-        console.error("Signup Error:", error);
     } finally {
         setLoading(false);
     }

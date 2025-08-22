@@ -9,8 +9,8 @@ interface UserData {
 }
 
 /**
- * Cria ou atualiza um documento de usuário no Firestore.
- * Garante que o documento exista com `isApproved: false` por padrão no momento do cadastro.
+ * Cria um documento de usuário no Firestore no momento do cadastro.
+ * Garante que o documento exista com `isApproved: false` por padrão.
  * @param user O objeto de usuário do Firebase Auth.
  * @param additionalData Dados adicionais, como o nome de exibição.
  */
@@ -18,23 +18,23 @@ export const createUserDocument = async (user: FirebaseAuthUser, additionalData:
     if (!user) return;
 
     const userRef = doc(db, 'users', user.uid);
-    const { displayName, email } = user;
+    const { email } = user;
     
-    // Os dados que queremos garantir que existam no documento.
+    // Dados a serem definidos para um novo usuário.
+    // Usar setDoc garante que o documento seja criado com este estado exato.
     const userData = {
-        displayName: additionalData.displayName || displayName,
+        displayName: additionalData.displayName,
         email,
-        isApproved: false, // O usuário não está aprovado por padrão.
-        role: 'user', // Define uma role padrão.
-        createdAt: serverTimestamp(), // Registra o horário do servidor.
+        isApproved: false, // Novos usuários sempre começam como não aprovados.
+        role: 'user',      // Papel padrão.
+        createdAt: serverTimestamp(),
     };
 
     try {
-        // setDoc com { merge: true } criaria o doc se não existir, ou mesclaria os dados se já existir.
-        // Mas para garantir a consistência no momento do cadastro, um setDoc simples é mais seguro
-        // para definir o estado inicial do usuário.
         await setDoc(userRef, userData);
     } catch (error) {
         console.error("Erro ao criar documento do usuário:", error);
+        // Lançar o erro pode ajudar a depurar na página de cadastro se algo der errado.
+        throw error;
     }
 };
