@@ -49,7 +49,7 @@ export default function SignupPage() {
       router.push('/dashboard');
     } catch (error: any) {
         if (error.code === 'auth/email-already-in-use') {
-            setError("Este endereço de e-mail já está em uso.");
+            setError("Este endereço de e-mail já está em uso. Tente fazer o <a href='/login' class='font-bold underline'>login</a>.");
         } else if (error.code === 'auth/invalid-email') {
             setError("O formato do e-mail é inválido.");
         } else if (error.code === 'auth/weak-password') {
@@ -88,7 +88,7 @@ export default function SignupPage() {
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Erro de Cadastro</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription dangerouslySetInnerHTML={{ __html: error }} />
             </Alert>
           )}
         </CardContent>
