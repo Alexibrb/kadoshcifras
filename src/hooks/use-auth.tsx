@@ -1,4 +1,3 @@
-
 // src/hooks/use-auth.tsx
 'use client';
 
@@ -23,11 +22,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Observador para o estado de autenticação do Firebase
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       if (!firebaseUser) {
-        // Se não há usuário, não há documento no Firestore para buscar.
         setAppUser(null);
         setLoading(false);
       }
@@ -36,21 +33,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    // Se não há usuário, não faz nada. O loading já foi definido como false acima.
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
-    // Se há um usuário, começa a carregar os dados do Firestore.
     setLoading(true);
     const userDocRef = doc(db, 'users', user.uid);
     const unsubscribeFirestore = onSnapshot(userDocRef, (docSnap) => {
       if (docSnap.exists()) {
         setAppUser({ id: docSnap.id, ...docSnap.data() } as AppUser);
       } else {
-        // Isso pode acontecer brevemente após o cadastro, antes do documento ser criado.
-        // O `useRequireAuth` lidará com essa condição.
         setAppUser(null);
       }
-      setLoading(false); // O carregamento termina após obter a resposta do Firestore.
+      setLoading(false);
     }, (error) => {
       console.error("Error fetching user document:", error);
       setAppUser(null);
@@ -58,7 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribeFirestore();
-  }, [user]); // Este efeito depende apenas do objeto 'user' do Firebase Auth.
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{ user, appUser, loading }}>
@@ -75,7 +71,7 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
     const pathname = usePathname();
 
     useEffect(() => {
-        // Não faz nada até que o carregamento inicial de autenticação e dados do usuário esteja completo.
+        // Don't do anything until loading is complete
         if (loading) {
             return;
         }
@@ -83,19 +79,19 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
         const isAuthPage = pathname === redirectUrl || pathname === '/signup' || pathname === '/';
         const isPendingApprovalPage = pathname === '/pending-approval';
 
-        // CASO 1: Nenhum usuário logado.
+        // CASE 1: No firebase user.
         if (!user) {
-            // Se não estiver em uma página pública permitida, redireciona para o login.
-            if (!isAuthPage && !isPendingApprovalPage) {
+            // Redirect to login if not on a public page.
+            if (!isAuthPage) {
                 router.push(redirectUrl);
             }
             return;
         }
         
-        // A partir daqui, sabemos que 'user' (Firebase Auth) existe.
+        // From here, we have a firebase user.
 
-        // CASO 2: O documento do usuário no Firestore (`appUser`) ainda não existe.
-        // Isso é normal logo após o cadastro. O usuário deve ser direcionado para a página de espera.
+        // CASE 2: The firestore document (`appUser`) does not exist yet.
+        // This is normal right after signup. The user must be sent to the pending page.
         if (!appUser) {
            if (!isPendingApprovalPage) {
              router.push('/pending-approval');
@@ -103,16 +99,16 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
            return;
         }
         
-        // CASO 3: Temos o usuário do Auth e do Firestore (`appUser`).
+        // CASE 3: We have both firebase user and firestore user (`appUser`).
         if (appUser) {
-            // Se o usuário não está aprovado, ele DEVE ficar na página de espera.
+            // If user is not approved, they MUST be on the pending page.
             if (!appUser.isApproved && !isPendingApprovalPage) {
                 router.push('/pending-approval');
                 return;
             }
 
-            // Se o usuário ESTÁ aprovado, ele NÃO deve estar nas páginas de auth ou de espera.
-            // Redireciona para o painel.
+            // If user IS approved, they should NOT be on auth or pending pages.
+            // Redirect them to the main app dashboard.
             if (appUser.isApproved && (isPendingApprovalPage || isAuthPage)) {
                 router.push('/dashboard');
                 return;

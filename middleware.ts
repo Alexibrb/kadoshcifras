@@ -3,16 +3,9 @@ import type { NextRequest } from 'next/server'
  
 // This function can be marked `async` if using `await` inside
 export function middleware(request: NextRequest) {
-    const path = request.nextUrl.pathname
-    
-    // Proteger a página de aprovação pendente
-    if (path.startsWith('/pending-approval')) {
-        const hasSession = request.cookies.has('__session'); // Check for a generic firebase auth cookie
-        if (!hasSession) {
-            return NextResponse.redirect(new URL('/login', request.url))
-        }
-    }
-
+    // This middleware is currently not performing any specific logic,
+    // but it enforces authentication for the matched routes.
+    // The actual redirection logic is handled by the `useRequireAuth` hook on the client-side.
     return NextResponse.next()
 }
  
