@@ -59,7 +59,7 @@ export default function SongPage() {
     if (song) {
         setEditedSong(song);
     }
-  }, [song]);
+  }, [songId, song]);
   
   const contentToDisplay = useMemo(() => {
     const currentContent = isEditing ? editedSong?.content : song?.content;
@@ -68,7 +68,7 @@ export default function SongPage() {
   }, [song, editedSong, transpose, isEditing]);
 
   const songParts = useMemo(() => {
-    return contentToDisplay.split(/\\n---\\n|---/);
+    return contentToDisplay.split(/\n---\n|---/);
   }, [contentToDisplay]);
 
   const handleStartEditing = () => {
@@ -243,12 +243,10 @@ export default function SongPage() {
                 <Button variant="ghost" size="icon" onClick={increaseTranspose}>
                     <Plus className="h-4 w-4" />
                 </Button>
-                {transpose !== 0 && (
-                  <Button variant="outline" size="icon" onClick={handleSaveKey} className="ml-2">
-                      <Save className="h-4 w-4" />
-                      <span className="sr-only">Salvar Tom</span>
-                  </Button>
-                )}
+                <Button variant="outline" size="icon" onClick={handleSaveKey} disabled={transpose === 0} className="ml-2">
+                    <Save className="h-4 w-4" />
+                    <span className="sr-only">Salvar Tom</span>
+                </Button>
             </div>
             <div className="flex items-center space-x-2 rounded-md border p-2 py-1">
               <Label htmlFor="show-chords" className="text-sm">Mostrar Cifras</Label>
@@ -307,7 +305,7 @@ export default function SongPage() {
             <CardContent className="p-0">
                 <ScrollArea className="h-[70vh] p-4 md:p-6">
                     <SongDisplay 
-                        content={contentToDisplay.replace(/\\n---\\n|---/g, '\n\n')} 
+                        content={contentToDisplay.replace(/\n---\n|---/g, '\n\n')} 
                         showChords={false} 
                     />
                 </ScrollArea>
