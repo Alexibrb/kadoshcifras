@@ -1,93 +1,87 @@
 'use client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarFooter,
-  SidebarInset,
-} from '@/components/ui/sidebar';
 import { LayoutDashboard, ListMusic, LogOut, Music, Sparkles, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/logo';
 import { Separator } from '@/components/ui/separator';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
+
+const navLinks = [
+    { href: '/dashboard', icon: LayoutDashboard, label: 'Painel' },
+    { href: '/songs', icon: Music, label: 'Músicas' },
+    { href: '/setlists', icon: ListMusic, label: 'Repertórios' },
+    { href: '/tools', icon: Sparkles, label: 'Ferramentas de IA' },
+]
+
+function Header() {
+    const pathname = usePathname();
+
+    return (
+        <header className="sticky top-0 z-40 w-full border-b bg-background">
+            <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
+                <Logo />
+                <div className="flex flex-1 items-center justify-end space-x-4">
+                    <nav className="flex items-center space-x-1">
+                       {navLinks.map(link => (
+                           <Button key={link.href} asChild variant={pathname.startsWith(link.href) ? "secondary" : "ghost"} size="icon">
+                               <Link href={link.href}>
+                                   <link.icon className="h-5 w-5" />
+                                   <span className="sr-only">{link.label}</span>
+                               </Link>
+                           </Button>
+                       ))}
+                    </nav>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src="https://placehold.co/100x100.png" alt="Avatar do Usuário" data-ai-hint="person music" />
+                            <AvatarFallback><User /></AvatarFallback>
+                          </Avatar>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-56" align="end" forceMount>
+                        <DropdownMenuLabel className="font-normal">
+                          <div className="flex flex-col space-y-1">
+                            <p className="text-sm font-medium leading-none">John Doe</p>
+                            <p className="text-xs leading-none text-muted-foreground">
+                              john.doe@email.com
+                            </p>
+                          </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                           <Link href="/">
+                             <LogOut className="mr-2 h-4 w-4" />
+                             <span>Sair</span>
+                           </Link>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </div>
+        </header>
+    )
+}
+
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen">
-        <Sidebar>
-          <SidebarHeader>
-            <Logo />
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === '/dashboard'} tooltip="Painel">
-                  <Link href="/dashboard">
-                    <LayoutDashboard />
-                    <span>Painel</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.startsWith('/songs')} tooltip="Músicas">
-                  <Link href="/songs">
-                    <Music />
-                    <span>Músicas</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.startsWith('/setlists')} tooltip="Repertórios">
-                  <Link href="/setlists">
-                    <ListMusic />
-                    <span>Repertórios</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.startsWith('/tools')} tooltip="Ferramentas de IA">
-                  <Link href="/tools">
-                    <Sparkles />
-                    <span>Ferramentas de IA</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarContent>
-          <Separator />
-          <SidebarFooter>
-            <div className="flex items-center gap-3">
-              <Avatar>
-                <AvatarImage src="https://placehold.co/100x100.png" alt="Avatar do Usuário" data-ai-hint="person music" />
-                <AvatarFallback>
-                  <User />
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col text-sm group-data-[collapsible=icon]:hidden">
-                <span className="font-semibold">John Doe</span>
-                <span className="text-muted-foreground">john.doe@email.com</span>
-              </div>
-            </div>
-            <Button asChild variant="ghost" size="icon" className="group-data-[collapsible=icon]:w-full">
-              <Link href="/">
-                <LogOut />
-                <span className="sr-only">Sair</span>
-              </Link>
-            </Button>
-          </SidebarFooter>
-        </Sidebar>
-        <SidebarInset>{children}</SidebarInset>
-      </div>
-    </SidebarProvider>
+    <div className="flex min-h-screen flex-col">
+        <Header />
+        <main className="flex-1">
+            {children}
+        </main>
+    </div>
   );
 }

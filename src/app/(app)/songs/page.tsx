@@ -59,36 +59,34 @@ export default function SongsPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {isClient &&
             songs.map((song) => (
-              <Card key={song.id} className="flex flex-col justify-center">
-                <CardHeader className="p-4">
-                    <div className="flex items-center justify-between gap-4">
-                        <CardTitle className="font-headline text-base truncate flex-1">{song.title}</CardTitle>
-                        <div className="flex items-center gap-1">
-                            <Button asChild variant="outline" size="sm" className="h-8">
-                                <Link href={`/songs/${song.id}`}>Abrir</Link>
-                            </Button>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                        <span className="sr-only">Excluir</span>
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Essa ação não pode ser desfeita. Isso excluirá permanentemente a música
-                                        e removerá seus dados de nossos servidores.
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => deleteSong(song.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
+              <Card key={song.id}>
+                <CardHeader className="flex flex-row items-center justify-between p-4 space-y-0">
+                    <CardTitle className="font-headline text-base truncate flex-1">{song.title}</CardTitle>
+                    <div className="flex items-center gap-1">
+                        <Button asChild variant="outline" size="sm" className="h-8">
+                            <Link href={`/songs/${song.id}`}>Abrir</Link>
+                        </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                    <span className="sr-only">Excluir</span>
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Essa ação não pode ser desfeita. Isso excluirá permanentemente a música
+                                    e removerá seus dados de nossos servidores.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteSong(song.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </div>
                 </CardHeader>
               </Card>
