@@ -258,7 +258,7 @@ export default function NewSongPage() {
                 placeholder="Verso 1:&#10;C                      G&#10;Olha que coisa mais linda, mais cheia de graça&#10;&#10;---&#10;&#10;Refrão:&#10;F                      C&#10;E o seu balançado é mais que um poema"
                 className="font-code resize-none overflow-hidden"
                 required
-                style={{ whiteSpace: 'nowrap', overflowX: 'auto' }}
+                style={{ whiteSpace: 'pre', overflowX: 'auto' }}
               />
                <p className="text-sm text-muted-foreground">
                 Use "---" em uma nova linha para dividir a música em várias páginas/seções.
