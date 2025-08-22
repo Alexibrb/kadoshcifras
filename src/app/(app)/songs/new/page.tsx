@@ -247,6 +247,9 @@ export default function NewSongPage() {
                   <Label htmlFor="content">Letra &amp; Cifras</Label>
                   <Button type="submit">Salvar Música</Button>
               </div>
+               <p className="text-sm text-muted-foreground">
+                Use duas linhas em branco para dividir a música em várias páginas/seções.
+              </p>
               <Textarea
                 id="content"
                 ref={textareaRef}
@@ -257,9 +260,6 @@ export default function NewSongPage() {
                 required
                 style={{ whiteSpace: 'pre', overflowX: 'auto', minHeight: '200px' }}
               />
-               <p className="text-sm text-muted-foreground">
-                Use duas linhas em branco para dividir a música em várias páginas/seções.
-              </p>
             </div>
             <div className="flex justify-end">
               <Button type="submit">Salvar Música</Button>

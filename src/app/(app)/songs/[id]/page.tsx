@@ -265,6 +265,9 @@ export default function SongPage() {
                     <Save className="mr-2 h-4 w-4" /> Salvar
                 </Button>
               </div>
+               <p className="text-sm text-muted-foreground">
+                Use duas linhas em branco para dividir a música em várias páginas/seções.
+              </p>
               <Textarea
                 id="content-editor"
                 ref={textareaRef}
@@ -277,9 +280,6 @@ export default function SongPage() {
                 className="font-code text-base"
                 style={{ whiteSpace: 'pre', overflowX: 'auto', minHeight: '400px' }}
               />
-              <p className="text-sm text-muted-foreground">
-                Use duas linhas em branco para dividir a música em várias páginas/seções.
-              </p>
               <div className="flex justify-end">
                 <Button onClick={handleSave}>Salvar Música</Button>
               </div>
