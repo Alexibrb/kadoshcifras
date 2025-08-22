@@ -102,6 +102,10 @@ export default function SongPage({ params }: { params: { id: string } }) {
         </Card>
       ) : (
         <Carousel className="w-full">
+            <div className="flex justify-center items-center gap-4 mb-4">
+                <CarouselPrevious className="relative top-auto left-auto -translate-y-0" />
+                <CarouselNext className="relative top-auto right-auto -translate-y-0" />
+            </div>
             <CarouselContent>
               {songParts.map((part, index) => (
                 <CarouselItem key={index}>
@@ -115,8 +119,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
                 </CarouselItem>
               ))}
             </CarouselContent>
-             <div className="flex justify-between items-center mt-4">
-               <CarouselPrevious className="relative top-auto left-auto -translate-y-0" />
+             <div className="flex justify-center items-center mt-4">
                <div className="flex items-center gap-1 rounded-md border p-1 mx-auto">
                     <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose - 1)}>
                         <Minus className="h-4 w-4" />
@@ -128,7 +131,6 @@ export default function SongPage({ params }: { params: { id: string } }) {
                         <Plus className="h-4 w-4" />
                     </Button>
                 </div>
-              <CarouselNext className="relative top-auto right-auto -translate-y-0" />
             </div>
           </Carousel>
       )}
