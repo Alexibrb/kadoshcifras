@@ -130,13 +130,13 @@ export default function SongPage() {
       content: newContent,
     };
 
-    setSongs(
-      songs.map((s) => (s.id === song.id ? updatedSong : s))
-    );
+    const updatedSongs = songs.map((s) => (s.id === song.id ? updatedSong : s));
+    setSongs(updatedSongs);
     
-    setSong(updatedSong);
-    setEditedContent(newContent);
-    setEditedKey(newKey);
+    // We update the local song state from the full list to ensure reactivity
+    const reloadedSong = updatedSongs.find(s => s.id === song.id);
+    setSong(reloadedSong);
+
     setTranspose(0);
     setIsEditing(false);
   };
