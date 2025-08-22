@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const defaultCategories = ['Hinário', 'Adoração', 'Ceia', 'Alegre', 'Cantor Cristão', 'Harpa Cristã', 'Outros'];
 const defaultGenres = ['Gospel', 'Worship', 'Pop', 'Rock', 'Reggae'];
 const defaultArtists = ['Aline Barros', 'Fernandinho', 'Gabriela Rocha', 'Anderson Freire', 'Bruna Karla', 'Isaias Saad', 'Midian Lima', 'Outros'];
+const ALL_KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B', 'Db', 'Eb', 'Gb', 'Ab', 'Bb'];
 
 
 export default function SongPage() {
@@ -207,7 +208,12 @@ export default function SongPage() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="key">Tom</Label>
-                    <Input id="key" value={transposeContent(editedKey, transpose)} onChange={(e) => setEditedKey(transposeContent(e.target.value, -transpose))} />
+                    <Select value={transposeContent(editedKey, transpose)} onValueChange={(v) => setEditedKey(transposeContent(v, -transpose))}>
+                        <SelectTrigger><SelectValue placeholder="Selecione um tom" /></SelectTrigger>
+                        <SelectContent>
+                            {ALL_KEYS.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
                 </div>
             </CardContent>
         </Card>
