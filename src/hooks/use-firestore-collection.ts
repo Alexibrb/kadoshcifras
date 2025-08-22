@@ -10,7 +10,7 @@ export type FirestoreQueryFilter = [string, WhereFilterOp, any];
 
 export function useFirestoreCollection<T extends { id: string }>(
   collectionName: string,
-  initialSort: string = 'title',
+  initialSort?: string,
   initialFilters: FirestoreQueryFilter[] = []
 ) {
   const [data, setData] = useState<T[]>([]);
@@ -23,7 +23,9 @@ export function useFirestoreCollection<T extends { id: string }>(
       q = query(q, where(...filter));
     });
 
-    q = query(q, orderBy(initialSort));
+    if (initialSort) {
+      q = query(q, orderBy(initialSort));
+    }
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const collectionData = querySnapshot.docs.map(doc => ({
