@@ -25,7 +25,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
   const [transpose, setTranspose] = useState(0);
   const [showChords, setShowChords] = useState(true);
   
-  const songId = use(params).id;
+  const { id: songId } = use(params);
   
   const [song, setSong] = useState<Song | undefined>(undefined);
   const [editedContent, setEditedContent] = useState('');
@@ -148,7 +148,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
                 <CarouselItem key={index}>
                   <Card>
                     <CardContent className="p-4 md:p-6 min-h-[60vh] flex flex-col">
-                       <SongDisplay content={part} showChords={showChords} />
+                        <SongDisplay content={part} showChords={showChords} />
                     </CardContent>
                   </Card>
                 </CarouselItem>
