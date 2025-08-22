@@ -236,7 +236,7 @@ export default function SongPage() {
       ) : (
         <div className="flex justify-center my-2">
             <div className="flex items-center gap-2 rounded-md border p-1 w-full max-w-xs">
-                <Label className="text-sm pl-1">Tam.</Label>
+                <Label className="text-sm pl-1">Tam. da Fonte</Label>
                 <Button variant="ghost" size="icon" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-6 w-6">
                     <Minus className="h-4 w-4" />
                 </Button>
