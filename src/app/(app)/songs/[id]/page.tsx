@@ -96,6 +96,9 @@ export default function SongPage({ params }: { params: { id: string } }) {
     setIsEditing(false);
   };
 
+  const increaseTranspose = () => setTranspose(t => Math.min(12, t + 1));
+  const decreaseTranspose = () => setTranspose(t => Math.max(-12, t - 1));
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-start justify-between gap-4">
@@ -118,7 +121,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
               <Save className="mr-2 h-4 w-4" /> Salvar
             </Button>
           ) : (
-            <Button variant="outline" onClick={() => setIsEditing(true)} size="sm">
+            <Button variant="outline" onClick={() => setIsEditing(true)} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
               <Edit className="mr-2 h-4 w-4" /> Editar
             </Button>
           )}
@@ -127,13 +130,13 @@ export default function SongPage({ params }: { params: { id: string } }) {
 
       <div className="flex justify-center items-center gap-4 my-4">
           <div className="flex items-center gap-2 rounded-md border p-1">
-              <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose - 1)}>
+              <Button variant="ghost" size="icon" onClick={decreaseTranspose}>
                   <Minus className="h-4 w-4" />
               </Button>
               <Badge variant="secondary" className="px-3 py-1 text-sm">
                   Tom: {transpose > 0 ? '+' : ''}{transpose}
               </Badge>
-              <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose + 1)}>
+              <Button variant="ghost" size="icon" onClick={increaseTranspose}>
                   <Plus className="h-4 w-4" />
               </Button>
           </div>
