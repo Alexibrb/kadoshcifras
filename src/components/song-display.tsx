@@ -28,7 +28,7 @@ export function SongDisplay({ content, className, ...props }: SongDisplayProps) 
   };
 
   return (
-    <div className={cn("font-code text-base leading-tight whitespace-pre", className)} {...props}>
+    <div className={cn("font-code text-base leading-tight whitespace-pre overflow-x-auto", className)} {...props}>
       {lines.map((line, lineIndex) => {
         if (line.trim() === '') {
           return <p key={lineIndex} className="mb-2">&nbsp;</p>;

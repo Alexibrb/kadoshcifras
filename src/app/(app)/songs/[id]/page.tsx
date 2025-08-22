@@ -122,9 +122,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
                 <CarouselItem key={index}>
                   <Card>
                     <CardContent className="p-4 md:p-6 min-h-[60vh] flex flex-col">
-                       <div className="flex-1 overflow-x-auto">
-                         <SongDisplay content={part} />
-                       </div>
+                       <SongDisplay content={part} />
                     </CardContent>
                   </Card>
                 </CarouselItem>
