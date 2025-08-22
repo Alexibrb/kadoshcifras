@@ -35,19 +35,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (user) {
+      setLoading(true); // Start loading when user object is available
       const docRef = doc(db, 'users', user.uid);
       const unsubscribeUser = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
           setAppUser({ id: docSnap.id, ...docSnap.data() } as AppUser);
         } else {
+          // This case can happen right after signup before the user doc is created.
+          // We set appUser to null and let useRequireAuth handle it.
           setAppUser(null);
         }
         setLoading(false);
-      }, () => {
+      }, (error) => {
+        console.error("Error fetching user document:", error);
         setAppUser(null);
         setLoading(false);
       });
       return () => unsubscribeUser();
+    } else {
+        // If there's no Firebase user, we are not loading.
+        setLoading(false);
     }
   }, [user]);
 
@@ -66,25 +73,34 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
     const pathname = usePathname();
 
     useEffect(() => {
-        if (loading) return;
+        // Wait until loading is completely finished before making any decisions.
+        if (loading) {
+            return;
+        }
 
+        // If there's no Firebase user, redirect to login page.
         if (!user) {
             router.push(redirectUrl);
             return;
         }
 
-        if (appUser) {
-            if (!appUser.isApproved && pathname !== '/pending-approval') {
-                router.push('/pending-approval');
-            } else if (appUser.isApproved && pathname === '/pending-approval') {
-                router.push('/dashboard');
-            }
+        // This runs after loading is false and we have a user.
+        // If appUser is still null here, it means the Firestore doc doesn't exist.
+        // This is an edge case, maybe the doc creation failed.
+        // Redirecting to login is a safe default.
+        if (!appUser) {
+             // Exception: allow access to pending approval page if they are stuck there.
+             if (pathname !== '/pending-approval') {
+                router.push(redirectUrl);
+             }
+            return;
         }
-        // If appUser is null and we are not loading, it means the user doc doesn't exist.
-        // The signup flow should handle creating it. A logged-in user without a doc is an edge case.
-        // We can redirect them to login to be safe.
-        else if (!appUser) {
-           router.push(redirectUrl);
+
+        // Now we have both user and appUser, we can apply approval logic.
+        if (!appUser.isApproved && pathname !== '/pending-approval') {
+            router.push('/pending-approval');
+        } else if (appUser.isApproved && pathname === '/pending-approval') {
+            router.push('/dashboard');
         }
 
     }, [user, appUser, loading, router, redirectUrl, pathname]);
