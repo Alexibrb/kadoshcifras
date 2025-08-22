@@ -11,7 +11,7 @@ import { transposeContent, transposeChord } from '@/lib/music';
 import { Textarea } from '@/components/ui/textarea';
 import { SongDisplay } from '@/components/song-display';
 import { Card, CardContent } from '@/components/ui/card';
-import { Carousel, CarouselApi, CarouselContent, CarouselItem } from '@/components/ui/carousel';
+import { Carousel, CarouselApi, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -70,7 +70,6 @@ export default function SongPage() {
   }, [song, editedSong, transpose, isEditing]);
 
   const songParts = useMemo(() => {
-    // Splits the content by three or more consecutive newlines (two blank lines)
     return contentToDisplay.split(/\n\s*\n\s*\n/);
   }, [contentToDisplay]);
 
@@ -293,21 +292,33 @@ export default function SongPage() {
           </CardContent>
         </Card>
       ) : showChords ? (
-        <Carousel className="w-full" setApi={setApi}>
-            <CarouselContent>
-              {songParts.map((part, index) => (
-                <CarouselItem key={index}>
-                  <Card>
-                    <CardContent className="p-0">
-                      <ScrollArea className="h-[70vh] p-4 md:p-6">
-                        <SongDisplay content={part} showChords={showChords} />
-                      </ScrollArea>
-                    </CardContent>
-                  </Card>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-          </Carousel>
+        <div className="relative">
+          <Carousel className="w-full" setApi={setApi} opts={{ watchDrag: true }}>
+              <CarouselContent>
+                {songParts.map((part, index) => (
+                  <CarouselItem key={index}>
+                    <Card>
+                      <CardContent className="p-0">
+                        <ScrollArea className="h-[70vh] p-4 md:p-6">
+                          <SongDisplay content={part} showChords={showChords} />
+                        </ScrollArea>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+               <div className="absolute left-0 top-1/2 -translate-y-1/2 md:hidden">
+                    <CarouselPrevious />
+                </div>
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 md:hidden">
+                    <CarouselNext />
+                </div>
+            </Carousel>
+             <div className="hidden md:block">
+                <CarouselPrevious />
+                <CarouselNext />
+            </div>
+        </div>
       ) : (
          <Card>
             <CardContent className="p-0">
@@ -323,3 +334,5 @@ export default function SongPage() {
     </div>
   );
 }
+
+    
