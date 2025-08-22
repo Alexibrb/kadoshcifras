@@ -2,7 +2,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { type Song } from '@/types';
 import { Music, PlusCircle, Trash2, ArrowUpDown, X } from 'lucide-react';
 import Link from 'next/link';
@@ -26,12 +26,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 type SortOption = 'title-asc' | 'title-desc' | 'artist-asc' | 'artist-desc' | 'date-desc';
 
 export default function SongsPage() {
-  const [songs, setSongs] = useLocalStorage<Song[]>('songs', []);
+  const { data: songs, loading, deleteDocument } = useFirestoreCollection<Song>('songs', 'title');
   const [isClient, setIsClient] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOption>('title-asc');
@@ -86,9 +87,7 @@ export default function SongsPage() {
           case 'artist-desc':
             return (b.artist || '').localeCompare(a.artist || '');
           case 'date-desc':
-            // Note: date-based sorting requires a timestamp on the song object
-            // For now, we'll keep the previous logic as a placeholder.
-            return songs.indexOf(b) - songs.indexOf(a);
+            return (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0);
           default:
             return 0;
         }
@@ -97,7 +96,7 @@ export default function SongsPage() {
 
 
   const deleteSong = (id: string) => {
-    setSongs(songs.filter((song) => song.id !== id));
+    deleteDocument(id);
   };
   
   const handleClearFilters = () => {
@@ -165,7 +164,16 @@ export default function SongsPage() {
             </Button>
         </div>
       </div>
-      {isClient && songs.length === 0 ? (
+      {loading && isClient ? (
+        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+                <Card key={i} className="p-3 space-y-2">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                </Card>
+            ))}
+        </div>
+      ) : isClient && songs.length === 0 ? (
         <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm mt-8 py-24">
           <div className="flex flex-col items-center gap-1 text-center">
             <Music className="h-12 w-12 text-muted-foreground" />

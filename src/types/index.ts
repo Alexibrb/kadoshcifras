@@ -1,3 +1,5 @@
+import type { Timestamp } from 'firebase/firestore';
+
 export interface Song {
   id: string;
   title: string;
@@ -6,6 +8,7 @@ export interface Song {
   key?: string;
   genre?: string;
   category?: string;
+  createdAt?: Timestamp;
 }
 
 export interface Setlist {

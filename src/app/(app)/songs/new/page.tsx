@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import type { Song } from '@/types';
 import { ArrowLeft, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -28,7 +29,7 @@ const defaultArtists = ['Aline Barros', 'Fernandinho', 'Gabriela Rocha', 'Anders
 
 export default function NewSongPage() {
   const router = useRouter();
-  const [songs, setSongs] = useLocalStorage<Song[]>('songs', []);
+  const { addDocument } = useFirestoreCollection<Song>('songs');
   const [categories, setCategories] = useLocalStorage<string[]>('song-categories', defaultCategories);
   const [genres, setGenres] = useLocalStorage<string[]>('song-genres', defaultGenres);
   const [artists, setArtists] = useLocalStorage<string[]>('song-artists', defaultArtists);
@@ -89,10 +90,9 @@ export default function NewSongPage() {
   };
 
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newSong: Song = {
-      id: crypto.randomUUID(),
+    const newSong: Omit<Song, 'id'> = {
       title,
       artist: selectedArtist,
       genre: selectedGenre,
@@ -100,8 +100,8 @@ export default function NewSongPage() {
       key,
       content,
     };
-    setSongs([...songs, newSong]);
-    router.push(`/songs/${newSong.id}`);
+    await addDocument(newSong);
+    router.push(`/songs`);
   };
 
   return (

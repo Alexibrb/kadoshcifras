@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
+// Este hook ainda pode ser útil para armazenar preferências do usuário que não precisam ir para o Firestore,
+// como as listas de artistas, gêneros e categorias.
+
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
   const [storedValue, setStoredValue] = useState<T>(() => {
     if (typeof window === 'undefined') {
@@ -10,14 +13,12 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
     try {
       const item = window.localStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      console.error(error);
+    } catch (error)
       return initialValue;
     }
   });
 
   useEffect(() => {
-    // This effect ensures that we use the value from localStorage after the initial render on the client.
     try {
       const item = window.localStorage.getItem(key);
       if (item) {

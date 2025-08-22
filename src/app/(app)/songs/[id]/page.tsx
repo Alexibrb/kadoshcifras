@@ -1,4 +1,5 @@
 
+
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,8 @@ import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const defaultCategories = ['Hinário', 'Adoração', 'Ceia', 'Alegre', 'Cantor Cristão', 'Harpa Cristã', 'Outros'];
 const defaultGenres = ['Gospel', 'Worship', 'Pop', 'Rock', 'Reggae'];
@@ -27,9 +30,19 @@ const ALL_KEYS = [
     'Cm', 'C#m', 'Dbm', 'Dm', 'D#m', 'Ebm', 'Em', 'Fm', 'F#m', 'Gbm', 'Gm', 'G#m', 'Abm', 'Am', 'A#m', 'Bbm', 'Bm'
 ];
 
+const isChordLine = (line: string) => {
+    // Implemente a lógica para detectar se uma linha contém apenas cifras
+    // Esta é uma implementação de exemplo
+    const trimmedLine = line.trim();
+    if (!trimmedLine) return false;
+    const parts = trimmedLine.split(/\s+/);
+    return parts.every(part => /^[A-G](b|#)?(m|maj|min|dim|aug|sus|°|[0-9])*/.test(part));
+};
+
 export default function SongPage() {
   const params = useParams();
-  const [songs, setSongs] = useLocalStorage<Song[]>('songs', []);
+  const songId = params.id as string;
+  const { data: songs, loading, updateDocument } = useFirestoreCollection<Song>('songs');
   const [artists, setArtists] = useLocalStorage<string[]>('song-artists', defaultArtists);
   const [genres, setGenres] = useLocalStorage<string[]>('song-genres', defaultGenres);
   const [categories, setCategories] = useLocalStorage<string[]>('song-categories', defaultCategories);
@@ -40,8 +53,6 @@ export default function SongPage() {
   const [showChords, setShowChords] = useState(true);
   const [api, setApi] = useState<CarouselApi>()
   
-  const songId = params.id as string;
-  
   const [song, setSong] = useState<Song | undefined>(undefined);
   const [editedSong, setEditedSong] = useState<Song | null>(null);
   
@@ -49,11 +60,13 @@ export default function SongPage() {
 
   useEffect(() => {
     setIsClient(true);
-    const currentSong = songs.find((s) => s.id === songId);
-    if (currentSong) {
-        setSong(currentSong);
+    if (!loading) {
+      const currentSong = songs.find((s) => s.id === songId);
+      if (currentSong) {
+          setSong(currentSong);
+      }
     }
-  }, [songs, songId]);
+  }, [songs, songId, loading]);
 
   useEffect(() => {
     if (isEditing && textareaRef.current && editedSong) {
@@ -62,20 +75,12 @@ export default function SongPage() {
     }
   }, [isEditing, editedSong?.content]);
 
-  const isChordLine = (line: string) => {
-    // Implemente a lógica para detectar se uma linha contém apenas cifras
-    // Esta é uma implementação de exemplo
-    const trimmedLine = line.trim();
-    if (!trimmedLine) return false;
-    const parts = trimmedLine.split(/\s+/);
-    return parts.every(part => /^[A-G](b|#)?(m|maj|min|dim|aug|sus|°|[0-9])*/.test(part));
-  }
   
   const contentToDisplay = useMemo(() => {
-    const currentContent = song?.content;
+    const currentContent = isEditing ? editedSong?.content : song?.content;
     if (!currentContent) return '';
     return transposeContent(currentContent, transpose);
-  }, [song, transpose]);
+  }, [song, editedSong, transpose, isEditing]);
 
   const songParts = useMemo(() => {
     if (showChords) {
@@ -110,20 +115,11 @@ export default function SongPage() {
       },
       [api, isEditing]
     )
-
-  if (isClient && !song) {
-    notFound();
-  }
   
-  if (!isClient || !song) {
-    return null; 
-  }
-
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editedSong) return;
-
-    const updatedSongs = songs.map((s) => (s.id === editedSong.id ? editedSong : s));
-    setSongs(updatedSongs);
+    
+    await updateDocument(editedSong.id, editedSong);
     setSong(editedSong);
     
     setTranspose(0);
@@ -131,13 +127,32 @@ export default function SongPage() {
     setEditedSong(null);
   };
 
+  if (isClient && !loading && !song) {
+    notFound();
+  }
+  
+  if (!isClient || loading || !song) {
+    return (
+        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+            <div className="flex items-center gap-4">
+                <Skeleton className="h-10 w-10 rounded-md" />
+                <div className="space-y-2">
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-4 w-32" />
+                </div>
+            </div>
+            <Skeleton className="h-[70vh] w-full" />
+        </div>
+    );
+  }
+
   const updateEditedSongField = (field: keyof Song, value: string | string[]) => {
     if (editedSong) {
         setEditedSong({ ...editedSong, [field]: value });
     }
   };
 
-  const handleSaveKey = () => {
+  const handleSaveKey = async () => {
     if (!song || transpose === 0) return;
     
     const newKey = song.key ? transposeChord(song.key, transpose) : '';
@@ -148,9 +163,8 @@ export default function SongPage() {
         key: newKey,
         content: newContent
     };
-
-    const updatedSongs = songs.map((s) => (s.id === updatedSong.id ? updatedSong : s));
-    setSongs(updatedSongs);
+    
+    await updateDocument(song.id, { key: newKey, content: newContent });
     setSong(updatedSong);
     setTranspose(0);
   };
@@ -254,7 +268,7 @@ export default function SongPage() {
                 <Button variant="ghost" size="icon" onClick={increaseTranspose}>
                     <Plus className="h-4 w-4" />
                 </Button>
-                {transpose !== 0 && !isEditing && (
+                {transpose !== 0 && (
                   <Button variant="outline" size="icon" onClick={handleSaveKey} className="ml-2">
                       <Save className="h-4 w-4" />
                       <span className="sr-only">Salvar Tom</span>
