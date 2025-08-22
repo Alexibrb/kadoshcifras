@@ -27,7 +27,8 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
     return (
         <p
             className={cn(
-                'whitespace-pre',
+                'whitespace-pre-wrap', // Permite que o texto quebre a linha, mas preserva os espaços
+                'break-words', // Força a quebra de palavras longas
                 isChord ? 'font-bold text-primary mb-1' : 'mb-2'
             )}
         >
@@ -41,7 +42,6 @@ export function SongDisplay({ content, className, showChords, ...props }: SongDi
 
     const containerClasses = cn(
         "font-code text-base leading-tight w-full",
-        !showChords && "overflow-x-hidden", // Remove a rolagem horizontal quando as cifras estão ocultas
         className
     );
 
