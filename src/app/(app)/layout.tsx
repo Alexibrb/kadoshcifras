@@ -1,3 +1,4 @@
+
 'use client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,6 @@ import { LayoutDashboard, ListMusic, LogOut, Music, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/logo';
-import { Separator } from '@/components/ui/separator';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ThemeToggle } from '@/components/theme-toggle';
+import { cn } from '@/lib/utils';
 
 
 const navLinks = [
@@ -32,14 +33,26 @@ function Header() {
                 <Logo />
                 <div className="flex flex-1 items-center justify-end space-x-4">
                     <nav className="flex items-center space-x-1">
-                       {navLinks.map(link => (
-                           <Button key={link.href} asChild variant={pathname.startsWith(link.href) ? "secondary" : "ghost"} size="icon" className="text-accent-foreground hover:bg-secondary hover:text-secondary-foreground">
-                               <Link href={link.href}>
-                                   <link.icon className="h-5 w-5" />
-                                   <span className="sr-only">{link.label}</span>
-                               </Link>
-                           </Button>
-                       ))}
+                       {navLinks.map(link => {
+                           const isActive = pathname.startsWith(link.href);
+                           return (
+                               <Button 
+                                 key={link.href} 
+                                 asChild 
+                                 variant="ghost"
+                                 size="icon" 
+                                 className={cn(
+                                    "text-accent-foreground hover:bg-secondary hover:text-secondary-foreground",
+                                    isActive && "bg-secondary text-secondary-foreground"
+                                  )}
+                               >
+                                   <Link href={link.href}>
+                                       <link.icon className="h-5 w-5" />
+                                       <span className="sr-only">{link.label}</span>
+                                   </Link>
+                               </Button>
+                           )
+                       })}
                        <ThemeToggle />
                     </nav>
                     <DropdownMenu>
@@ -99,3 +112,4 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
