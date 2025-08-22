@@ -24,15 +24,17 @@ import {
 
 const defaultCategories = ['Hinário', 'Adoração', 'Ceia', 'Alegre', 'Cantor Cristão', 'Harpa Cristã', 'Outros'];
 const defaultGenres = ['Gospel', 'Worship', 'Pop', 'Rock', 'Reggae'];
+const defaultArtists = ['Aline Barros', 'Fernandinho', 'Gabriela Rocha', 'Anderson Freire', 'Bruna Karla', 'Isaias Saad', 'Midian Lima', 'Outros'];
 
 export default function NewSongPage() {
   const router = useRouter();
   const [songs, setSongs] = useLocalStorage<Song[]>('songs', []);
   const [categories, setCategories] = useLocalStorage<string[]>('song-categories', defaultCategories);
   const [genres, setGenres] = useLocalStorage<string[]>('song-genres', defaultGenres);
+  const [artists, setArtists] = useLocalStorage<string[]>('song-artists', defaultArtists);
 
   const [title, setTitle] = useState('');
-  const [artist, setArtist] = useState('');
+  const [selectedArtist, setSelectedArtist] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [key, setKey] = useState('');
@@ -40,9 +42,11 @@ export default function NewSongPage() {
 
   const [newCategory, setNewCategory] = useState('');
   const [newGenre, setNewGenre] = useState('');
+  const [newArtist, setNewArtist] = useState('');
 
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [isGenreDialogOpen, setIsGenreDialogOpen] = useState(false);
+  const [isArtistDialogOpen, setIsArtistDialogOpen] = useState(false);
 
 
   const handleAddCategory = () => {
@@ -65,13 +69,23 @@ export default function NewSongPage() {
     setIsGenreDialogOpen(false);
   };
 
+  const handleAddArtist = () => {
+    if (newArtist && !artists.includes(newArtist)) {
+      const updatedArtists = [...artists, newArtist];
+      setArtists(updatedArtists);
+      setSelectedArtist(newArtist);
+    }
+    setNewArtist('');
+    setIsArtistDialogOpen(false);
+  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const newSong: Song = {
       id: crypto.randomUUID(),
       title,
-      artist,
+      artist: selectedArtist,
       genre: selectedGenre,
       category: selectedCategory,
       key,
@@ -101,11 +115,44 @@ export default function NewSongPage() {
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="title">Título</Label>
-                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="ex: Garota de Ipanema" required />
+                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="ex: Sonda-me, Usa-me" required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="artist">Artista</Label>
-                <Input id="artist" value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="ex: Tom Jobim" required />
+                <div className="flex gap-2">
+                  <Select value={selectedArtist} onValueChange={setSelectedArtist}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um artista" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {artists.map(art => <SelectItem key={art} value={art}>{art}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Dialog open={isArtistDialogOpen} onOpenChange={setIsArtistDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="icon"><PlusCircle className="h-4 w-4" /></Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Adicionar Novo Artista</DialogTitle>
+                        <DialogDescription>
+                          Digite o nome do novo artista que você deseja adicionar à lista.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="new-artist-name" className="text-right">
+                            Nome
+                          </Label>
+                          <Input id="new-artist-name" value={newArtist} onChange={(e) => setNewArtist(e.target.value)} className="col-span-3" />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button type="button" onClick={handleAddArtist}>Adicionar</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
             </div>
              <div className="grid md:grid-cols-2 gap-4">
