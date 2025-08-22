@@ -337,7 +337,7 @@ export default function SongPage() {
                   <Button variant="ghost" size="icon" onClick={decreaseTranspose} className="h-8 w-8">
                       <Minus className="h-4 w-4" />
                   </Button>
-                  <Badge variant="secondary" className="px-3 py-1 text-xs">
+                  <Badge variant="secondary" className="px-3 py-1 text-xs whitespace-nowrap">
                       Tom: {transpose > 0 ? '+' : ''}{transpose}
                   </Badge>
                   <Button variant="ghost" size="icon" onClick={increaseTranspose} className="h-8 w-8">
