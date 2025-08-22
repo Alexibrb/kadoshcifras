@@ -1,3 +1,4 @@
+
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -70,9 +71,9 @@ export default function SongPage({ params }: { params: { id: string } }) {
               <span className="sr-only">Voltar para as músicas</span>
             </Link>
           </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold font-headline tracking-tight">{song.title}</h1>
-            <p className="text-muted-foreground">{song.artist}</p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold font-headline tracking-tight">{song.title}</h1>
+            <p className="text-muted-foreground text-sm">{song.artist}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -100,7 +101,20 @@ export default function SongPage({ params }: { params: { id: string } }) {
         </Card>
       ) : (
         <Carousel className="w-full">
-            <div className="flex justify-between items-center mb-4">
+            <CarouselContent>
+              {songParts.map((part, index) => (
+                <CarouselItem key={index}>
+                  <Card>
+                    <CardContent className="p-4 md:p-6 min-h-[60vh] flex flex-col">
+                       <div className="overflow-x-auto pb-2 flex-1">
+                         <SongDisplay content={part} />
+                       </div>
+                    </CardContent>
+                  </Card>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+             <div className="flex justify-between items-center mt-4">
                <CarouselPrevious className="relative top-auto left-auto -translate-y-0" />
                <div className="flex items-center gap-1 rounded-md border p-1 mx-auto">
                     <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose - 1)}>
@@ -115,17 +129,6 @@ export default function SongPage({ params }: { params: { id: string } }) {
                 </div>
               <CarouselNext className="relative top-auto right-auto -translate-y-0" />
             </div>
-            <CarouselContent>
-              {songParts.map((part, index) => (
-                <CarouselItem key={index}>
-                  <Card>
-                    <CardContent className="p-4 md:p-6 min-h-[60vh]">
-                      <SongDisplay content={part} />
-                    </CardContent>
-                  </Card>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
           </Carousel>
       )}
     </div>
