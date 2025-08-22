@@ -19,13 +19,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+const defaultCategories = ['Hinário', 'Adoração', 'Ceia', 'Alegre', 'Cantor Cristão', 'Harpa Cristã', 'Outros'];
+const defaultGenres = ['Gospel', 'Worship', 'Pop', 'Rock', 'Reggae'];
+const defaultArtists = ['Aline Barros', 'Fernandinho', 'Gabriela Rocha', 'Anderson Freire', 'Bruna Karla', 'Isaias Saad', 'Midian Lima', 'Outros'];
+
+
 export default function SongPage() {
   const router = useRouter();
   const params = useParams();
   const [songs, setSongs] = useLocalStorage<Song[]>('songs', []);
-  const [artists, setArtists] = useLocalStorage<string[]>('song-artists', []);
-  const [genres, setGenres] = useLocalStorage<string[]>('song-genres', []);
-  const [categories, setCategories] = useLocalStorage<string[]>('song-categories', []);
+  const [artists, setArtists] = useLocalStorage<string[]>('song-artists', defaultArtists);
+  const [genres, setGenres] = useLocalStorage<string[]>('song-genres', defaultGenres);
+  const [categories, setCategories] = useLocalStorage<string[]>('song-categories', defaultCategories);
   
   const [isClient, setIsClient] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
