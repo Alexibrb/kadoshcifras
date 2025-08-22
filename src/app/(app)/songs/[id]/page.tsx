@@ -29,7 +29,6 @@ const ALL_KEYS = [
 
 
 export default function SongPage() {
-  const router = useRouter();
   const params = useParams();
   const [songs, setSongs] = useLocalStorage<Song[]>('songs', []);
   const [artists, setArtists] = useLocalStorage<string[]>('song-artists', defaultArtists);
@@ -45,44 +44,19 @@ export default function SongPage() {
   const songId = params.id as string;
   
   const [song, setSong] = useState<Song | undefined>(undefined);
-  
-  // States for editing
-  const [editedTitle, setEditedTitle] = useState('');
-  const [editedArtist, setEditedArtist] = useState('');
-  const [editedCategory, setEditedCategory] = useState('');
-  const [editedGenre, setEditedGenre] = useState('');
-  const [editedKey, setEditedKey] = useState('');
-  const [editedContent, setEditedContent] = useState('');
+  const [editedSong, setEditedSong] = useState<Song | null>(null);
 
   useEffect(() => {
     setIsClient(true);
     const currentSong = songs.find((s) => s.id === songId);
     if (currentSong) {
         setSong(currentSong);
-        // We only set the edited state if we are in editing mode
-        // to avoid overwriting user changes with stale data.
-        if (isEditing) {
-            // This part is handled by handleStartEditing now
-        } else {
-            // When not editing, ensure the display is up-to-date
-             setEditedTitle(currentSong.title);
-             setEditedArtist(currentSong.artist);
-             setEditedCategory(currentSong.category || '');
-             setEditedGenre(currentSong.genre || '');
-             setEditedKey(currentSong.key || '');
-             setEditedContent(currentSong.content);
-        }
     }
-  }, [songs, songId, isEditing]);
+  }, [songs, songId]);
 
   const handleStartEditing = () => {
     if (!song) return;
-    setEditedTitle(song.title);
-    setEditedArtist(song.artist);
-    setEditedCategory(song.category || '');
-    setEditedGenre(song.genre || '');
-    setEditedKey(song.key || '');
-    setEditedContent(song.content);
+    setEditedSong({ ...song });
     setIsEditing(true);
   }
 
@@ -101,19 +75,19 @@ export default function SongPage() {
       [api, isEditing]
     )
   
-  const transposedContent = useMemo(() => {
-    if (!song) return '';
-    // Use editedContent directly, as it's synced with the song's content
-    return transposeContent(editedContent, transpose);
-  }, [song, editedContent, transpose]);
+  const contentToDisplay = useMemo(() => {
+    const currentContent = isEditing ? editedSong?.content : song?.content;
+    if (!currentContent) return '';
+    return transposeContent(currentContent, transpose);
+  }, [song, editedSong, isEditing, transpose]);
+
 
   const songParts = useMemo(() => {
-    const contentToDisplay = isEditing ? transposedContent : (song ? transposeContent(song.content, transpose) : '');
     if (showChords) {
       return contentToDisplay.split(/\n---\n/);
     }
     return [contentToDisplay.replace(/\n---\n/g, '\n\n')];
-  }, [transposedContent, showChords, song, transpose, isEditing]);
+  }, [contentToDisplay, showChords]);
 
 
   if (isClient && !song) {
@@ -125,24 +99,27 @@ export default function SongPage() {
   }
 
   const handleSave = () => {
-    const updatedSong: Song = {
-      // id, title, etc. can be taken from `song` state if not edited
-      // but we use the `edited` states to capture all changes.
-      id: song.id,
-      title: editedTitle,
-      artist: editedArtist,
-      category: editedCategory,
-      genre: editedGenre,
-      // The key and content are transposed back to their original state before saving.
-      key: transposeContent(editedKey, -transpose),
-      content: transposeContent(editedContent, -transpose),
+    if (!editedSong) return;
+
+    const finalSong = {
+        ...editedSong,
+        content: transposeContent(editedSong.content, -transpose),
+        key: transposeContent(editedSong.key || '', -transpose),
     };
 
-    const updatedSongs = songs.map((s) => (s.id === song.id ? updatedSong : s));
-    setSongs(updatedSongs); // This triggers the useEffect to update `song` state
+    const updatedSongs = songs.map((s) => (s.id === finalSong.id ? finalSong : s));
+    setSongs(updatedSongs);
+    setSong(finalSong); // Directly update the displayed song
     
     setTranspose(0);
     setIsEditing(false);
+    setEditedSong(null);
+  };
+
+  const updateEditedSongField = (field: keyof Song, value: string) => {
+    if (editedSong) {
+        setEditedSong({ ...editedSong, [field]: value });
+    }
   };
 
 
@@ -180,16 +157,16 @@ export default function SongPage() {
         </div>
       </div>
       
-      {isEditing && (
+      {isEditing && editedSong && (
         <Card className="mb-4">
             <CardContent className="p-4 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                  <div className="space-y-2">
                     <Label htmlFor="title">Título</Label>
-                    <Input id="title" value={editedTitle} onChange={(e) => setEditedTitle(e.target.value)} />
+                    <Input id="title" value={editedSong.title} onChange={(e) => updateEditedSongField('title', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="artist">Artista</Label>
-                    <Select value={editedArtist} onValueChange={setEditedArtist}>
+                    <Select value={editedSong.artist} onValueChange={(value) => updateEditedSongField('artist', value)}>
                         <SelectTrigger><SelectValue placeholder="Selecione um artista" /></SelectTrigger>
                         <SelectContent>
                             {artists.map(art => <SelectItem key={art} value={art}>{art}</SelectItem>)}
@@ -198,7 +175,7 @@ export default function SongPage() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="category">Categoria</Label>
-                    <Select value={editedCategory} onValueChange={setEditedCategory}>
+                    <Select value={editedSong.category} onValueChange={(value) => updateEditedSongField('category', value)}>
                         <SelectTrigger><SelectValue placeholder="Selecione uma categoria" /></SelectTrigger>
                         <SelectContent>
                             {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
@@ -207,7 +184,7 @@ export default function SongPage() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="genre">Gênero</Label>
-                    <Select value={editedGenre} onValueChange={setEditedGenre}>
+                    <Select value={editedSong.genre} onValueChange={(value) => updateEditedSongField('genre', value)}>
                         <SelectTrigger><SelectValue placeholder="Selecione um gênero" /></SelectTrigger>
                         <SelectContent>
                            {genres.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
@@ -216,7 +193,14 @@ export default function SongPage() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="key">Tom</Label>
-                    <Select value={transposeContent(editedKey, transpose)} onValueChange={(v) => setEditedKey(transposeContent(v, -transpose))}>
+                     <Select 
+                        value={transposeContent(editedSong.key || '', transpose)} 
+                        onValueChange={(v) => {
+                            if (editedSong) {
+                                setEditedSong({...editedSong, key: transposeContent(v, -transpose)})
+                            }
+                        }}
+                    >
                         <SelectTrigger><SelectValue placeholder="Selecione um tom" /></SelectTrigger>
                         <SelectContent>
                             {ALL_KEYS.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
@@ -249,9 +233,11 @@ export default function SongPage() {
         <Card>
           <CardContent className="p-4 md:p-6">
               <Textarea
-                value={transposedContent}
+                value={contentToDisplay}
                 onChange={(e) => {
-                  setEditedContent(transposeContent(e.target.value, -transpose));
+                  if (editedSong) {
+                    setEditedSong({ ...editedSong, content: transposeContent(e.target.value, -transpose)});
+                  }
                 }}
                 className="min-h-[60vh] font-code text-base"
                 style={{ whiteSpace: 'pre', overflowX: 'auto' }}
