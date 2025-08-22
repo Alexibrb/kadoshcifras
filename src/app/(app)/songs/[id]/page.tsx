@@ -6,7 +6,7 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Song } from '@/types';
 import { ArrowLeft, Edit, Minus, Plus, Save } from 'lucide-react';
 import Link from 'next/link';
-import { notFound, useRouter } from 'next/navigation';
+import { notFound, useRouter, useParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { transposeContent } from '@/lib/music';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,8 +19,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-export default function SongPage({ params }: { params: { id: string } }) {
+export default function SongPage() {
   const router = useRouter();
+  const params = useParams();
   const [songs, setSongs] = useLocalStorage<Song[]>('songs', []);
   const [artists, setArtists] = useLocalStorage<string[]>('song-artists', []);
   const [genres, setGenres] = useLocalStorage<string[]>('song-genres', []);
@@ -32,7 +33,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
   const [showChords, setShowChords] = useState(true);
   const [api, setApi] = useState<CarouselApi>()
   
-  const songId = params.id;
+  const songId = params.id as string;
   
   const [song, setSong] = useState<Song | undefined>(undefined);
   
