@@ -172,7 +172,7 @@ export default function SetlistPage() {
                                         <div className="flex items-center gap-2">
                                             <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
                                             <div>
-                                                <Link href={`/songs/${song.id}`} className="font-medium hover:underline">{song.title}</Link>
+                                                <Link href={`/songs/${song.id}?fromSetlist=${setlistId}`} className="font-medium hover:underline">{song.title}</Link>
                                                 <p className="text-sm text-muted-foreground">{song.artist}</p>
                                             </div>
                                         </div>

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Song } from '@/types';
 import { ArrowLeft, Edit, Minus, Plus, Save } from 'lucide-react';
 import Link from 'next/link';
-import { notFound, useParams } from 'next/navigation';
+import { notFound, useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { transposeContent, transposeChord } from '@/lib/music';
 import { Textarea } from '@/components/ui/textarea';
@@ -35,7 +35,10 @@ const ALL_KEYS = [
 
 export default function SongPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const songId = params.id as string;
+  const fromSetlistId = searchParams.get('fromSetlist');
+
   const { data: song, loading: loadingSong } = useFirestoreDocument<Song>('songs', songId);
   const { updateDocument } = useFirestoreCollection<Song>('songs');
   
@@ -150,6 +153,9 @@ export default function SongPage() {
 
   const increaseTranspose = () => setTranspose(t => Math.min(12, t + 1));
   const decreaseTranspose = () => setTranspose(t => Math.max(-12, t - 1));
+  
+  const backUrl = fromSetlistId ? `/setlists/${fromSetlistId}` : '/songs';
+
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 pb-24" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
@@ -157,9 +163,9 @@ export default function SongPage() {
         <CardContent className="p-4 space-y-4">
             <div className="flex items-start gap-4">
                 <Button asChild variant="outline" size="icon" className="shrink-0">
-                    <Link href="/songs">
+                    <Link href={backUrl}>
                         <ArrowLeft className="h-4 w-4" />
-                        <span className="sr-only">Voltar para as músicas</span>
+                        <span className="sr-only">Voltar</span>
                     </Link>
                 </Button>
 
@@ -358,5 +364,3 @@ export default function SongPage() {
     </div>
   );
 }
-
-    
