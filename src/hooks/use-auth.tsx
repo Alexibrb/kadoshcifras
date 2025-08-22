@@ -1,3 +1,4 @@
+
 // src/hooks/use-auth.tsx
 'use client';
 
@@ -24,37 +25,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
+      // If there's no Firebase user, we can stop loading and clear appUser.
       if (!firebaseUser) {
         setAppUser(null);
         setLoading(false);
       }
     });
+    // Cleanup the auth listener on unmount.
     return () => unsubscribeAuth();
   }, []);
 
   useEffect(() => {
+    // If there's no user, no need to fetch from Firestore.
     if (!user) {
-      setLoading(false);
+      setLoading(false); // Ensure loading is false if user logs out.
       return;
     }
 
+    // Start loading user data from Firestore.
     setLoading(true);
     const userDocRef = doc(db, 'users', user.uid);
+    
     const unsubscribeFirestore = onSnapshot(userDocRef, (docSnap) => {
       if (docSnap.exists()) {
         setAppUser({ id: docSnap.id, ...docSnap.data() } as AppUser);
       } else {
+        // This case can happen right after signup, before the user document is created.
         setAppUser(null);
       }
-      setLoading(false);
+      setLoading(false); // Firestore data has been fetched (or confirmed not to exist).
     }, (error) => {
       console.error("Error fetching user document:", error);
       setAppUser(null);
       setLoading(false);
     });
 
+    // Cleanup the Firestore listener on unmount.
     return () => unsubscribeFirestore();
-  }, [user]);
+  }, [user]); // This effect depends only on the user object.
 
   return (
     <AuthContext.Provider value={{ user, appUser, loading }}>
@@ -71,27 +79,28 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
     const pathname = usePathname();
 
     useEffect(() => {
-        // Don't do anything until loading is complete
+        // Wait until loading is fully complete before making any decisions.
         if (loading) {
             return;
         }
 
         const isAuthPage = pathname === redirectUrl || pathname === '/signup' || pathname === '/';
         const isPendingApprovalPage = pathname === '/pending-approval';
+        const isAdminPage = pathname.startsWith('/users');
 
-        // CASE 1: No firebase user.
+        // CASE 1: No firebase user. Not authenticated.
         if (!user) {
-            // Redirect to login if not on a public page.
+            // Redirect to login if trying to access a protected page.
             if (!isAuthPage) {
                 router.push(redirectUrl);
             }
             return;
         }
         
-        // From here, we have a firebase user.
+        // From here, we have a Firebase user.
 
-        // CASE 2: The firestore document (`appUser`) does not exist yet.
-        // This is normal right after signup. The user must be sent to the pending page.
+        // CASE 2: The Firestore document (`appUser`) does not exist yet.
+        // This can happen right after signup. Send them to the pending page.
         if (!appUser) {
            if (!isPendingApprovalPage) {
              router.push('/pending-approval');
@@ -99,7 +108,7 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
            return;
         }
         
-        // CASE 3: We have both firebase user and firestore user (`appUser`).
+        // CASE 3: We have both Firebase user and Firestore user (`appUser`).
         if (appUser) {
             // If user is not approved, they MUST be on the pending page.
             if (!appUser.isApproved && !isPendingApprovalPage) {
@@ -113,9 +122,15 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
                 router.push('/dashboard');
                 return;
             }
+
+            // If user is approved but NOT an admin, they cannot access admin pages.
+            if (appUser.isApproved && appUser.role !== 'admin' && isAdminPage) {
+                router.push('/dashboard'); // Redirect to a safe page
+                return;
+            }
         }
 
     }, [user, appUser, loading, router, redirectUrl, pathname]);
 
-    return { loading };
+    return { loading, isAdmin: appUser?.role === 'admin' };
 }

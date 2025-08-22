@@ -2,7 +2,7 @@
 'use client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, ListMusic, LogOut, Music, User } from 'lucide-react';
+import { LayoutDashboard, ListMusic, LogOut, Music, User, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/logo';
@@ -27,7 +27,11 @@ const navLinks = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Painel' },
     { href: '/songs', icon: Music, label: 'Músicas' },
     { href: '/setlists', icon: ListMusic, label: 'Repertórios' },
-]
+];
+
+const adminNavLinks = [
+    { href: '/users', icon: Users, label: 'Usuários' },
+];
 
 function Header() {
     const pathname = usePathname();
@@ -47,6 +51,26 @@ function Header() {
                     <nav className="flex items-center space-x-1">
                        {navLinks.map(link => {
                            const isActive = pathname === link.href || (link.href !== '/dashboard' && pathname.startsWith(link.href));
+                           return (
+                               <Button
+                                 key={link.href}
+                                 asChild
+                                 variant={isActive ? 'secondary' : 'ghost'}
+                                 size="icon"
+                                 className={cn(
+                                    "text-accent-foreground hover:bg-secondary hover:text-secondary-foreground",
+                                    isActive && "bg-secondary text-secondary-foreground"
+                                  )}
+                               >
+                                   <Link href={link.href}>
+                                       <link.icon className="h-5 w-5" />
+                                       <span className="sr-only">{link.label}</span>
+                                   </Link>
+                               </Button>
+                           )
+                       })}
+                       {appUser?.role === 'admin' && adminNavLinks.map(link => {
+                           const isActive = pathname === link.href || pathname.startsWith(link.href);
                            return (
                                <Button
                                  key={link.href}
@@ -128,6 +152,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                           <Skeleton className="h-8 w-8 rounded-md" />
                           <Skeleton className="h-8 w-8 rounded-md" />
                           <Skeleton className="h-8 w-8 rounded-md" />
+                           <Skeleton className="h-8 w-8 rounded-md" />
                           <Skeleton className="h-8 w-8 rounded-full" />
                         </div>
                     </div>
