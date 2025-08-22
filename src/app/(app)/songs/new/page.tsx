@@ -7,19 +7,64 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import type { Song } from '@/types';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+
+const defaultCategories = ['Hinário', 'Adoração', 'Ceia', 'Alegre', 'Cantor Cristão', 'Harpa Cristã', 'Outros'];
+const defaultGenres = ['Gospel', 'Worship', 'Pop', 'Rock', 'Reggae'];
 
 export default function NewSongPage() {
   const router = useRouter();
   const [songs, setSongs] = useLocalStorage<Song[]>('songs', []);
+  const [categories, setCategories] = useLocalStorage<string[]>('song-categories', defaultCategories);
+  const [genres, setGenres] = useLocalStorage<string[]>('song-genres', defaultGenres);
+
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
-  const [genre, setGenre] = useState('');
+  const [selectedGenre, setSelectedGenre] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [key, setKey] = useState('');
   const [content, setContent] = useState('');
+
+  const [newCategory, setNewCategory] = useState('');
+  const [newGenre, setNewGenre] = useState('');
+
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [isGenreDialogOpen, setIsGenreDialogOpen] = useState(false);
+
+
+  const handleAddCategory = () => {
+    if (newCategory && !categories.includes(newCategory)) {
+      const updatedCategories = [...categories, newCategory];
+      setCategories(updatedCategories);
+      setSelectedCategory(newCategory);
+    }
+    setNewCategory('');
+    setIsCategoryDialogOpen(false);
+  };
+
+  const handleAddGenre = () => {
+    if (newGenre && !genres.includes(newGenre)) {
+      const updatedGenres = [...genres, newGenre];
+      setGenres(updatedGenres);
+      setSelectedGenre(newGenre);
+    }
+    setNewGenre('');
+    setIsGenreDialogOpen(false);
+  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +72,8 @@ export default function NewSongPage() {
       id: crypto.randomUUID(),
       title,
       artist,
-      genre,
+      genre: selectedGenre,
+      category: selectedCategory,
       key,
       content,
     };
@@ -64,13 +110,83 @@ export default function NewSongPage() {
             </div>
              <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="genre">Gênero</Label>
-                    <Input id="genre" value={genre} onChange={(e) => setGenre(e.target.value)} placeholder="ex: Bossa Nova" />
+                    <Label htmlFor="category">Categoria</Label>
+                    <div className="flex gap-2">
+                      <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione uma categoria" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="icon"><PlusCircle className="h-4 w-4" /></Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[425px]">
+                          <DialogHeader>
+                            <DialogTitle>Adicionar Nova Categoria</DialogTitle>
+                            <DialogDescription>
+                              Digite o nome da nova categoria que você deseja adicionar à lista.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="new-category-name" className="text-right">
+                                Nome
+                              </Label>
+                              <Input id="new-category-name" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="col-span-3" />
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button type="button" onClick={handleAddCategory}>Adicionar</Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="key">Tom Original</Label>
-                    <Input id="key" value={key} onChange={(e) => setKey(e.target.value)} placeholder="ex: C" />
+                    <Label htmlFor="genre">Gênero</Label>
+                    <div className="flex gap-2">
+                      <Select value={selectedGenre} onValueChange={setSelectedGenre}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um gênero" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {genres.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                       <Dialog open={isGenreDialogOpen} onOpenChange={setIsGenreDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="icon"><PlusCircle className="h-4 w-4" /></Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[425px]">
+                          <DialogHeader>
+                            <DialogTitle>Adicionar Novo Gênero</DialogTitle>
+                            <DialogDescription>
+                              Digite o nome do novo gênero que você deseja adicionar à lista.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="new-genre-name" className="text-right">
+                                Nome
+                              </Label>
+                              <Input id="new-genre-name" value={newGenre} onChange={(e) => setNewGenre(e.target.value)} className="col-span-3" />
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button type="button" onClick={handleAddGenre}>Adicionar</Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                 </div>
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="key">Tom Original</Label>
+                <Input id="key" value={key} onChange={(e) => setKey(e.target.value)} placeholder="ex: C" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="content">Letra & Cifras</Label>

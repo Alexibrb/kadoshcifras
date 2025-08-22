@@ -5,6 +5,7 @@ export interface Song {
   content: string; // Letras e cifras, ex: "Verso 1:\n[C]Letra vai [G]aqui"
   key?: string;
   genre?: string;
+  category?: string;
 }
 
 export interface Setlist {
