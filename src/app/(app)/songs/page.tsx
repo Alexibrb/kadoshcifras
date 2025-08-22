@@ -120,19 +120,21 @@ export default function SongsPage() {
           </div>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {isClient &&
             filteredAndSortedSongs.map((song) => (
-              <Card key={song.id} className="flex flex-col">
-                <CardHeader className="flex-grow">
-                    <CardTitle className="font-headline text-lg truncate">{song.title}</CardTitle>
-                    <CardDescription className="truncate">{song.artist}</CardDescription>
-                </CardHeader>
-                <CardFooter className="flex justify-end items-center gap-1 p-4 pt-0">
-                    <Button asChild variant="default" size="sm" className="flex-grow">
-                        <Link href={`/songs/${song.id}`}>Abrir</Link>
+              <Card key={song.id} className="p-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-grow overflow-hidden">
+                    <Button asChild variant="link" className="p-0 h-auto justify-start">
+                        <Link href={`/songs/${song.id}`} className="truncate">
+                            <p className="font-semibold text-base truncate">{song.title}</p>
+                        </Link>
                     </Button>
-                    <AlertDialog>
+                     <p className="text-sm text-muted-foreground truncate">{song.artist}</p>
+                  </div>
+                  <div className="flex items-center shrink-0">
+                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                                 <Trash2 className="h-4 w-4 text-destructive" />
@@ -153,7 +155,8 @@ export default function SongsPage() {
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
-                </CardFooter>
+                  </div>
+                </div>
               </Card>
             ))}
         </div>
