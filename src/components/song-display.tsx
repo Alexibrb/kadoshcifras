@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { cn } from '@/lib/utils';
 
@@ -35,8 +36,8 @@ export function SongDisplay({ content, className, ...props }: SongDisplayProps) 
 
         if (isChordLine(line)) {
             return (
-                <p key={lineIndex} className="font-bold text-primary mb-1">
-                    {line}
+                <p key={lineIndex} className="font-bold text-primary mb-1 overflow-hidden">
+                    <span className="inline-block transform origin-left" style={{ transform: 'scaleX(1)', textWrap: 'nowrap' }}>{line}</span>
                 </p>
             );
         }
