@@ -126,7 +126,7 @@ export default function SongsPage() {
               <Card key={song.id} className="flex flex-col">
                 <CardHeader className="flex-grow">
                     <CardTitle className="font-headline text-lg truncate">{song.title}</CardTitle>
-                    <CardDescription>{song.artist}</CardDescription>
+                    <CardDescription className="truncate">{song.artist}</CardDescription>
                 </CardHeader>
                 <CardFooter className="flex justify-end items-center gap-1 p-4 pt-0">
                     <Button asChild variant="default" size="sm" className="flex-grow">
