@@ -152,7 +152,7 @@ export default function SongPage() {
   const decreaseTranspose = () => setTranspose(t => Math.max(-12, t - 1));
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 pb-24" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
       <Card className="mb-4 bg-accent/10">
         <CardContent className="p-4 space-y-4">
             <div className="flex items-start gap-4">
@@ -331,8 +331,8 @@ export default function SongPage() {
       )}
       
       {!isEditing && (
-        <Card className="mt-4 bg-accent/10">
-          <CardContent className="p-4 flex flex-row justify-center items-center gap-2">
+        <Card className="fixed bottom-0 left-0 right-0 z-50 rounded-none border-t border-x-0 bg-accent/10">
+          <CardContent className="p-2 flex flex-row justify-center items-center gap-2">
               <div className="flex items-center gap-2 rounded-md border p-1 bg-background">
                   <Button variant="ghost" size="icon" onClick={decreaseTranspose} className="h-8 w-8">
                       <Minus className="h-4 w-4" />
