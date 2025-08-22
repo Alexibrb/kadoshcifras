@@ -13,6 +13,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { SongDisplay } from '@/components/song-display';
 import { Card, CardContent } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 export default function SongPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -20,6 +22,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
   const [isClient, setIsClient] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [transpose, setTranspose] = useState(0);
+  const [showChords, setShowChords] = useState(true);
   
   const songId = use(params).id;
   
@@ -104,7 +107,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
         <Carousel className="w-full">
             <div className="flex justify-center items-center gap-4 mb-4">
                 <CarouselPrevious className="relative top-auto left-auto -translate-y-0" />
-                <div className="flex items-center gap-1 rounded-md border p-1 mx-auto">
+                <div className="flex items-center gap-2 rounded-md border p-1">
                     <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose - 1)}>
                         <Minus className="h-4 w-4" />
                     </Button>
@@ -115,6 +118,10 @@ export default function SongPage({ params }: { params: { id: string } }) {
                         <Plus className="h-4 w-4" />
                     </Button>
                 </div>
+                <div className="flex items-center space-x-2 rounded-md border p-2 py-1">
+                  <Label htmlFor="show-chords" className="text-sm">Mostrar Cifras</Label>
+                  <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
+                </div>
                 <CarouselNext className="relative top-auto right-auto -translate-y-0" />
             </div>
             <CarouselContent>
@@ -122,7 +129,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
                 <CarouselItem key={index}>
                   <Card>
                     <CardContent className="p-4 md:p-6 min-h-[60vh] flex flex-col">
-                       <SongDisplay content={part} />
+                       <SongDisplay content={part} showChords={showChords} />
                     </CardContent>
                   </Card>
                 </CarouselItem>

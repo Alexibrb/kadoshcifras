@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 
 interface SongDisplayProps extends React.HTMLAttributes<HTMLDivElement> {
   content: string;
+  showChords: boolean;
 }
 
 // Regex expandido para detectar uma gama maior de acordes
@@ -25,38 +26,34 @@ const isChordLine = (line: string): boolean => {
     return areAllPartsChords;
 };
 
-const Line = ({ text, isChord }: { text: string; isChord: boolean }) => {
+const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, showChords: boolean }) => {
     const textRef = useRef<HTMLParagraphElement>(null);
-    const [scale, setScale] = useState(1);
+    const [fontSize, setFontSize] = useState<number | undefined>(undefined);
 
     useLayoutEffect(() => {
         const checkOverflow = () => {
             if (textRef.current) {
                 const { scrollWidth, clientWidth } = textRef.current;
                 if (scrollWidth > clientWidth) {
-                    setScale(clientWidth / scrollWidth);
+                    const currentFontSize = parseFloat(window.getComputedStyle(textRef.current).fontSize);
+                    setFontSize(currentFontSize * (clientWidth / scrollWidth));
                 } else {
-                    setScale(1);
+                    setFontSize(undefined); // Reseta se não houver overflow
                 }
             }
         };
 
         checkOverflow();
         
-        // Recalcular em redimensionamento de janela
         window.addEventListener('resize', checkOverflow);
         return () => window.removeEventListener('resize', checkOverflow);
 
     }, [text]); // Re-executar quando o texto (transposição) mudar
 
-    const style = {
-        transform: `scaleX(${scale})`,
-        transformOrigin: 'left',
-        whiteSpace: 'pre' as 'pre',
-        width: '100%',
-        display: 'inline-block'
-    };
-
+    if (isChord && !showChords) {
+        return null;
+    }
+    
     if (text.trim() === '') {
         return <p className="mb-2">&nbsp;</p>;
     }
@@ -65,17 +62,17 @@ const Line = ({ text, isChord }: { text: string; isChord: boolean }) => {
         <p
             ref={textRef}
             className={cn(
-                'mb-2',
+                'whitespace-pre',
                 isChord ? 'font-bold text-primary mb-1' : 'mb-2'
             )}
-            style={scale < 1 ? style : {whiteSpace: 'pre'}}
+            style={{ fontSize: fontSize ? `${fontSize}px` : undefined }}
         >
             {text}
         </p>
     );
 }
 
-export function SongDisplay({ content, className, ...props }: SongDisplayProps) {
+export function SongDisplay({ content, className, showChords, ...props }: SongDisplayProps) {
     const lines = content.split('\n');
 
     return (
@@ -85,6 +82,7 @@ export function SongDisplay({ content, className, ...props }: SongDisplayProps) 
                     key={lineIndex}
                     text={line}
                     isChord={isChordLine(line)}
+                    showChords={showChords}
                 />
             ))}
         </div>
