@@ -62,7 +62,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button asChild variant="outline" size="icon" className="shrink-0">
             <Link href="/songs">
@@ -70,29 +70,18 @@ export default function SongPage({ params }: { params: { id: string } }) {
               <span className="sr-only">Voltar para as músicas</span>
             </Link>
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold font-headline tracking-tight">{song.title}</h1>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold font-headline tracking-tight">{song.title}</h1>
             <p className="text-muted-foreground">{song.artist}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 rounded-md border p-1">
-            <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose - 1)}>
-              <Minus className="h-4 w-4" />
-            </Button>
-            <Badge variant="secondary" className="px-3 py-1 text-sm">
-              Tom: {transpose >= 0 ? '+' : ''}{transpose}
-            </Badge>
-            <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose + 1)}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-          {isEditing ? (
-            <Button onClick={handleSave}>
+           {isEditing ? (
+            <Button onClick={handleSave} size="sm">
               <Save className="mr-2 h-4 w-4" /> Salvar
             </Button>
           ) : (
-            <Button variant="outline" onClick={() => setIsEditing(true)}>
+            <Button variant="outline" onClick={() => setIsEditing(true)} size="sm">
               <Edit className="mr-2 h-4 w-4" /> Editar
             </Button>
           )}
@@ -111,8 +100,19 @@ export default function SongPage({ params }: { params: { id: string } }) {
         </Card>
       ) : (
         <Carousel className="w-full">
-            <div className="flex justify-center gap-2 mb-4">
-              <CarouselPrevious className="relative top-auto left-auto -translate-y-0" />
+            <div className="flex justify-between items-center mb-4">
+               <CarouselPrevious className="relative top-auto left-auto -translate-y-0" />
+               <div className="flex items-center gap-1 rounded-md border p-1 mx-auto">
+                    <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose - 1)}>
+                        <Minus className="h-4 w-4" />
+                    </Button>
+                    <Badge variant="secondary" className="px-3 py-1 text-sm">
+                        Tom: {transpose >= 0 ? '+' : ''}{transpose}
+                    </Badge>
+                    <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose + 1)}>
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                </div>
               <CarouselNext className="relative top-auto right-auto -translate-y-0" />
             </div>
             <CarouselContent>
