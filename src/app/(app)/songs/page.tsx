@@ -1,7 +1,7 @@
 
 'use client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { type Song } from '@/types';
 import { Music, PlusCircle, Trash2 } from 'lucide-react';
@@ -59,20 +59,17 @@ export default function SongsPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {isClient &&
             songs.map((song) => (
-              <Card key={song.id}>
-                <CardHeader>
-                    <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                            <CardTitle className="font-headline truncate">{song.title}</CardTitle>
-                            <CardDescription>{song.artist}</CardDescription>
-                        </div>
+              <Card key={song.id} className="flex flex-col justify-center">
+                <CardHeader className="p-4">
+                    <div className="flex items-center justify-between gap-4">
+                        <CardTitle className="font-headline text-base truncate flex-1">{song.title}</CardTitle>
                         <div className="flex items-center gap-1">
-                            <Button asChild variant="outline" size="sm">
+                            <Button asChild variant="outline" size="sm" className="h-8">
                                 <Link href={`/songs/${song.id}`}>Abrir</Link>
                             </Button>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
                                         <Trash2 className="h-4 w-4 text-destructive" />
                                         <span className="sr-only">Excluir</span>
                                     </Button>
