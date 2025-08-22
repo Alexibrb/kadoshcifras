@@ -96,6 +96,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
                 value={editedContent}
                 onChange={(e) => setEditedContent(e.target.value)}
                 className="min-h-[60vh] font-code text-base"
+                style={{ whiteSpace: 'nowrap', overflowX: 'auto' }}
               />
           </CardContent>
         </Card>
