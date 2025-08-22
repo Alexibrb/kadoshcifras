@@ -331,27 +331,29 @@ export default function SongPage() {
       )}
       
       {!isEditing && (
-        <div className="flex justify-center items-center flex-wrap gap-4 mt-8">
-            <div className="flex items-center gap-2 rounded-md border p-1">
-                <Button variant="ghost" size="icon" onClick={decreaseTranspose}>
-                    <Minus className="h-4 w-4" />
-                </Button>
-                <Badge variant="secondary" className="px-3 py-1 text-sm">
-                    Tom: {transpose > 0 ? '+' : ''}{transpose}
-                </Badge>
-                <Button variant="ghost" size="icon" onClick={increaseTranspose}>
-                    <Plus className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon" onClick={handleSaveKey} disabled={transpose === 0} className="ml-2">
-                    <Save className="h-4 w-4" />
-                    <span className="sr-only">Salvar Tom</span>
-                </Button>
-            </div>
-            <div className="flex flex-col items-center space-y-1 rounded-md border p-2 py-1">
-              <Label htmlFor="show-chords" className="text-sm">Mostrar Cifras</Label>
-              <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
-            </div>
-        </div>
+        <Card className="mt-4 bg-accent/10">
+          <CardContent className="p-4 flex justify-center items-center flex-wrap gap-4">
+              <div className="flex items-center gap-2 rounded-md border p-1 bg-background">
+                  <Button variant="ghost" size="icon" onClick={decreaseTranspose}>
+                      <Minus className="h-4 w-4" />
+                  </Button>
+                  <Badge variant="secondary" className="px-3 py-1 text-sm">
+                      Tom: {transpose > 0 ? '+' : ''}{transpose}
+                  </Badge>
+                  <Button variant="ghost" size="icon" onClick={increaseTranspose}>
+                      <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={handleSaveKey} disabled={transpose === 0} className="ml-2">
+                      <Save className="h-4 w-4" />
+                      <span className="sr-only">Salvar Tom</span>
+                  </Button>
+              </div>
+              <div className="flex flex-col items-center space-y-1 rounded-md border p-2 py-1 bg-background">
+                <Label htmlFor="show-chords" className="text-sm">Mostrar Cifras</Label>
+                <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
+              </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
