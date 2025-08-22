@@ -47,6 +47,7 @@ export default function SongPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [transpose, setTranspose] = useState(0);
   const [showChords, setShowChords] = useState(true);
+  const [fontSize, setFontSize] = useLocalStorage('song-font-size', 16);
   const [api, setApi] = useState<CarouselApi>()
   
   const [editedSong, setEditedSong] = useState<Song | null>(null);
@@ -235,7 +236,7 @@ export default function SongPage() {
             </CardContent>
         </Card>
       ) : (
-        <div className="flex justify-center items-center gap-4 my-4">
+        <div className="flex justify-center items-center flex-wrap gap-4 my-4">
             <div className="flex items-center gap-2 rounded-md border p-1">
                 <Button variant="ghost" size="icon" onClick={decreaseTranspose}>
                     <Minus className="h-4 w-4" />
@@ -254,6 +255,18 @@ export default function SongPage() {
             <div className="flex flex-col items-center space-y-1 rounded-md border p-2 py-1">
               <Label htmlFor="show-chords" className="text-sm">Mostrar Cifras</Label>
               <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
+            </div>
+            <div className="flex flex-col items-center space-y-1 rounded-md border p-2 py-1">
+                <Label htmlFor="font-size" className="text-sm">Fonte</Label>
+                <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-6 w-6">
+                        <Minus className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm font-medium w-6 text-center">{fontSize}px</span>
+                    <Button variant="ghost" size="icon" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-6 w-6">
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                </div>
             </div>
         </div>
       )}
@@ -282,8 +295,13 @@ export default function SongPage() {
                     updateEditedSongField('content', e.target.value);
                   }
                 }}
-                className="font-code text-base"
-                style={{ whiteSpace: 'pre', overflowX: 'auto', minHeight: '400px' }}
+                className="font-code"
+                style={{ 
+                    whiteSpace: 'pre', 
+                    overflowX: 'auto', 
+                    minHeight: '400px',
+                    fontSize: `${fontSize}px` 
+                }}
                 required
               />
               <div className="flex justify-end">
@@ -300,7 +318,7 @@ export default function SongPage() {
                     <Card>
                       <CardContent className="p-0">
                         <ScrollArea className="h-[70vh] p-4 md:p-6">
-                          <SongDisplay content={part} showChords={showChords} />
+                          <SongDisplay style={{ fontSize: `${fontSize}px` }} content={part} showChords={showChords} />
                         </ScrollArea>
                       </CardContent>
                     </Card>
@@ -324,6 +342,7 @@ export default function SongPage() {
             <CardContent className="p-0">
                 <ScrollArea className="h-[70vh] p-4 md:p-6">
                     <SongDisplay 
+                        style={{ fontSize: `${fontSize}px` }}
                         content={contentToDisplay.replace(/\n\s*\n\s*\n/g, '\n\n')}
                         showChords={false} 
                     />
