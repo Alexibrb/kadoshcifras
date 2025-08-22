@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { type Song } from '@/types';
-import { Music, PlusCircle, Trash2, ArrowUpDown } from 'lucide-react';
+import { Music, PlusCircle, Trash2, ArrowUpDown, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
 import {
@@ -58,16 +58,24 @@ export default function SongsPage() {
   const filteredAndSortedSongs = useMemo(() => {
     if (!isClient) return [];
 
-    return songs
-      .filter((song) => {
-        const searchMatch = song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            (song.artist && song.artist.toLowerCase().includes(searchQuery.toLowerCase()));
-        const artistMatch = selectedArtist === 'all' || song.artist === selectedArtist;
-        const categoryMatch = selectedCategory === 'all' || song.category === selectedCategory;
+    let filtered = songs;
 
-        return searchMatch && artistMatch && categoryMatch;
-      })
-      .sort((a, b) => {
+    if (searchQuery) {
+        filtered = filtered.filter((song) =>
+            song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (song.artist && song.artist.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+    }
+
+    if (selectedArtist !== 'all') {
+        filtered = filtered.filter((song) => song.artist === selectedArtist);
+    }
+
+    if (selectedCategory !== 'all') {
+        filtered = filtered.filter((song) => song.category === selectedCategory);
+    }
+
+    return filtered.sort((a, b) => {
         switch (sortOrder) {
           case 'title-asc':
             return a.title.localeCompare(b.title);
@@ -84,12 +92,19 @@ export default function SongsPage() {
           default:
             return 0;
         }
-      });
+    });
   }, [songs, searchQuery, sortOrder, selectedArtist, selectedCategory, isClient]);
 
 
   const deleteSong = (id: string) => {
     setSongs(songs.filter((song) => song.id !== id));
+  };
+  
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setSortOrder('title-asc');
+    setSelectedArtist('all');
+    setSelectedCategory('all');
   };
 
   return (
@@ -138,6 +153,10 @@ export default function SongsPage() {
                     <SelectItem value="date-desc">Mais Recentes</SelectItem>
                 </SelectContent>
             </Select>
+            <Button variant="ghost" onClick={handleClearFilters} className="w-full sm:w-auto">
+                <X className="mr-2 h-4 w-4" />
+                Limpar
+            </Button>
             <Button asChild className="w-full sm:w-auto">
                 <Link href="/songs/new">
                     <PlusCircle className="mr-2 h-4 w-4" />
