@@ -332,7 +332,7 @@ export default function SongPage() {
       
       {!isEditing && (
         <Card className="mt-4 bg-accent/10">
-          <CardContent className="p-4 flex flex-col sm:flex-row justify-center items-center gap-2">
+          <CardContent className="p-4 flex flex-row justify-center items-center gap-2">
               <div className="flex items-center gap-2 rounded-md border p-1 bg-background">
                   <Button variant="ghost" size="icon" onClick={decreaseTranspose} className="h-8 w-8">
                       <Minus className="h-4 w-4" />
