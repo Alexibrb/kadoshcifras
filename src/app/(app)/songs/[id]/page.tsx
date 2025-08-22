@@ -86,10 +86,10 @@ export default function SongPage() {
     )
   
   const contentToDisplay = useMemo(() => {
-    const currentContent = song?.content;
+    const currentContent = isEditing && editedSong ? editedSong.content : song?.content;
     if (!currentContent) return '';
     return transposeContent(currentContent, transpose);
-  }, [song, transpose]);
+  }, [song, editedSong, isEditing, transpose]);
 
 
   const songParts = useMemo(() => {
@@ -245,29 +245,31 @@ export default function SongPage() {
         </Card>
       )}
 
-      <div className="flex justify-center items-center gap-4 my-4">
-          <div className="flex items-center gap-2 rounded-md border p-1">
-              <Button variant="ghost" size="icon" onClick={decreaseTranspose}>
-                  <Minus className="h-4 w-4" />
-              </Button>
-              <Badge variant="secondary" className="px-3 py-1 text-sm">
-                  Tom: {transpose > 0 ? '+' : ''}{transpose}
-              </Badge>
-              <Button variant="ghost" size="icon" onClick={increaseTranspose}>
-                  <Plus className="h-4 w-4" />
-              </Button>
-               {transpose !== 0 && !isEditing && (
-                <Button variant="outline" size="icon" onClick={handleSaveKey} className="ml-2">
-                    <Save className="h-4 w-4" />
-                    <span className="sr-only">Salvar Tom</span>
+      {!isEditing && (
+        <div className="flex justify-center items-center gap-4 my-4">
+            <div className="flex items-center gap-2 rounded-md border p-1">
+                <Button variant="ghost" size="icon" onClick={decreaseTranspose}>
+                    <Minus className="h-4 w-4" />
                 </Button>
-              )}
-          </div>
-          <div className="flex items-center space-x-2 rounded-md border p-2 py-1">
-            <Label htmlFor="show-chords" className="text-sm">Mostrar Cifras</Label>
-            <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
-          </div>
-      </div>
+                <Badge variant="secondary" className="px-3 py-1 text-sm">
+                    Tom: {transpose > 0 ? '+' : ''}{transpose}
+                </Badge>
+                <Button variant="ghost" size="icon" onClick={increaseTranspose}>
+                    <Plus className="h-4 w-4" />
+                </Button>
+                {transpose !== 0 && !isEditing && (
+                  <Button variant="outline" size="icon" onClick={handleSaveKey} className="ml-2">
+                      <Save className="h-4 w-4" />
+                      <span className="sr-only">Salvar Tom</span>
+                  </Button>
+                )}
+            </div>
+            <div className="flex items-center space-x-2 rounded-md border p-2 py-1">
+              <Label htmlFor="show-chords" className="text-sm">Mostrar Cifras</Label>
+              <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
+            </div>
+        </div>
+      )}
 
       {isEditing && editedSong ? (
         <Card>
