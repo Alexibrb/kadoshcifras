@@ -43,10 +43,11 @@ export default function SignupPage() {
         await updateProfile(user, {
             displayName: name,
         });
-        // Create user document in Firestore
+        // Create user document in Firestore and wait for it to complete
         await createUserDocument(user, { displayName: name });
       }
-      router.push('/dashboard');
+      // Redirect to pending approval page after successful signup
+      router.push('/pending-approval');
     } catch (error: any) {
         if (error.code === 'auth/email-already-in-use') {
             setError("Este endereço de e-mail já está em uso. Tente fazer o <a href='/login' class='font-bold underline'>login</a>.");
