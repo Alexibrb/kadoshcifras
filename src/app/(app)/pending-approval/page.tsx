@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/use-auth';
 
 export default function PendingApprovalPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user } = useAuth(); // Use useAuth to get user info
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -37,7 +37,7 @@ export default function PendingApprovalPage() {
             Você será notificado por e-mail assim que sua conta for aprovada.
           </p>
            <p className="text-sm">
-            Logado como: <span className="font-medium">{user?.email}</span>
+            Logado como: <span className="font-medium">{user?.email ?? 'Carregando...'}</span>
           </p>
           <Button onClick={handleLogout} variant="outline" className="w-full">
             <LogOut className="mr-2 h-4 w-4" />
