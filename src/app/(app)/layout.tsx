@@ -31,7 +31,7 @@ const navLinks = [
 
 function Header() {
     const pathname = usePathname();
-    const { user } = useAuth();
+    const { user: authUser, appUser } = useAuth(); // Use authUser to distinguish from component User
     const router = useRouter();
 
     const handleLogout = async () => {
@@ -71,7 +71,7 @@ function Header() {
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="relative h-8 w-8 rounded-full text-accent-foreground hover:bg-secondary hover:text-secondary-foreground">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={user?.photoURL ?? `https://placehold.co/100x100.png?text=${user?.displayName?.charAt(0)}`} alt="Avatar do Usuário" data-ai-hint="person music" />
+                            <AvatarImage src={authUser?.photoURL ?? `https://placehold.co/100x100.png?text=${appUser?.displayName?.charAt(0)}`} alt="Avatar do Usuário" data-ai-hint="person music" />
                             <AvatarFallback><User /></AvatarFallback>
                           </Avatar>
                         </Button>
@@ -79,9 +79,9 @@ function Header() {
                       <DropdownMenuContent className="w-56" align="end" forceMount>
                         <DropdownMenuLabel className="font-normal">
                           <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-medium leading-none">{user?.displayName ?? 'Usuário'}</p>
+                            <p className="text-sm font-medium leading-none">{appUser?.displayName ?? 'Usuário'}</p>
                             <p className="text-xs leading-none text-muted-foreground">
-                              {user?.email ?? ''}
+                              {authUser?.email ?? ''}
                             </p>
                           </div>
                         </DropdownMenuLabel>
@@ -112,15 +112,24 @@ function Footer() {
 
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-    const { user, loading } = useRequireAuth();
+    const { loading } = useRequireAuth();
 
-    if (loading || !user) {
+    if (loading) {
         return (
              <div className="flex min-h-screen flex-col">
                 <header className="sticky top-0 z-40 w-full border-b bg-accent text-accent-foreground">
-                    <div className="container flex h-16 items-center justify-end space-x-4">
-                        <Skeleton className="h-8 w-24" />
-                        <Skeleton className="h-8 w-8 rounded-full" />
+                    <div className="container flex h-16 items-center justify-between">
+                       <div className="flex items-center gap-2">
+                         <Skeleton className="h-6 w-6" />
+                         <Skeleton className="h-5 w-28" />
+                       </div>
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-8 w-8 rounded-md" />
+                          <Skeleton className="h-8 w-8 rounded-md" />
+                          <Skeleton className="h-8 w-8 rounded-md" />
+                          <Skeleton className="h-8 w-8 rounded-md" />
+                          <Skeleton className="h-8 w-8 rounded-full" />
+                        </div>
                     </div>
                 </header>
                 <main className="flex-1 p-8">
