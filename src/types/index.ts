@@ -16,3 +16,12 @@ export interface Setlist {
   name: string;
   songIds: string[];
 }
+
+export interface User {
+    id: string;
+    displayName: string;
+    email: string;
+    isApproved: boolean;
+    role: 'admin' | 'user';
+    createdAt: Timestamp;
+}

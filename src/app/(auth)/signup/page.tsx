@@ -13,6 +13,7 @@ import { auth } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { createUserDocument } from '@/services/user-service';
 
 
 export default function SignupPage() {
@@ -37,10 +38,13 @@ export default function SignupPage() {
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      if (userCredential.user) {
-        await updateProfile(userCredential.user, {
+      const user = userCredential.user;
+      if (user) {
+        await updateProfile(user, {
             displayName: name,
         });
+        // Create user document in Firestore
+        await createUserDocument(user, { displayName: name });
       }
       router.push('/dashboard');
     } catch (error: any) {
