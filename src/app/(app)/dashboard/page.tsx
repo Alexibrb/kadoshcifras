@@ -8,7 +8,7 @@ export default function DashboardPage() {
     <div className="flex-1 flex items-center justify-center p-4 md:p-8">
       <div className="flex flex-col space-y-4 w-full max-w-xs">
         <h2 className="text-3xl font-bold font-headline tracking-tight text-center mb-4">
-          CifraFácil
+          Bem-vindo, John Doe!
         </h2>
         <Button asChild size="lg" className="h-16 text-lg justify-start">
           <Link href="/songs">
