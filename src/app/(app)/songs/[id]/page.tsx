@@ -111,6 +111,10 @@ export default function SongPage({ params }: { params: { id: string } }) {
         </Card>
       ) : (
         <Carousel className="w-full">
+            <div className="flex justify-center gap-2 mb-4">
+              <CarouselPrevious className="relative top-auto left-auto -translate-y-0" />
+              <CarouselNext className="relative top-auto right-auto -translate-y-0" />
+            </div>
             <CarouselContent>
               {songParts.map((part, index) => (
                 <CarouselItem key={index}>
@@ -122,8 +126,6 @@ export default function SongPage({ params }: { params: { id: string } }) {
                 </CarouselItem>
               ))}
             </CarouselContent>
-            <CarouselPrevious className="ml-12" />
-            <CarouselNext className="mr-12" />
           </Carousel>
       )}
     </div>
