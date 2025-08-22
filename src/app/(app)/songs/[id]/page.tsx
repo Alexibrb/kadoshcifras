@@ -59,7 +59,7 @@ export default function SongPage() {
     if (song) {
         setEditedSong(song);
     }
-  }, [songId, song]);
+  }, [song]);
   
   const contentToDisplay = useMemo(() => {
     const currentContent = isEditing ? editedSong?.content : song?.content;
@@ -68,7 +68,8 @@ export default function SongPage() {
   }, [song, editedSong, transpose, isEditing]);
 
   const songParts = useMemo(() => {
-    return contentToDisplay.split(/\n---\n|---/);
+    // Splits the content by two or more consecutive newlines (blank lines)
+    return contentToDisplay.split(/\n\s*\n\s*\n/);
   }, [contentToDisplay]);
 
   const handleStartEditing = () => {
@@ -277,7 +278,7 @@ export default function SongPage() {
                 style={{ whiteSpace: 'pre', overflowX: 'auto', minHeight: '400px' }}
               />
               <p className="text-sm text-muted-foreground">
-                Use "---" em uma nova linha para dividir a música em várias páginas/seções.
+                Use duas linhas em branco para dividir a música em várias páginas/seções.
               </p>
               <div className="flex justify-end">
                 <Button onClick={handleSave}>Salvar Música</Button>
@@ -305,7 +306,7 @@ export default function SongPage() {
             <CardContent className="p-0">
                 <ScrollArea className="h-[70vh] p-4 md:p-6">
                     <SongDisplay 
-                        content={contentToDisplay.replace(/\n---\n|---/g, '\n\n')} 
+                        content={contentToDisplay.replace(/\n\s*\n\s*\n/g, '\n\n')}
                         showChords={false} 
                     />
                 </ScrollArea>
@@ -315,3 +316,5 @@ export default function SongPage() {
     </div>
   );
 }
+
+    
