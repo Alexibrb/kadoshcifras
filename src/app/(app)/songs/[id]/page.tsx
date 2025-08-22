@@ -7,12 +7,12 @@ import { Song } from '@/types';
 import { ArrowLeft, Edit, Minus, Plus, Save } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState, use } from 'react';
+import { useEffect, useMemo, useState, use, useCallback } from 'react';
 import { transposeContent } from '@/lib/music';
 import { Textarea } from '@/components/ui/textarea';
 import { SongDisplay } from '@/components/song-display';
 import { Card, CardContent } from '@/components/ui/card';
-import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
+import { Carousel, CarouselApi, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -24,6 +24,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
   const [isEditing, setIsEditing] = useState(false);
   const [transpose, setTranspose] = useState(0);
   const [showChords, setShowChords] = useState(true);
+  const [api, setApi] = useState<CarouselApi>()
   
   const { id: songId } = use(params);
   
@@ -38,6 +39,19 @@ export default function SongPage({ params }: { params: { id: string } }) {
         setEditedContent(currentSong.content);
     }
   }, [songs, songId]);
+
+  const handleKeyDown = useCallback(
+      (event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (event.key === "ArrowLeft") {
+          event.preventDefault()
+          api?.scrollPrev()
+        } else if (event.key === "ArrowRight") {
+          event.preventDefault()
+          api?.scrollNext()
+        }
+      },
+      [api]
+    )
   
   const transposedContent = useMemo(() => {
     if (!song) return '';
@@ -69,11 +83,14 @@ export default function SongPage({ params }: { params: { id: string } }) {
     // Aplica a transposição ao conteúdo antes de salvar
     const newContent = transposeContent(editedContent, transpose);
 
+    const newKey = transposeContent(song.key || 'C', transpose);
+
     setSongs(
-      songs.map((s) => (s.id === song.id ? { ...s, content: newContent } : s))
+      songs.map((s) => (s.id === song.id ? { ...s, content: newContent, key: newKey } : s))
     );
     
     // Reseta o estado local
+    setSong(s => s ? { ...s, content: newContent, key: newKey } : undefined);
     setEditedContent(newContent);
     setTranspose(0);
     setIsEditing(false);
@@ -92,7 +109,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold font-headline tracking-tight">{song.title}</h1>
             <p className="text-muted-foreground text-sm">{song.artist}</p>
-            {song.key && <Badge variant="outline">Tom: {song.key}</Badge>}
+            {song.key && <Badge variant="outline">Tom: {transposeContent(song.key, transpose)}</Badge>}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -108,7 +125,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      <div className="flex justify-center items-center gap-4 mb-4">
+      <div className="flex justify-center items-center gap-4 my-4">
           <div className="flex items-center gap-2 rounded-md border p-1">
               <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose - 1)}>
                   <Minus className="h-4 w-4" />
@@ -137,12 +154,12 @@ export default function SongPage({ params }: { params: { id: string } }) {
                   setEditedContent(transposeContent(e.target.value, -transpose));
                 }}
                 className="min-h-[60vh] font-code text-base"
-                style={{ whiteSpace: 'nowrap', overflowX: 'auto' }}
+                style={{ whiteSpace: 'pre', overflowX: 'auto' }}
               />
           </CardContent>
         </Card>
       ) : showChords ? (
-        <Carousel className="w-full">
+        <Carousel className="w-full" onKeyDownCapture={handleKeyDown} tabIndex={0} setApi={setApi}>
             <CarouselContent>
               {songParts.map((part, index) => (
                 <CarouselItem key={index}>
