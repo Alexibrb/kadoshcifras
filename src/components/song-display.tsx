@@ -28,7 +28,7 @@ export function SongDisplay({ content, className, ...props }: SongDisplayProps) 
   };
 
   return (
-    <div className={cn("font-code text-base leading-tight whitespace-pre-wrap", className)} {...props}>
+    <div className={cn("font-code text-base leading-tight whitespace-pre", className)} {...props}>
       {lines.map((line, lineIndex) => {
         if (line.trim() === '') {
           return <p key={lineIndex} className="mb-2">&nbsp;</p>;
@@ -36,8 +36,8 @@ export function SongDisplay({ content, className, ...props }: SongDisplayProps) 
 
         if (isChordLine(line)) {
             return (
-                <p key={lineIndex} className="font-bold text-primary mb-1 overflow-hidden">
-                    <span className="inline-block transform origin-left" style={{ transform: 'scaleX(1)', textWrap: 'nowrap' }}>{line}</span>
+                <p key={lineIndex} className="font-bold text-primary mb-1">
+                    {line}
                 </p>
             );
         }
