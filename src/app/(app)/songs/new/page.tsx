@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import type { Song } from '@/types';
-import { ArrowLeft, PlusCircle } from 'lucide-react';
+import { ArrowLeft, PlusCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
@@ -22,6 +22,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
 
 const defaultCategories = ['Hinário', 'Adoração', 'Ceia', 'Alegre', 'Cantor Cristão', 'Harpa Cristã', 'Outros'];
 const defaultGenres = ['Gospel', 'Worship', 'Pop', 'Rock', 'Reggae'];
@@ -247,9 +249,12 @@ export default function NewSongPage() {
                   <Label htmlFor="content">Letra &amp; Cifras</Label>
                   <Button type="submit">Salvar Música</Button>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Use duas linhas em branco para dividir a música em várias páginas/seções.
-              </p>
+              <Alert variant="destructive" className="p-3">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  Use duas linhas em branco para dividir a música em várias páginas/seções.
+                </AlertDescription>
+              </Alert>
               <Textarea
                 id="content"
                 ref={textareaRef}

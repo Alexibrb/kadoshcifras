@@ -21,6 +21,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useFirestoreDocument } from '@/hooks/use-firestore-document';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 
 const defaultCategories = ['Hinário', 'Adoração', 'Ceia', 'Alegre', 'Cantor Cristão', 'Harpa Cristã', 'Outros'];
@@ -182,7 +184,7 @@ export default function SongPage() {
         </div>
       </div>
       
-      {isEditing && editedSong && (
+      {isEditing && editedSong ? (
         <Card className="mb-4">
             <CardContent className="p-4 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                  <div className="space-y-2">
@@ -230,9 +232,7 @@ export default function SongPage() {
                 </div>
             </CardContent>
         </Card>
-      )}
-
-      {!isEditing && (
+      ) : (
         <div className="flex justify-center items-center gap-4 my-4">
             <div className="flex items-center gap-2 rounded-md border p-1">
                 <Button variant="ghost" size="icon" onClick={decreaseTranspose}>
@@ -265,9 +265,12 @@ export default function SongPage() {
                     <Save className="mr-2 h-4 w-4" /> Salvar
                 </Button>
               </div>
-               <p className="text-sm text-muted-foreground">
-                Use duas linhas em branco para dividir a música em várias páginas/seções.
-              </p>
+              <Alert variant="destructive" className="p-3">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  Use duas linhas em branco para dividir a música em várias páginas/seções.
+                </AlertDescription>
+              </Alert>
               <Textarea
                 id="content-editor"
                 ref={textareaRef}
@@ -316,5 +319,3 @@ export default function SongPage() {
     </div>
   );
 }
-
-    
