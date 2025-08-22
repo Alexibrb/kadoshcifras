@@ -112,21 +112,21 @@ export default function SongsPage() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
        <div className="flex items-center gap-4 mb-4">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3">
-                <CardTitle className="text-sm font-medium">Total de Músicas</CardTitle>
-                <Music className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent className="p-3 pt-0">
-                <div className="text-2xl font-bold">{loading ? '...' : songs.length}</div>
+              <CardContent className="p-3 flex items-center gap-4">
+                <Music className="h-6 w-6 text-muted-foreground" />
+                <div className="flex items-baseline gap-2">
+                    <p className="text-2xl font-bold">{loading ? '...' : songs.length}</p>
+                    <p className="text-sm text-muted-foreground">Músicas</p>
+                </div>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3">
-                <CardTitle className="text-sm font-medium">Total de Repertórios</CardTitle>
-                <ListMusic className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent className="p-3 pt-0">
-                <div className="text-2xl font-bold">{loading ? '...' : setlists.length}</div>
+              <CardContent className="p-3 flex items-center gap-4">
+                <ListMusic className="h-6 w-6 text-muted-foreground" />
+                 <div className="flex items-baseline gap-2">
+                    <p className="text-2xl font-bold">{loading ? '...' : setlists.length}</p>
+                    <p className="text-sm text-muted-foreground">Repertórios</p>
+                </div>
               </CardContent>
             </Card>
         </div>
