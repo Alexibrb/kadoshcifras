@@ -7,7 +7,7 @@ import { Song } from '@/types';
 import { ArrowLeft, Edit, Minus, Plus, Save } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, use } from 'react';
 import { transposeContent } from '@/lib/music';
 import { Textarea } from '@/components/ui/textarea';
 import { SongDisplay } from '@/components/song-display';
@@ -21,7 +21,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
   const [isEditing, setIsEditing] = useState(false);
   const [transpose, setTranspose] = useState(0);
   
-  const songId = params.id;
+  const songId = use(params).id;
   
   const [song, setSong] = useState<Song | undefined>(undefined);
   const [editedContent, setEditedContent] = useState('');
@@ -107,7 +107,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
                 <CarouselItem key={index}>
                   <Card>
                     <CardContent className="p-4 md:p-6 min-h-[60vh] flex flex-col">
-                       <div className="flex-1">
+                       <div className="flex-1 overflow-x-auto">
                          <SongDisplay content={part} />
                        </div>
                     </CardContent>
