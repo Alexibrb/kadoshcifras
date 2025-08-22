@@ -28,13 +28,13 @@ function Header() {
     const pathname = usePathname();
 
     return (
-        <header className="sticky top-0 z-40 w-full border-b bg-background">
+        <header className="sticky top-0 z-40 w-full border-b bg-accent text-accent-foreground">
             <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
                 <Logo />
                 <div className="flex flex-1 items-center justify-end space-x-4">
                     <nav className="flex items-center space-x-1">
                        {navLinks.map(link => (
-                           <Button key={link.href} asChild variant={pathname.startsWith(link.href) ? "secondary" : "ghost"} size="icon">
+                           <Button key={link.href} asChild variant={pathname.startsWith(link.href) ? "secondary" : "ghost"} size="icon" className="text-accent-foreground hover:bg-accent-foreground/10">
                                <Link href={link.href}>
                                    <link.icon className="h-5 w-5" />
                                    <span className="sr-only">{link.label}</span>
@@ -45,7 +45,7 @@ function Header() {
                     </nav>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                        <Button variant="ghost" className="relative h-8 w-8 rounded-full text-accent-foreground hover:bg-accent-foreground/10">
                           <Avatar className="h-8 w-8">
                             <AvatarImage src="https://placehold.co/100x100.png" alt="Avatar do Usuário" data-ai-hint="person music" />
                             <AvatarFallback><User /></AvatarFallback>
@@ -76,6 +76,18 @@ function Header() {
     )
 }
 
+function Footer() {
+    return (
+        <footer className="w-full bg-background border-t">
+            <div className="container flex h-14 items-center justify-center">
+                <p className="text-sm text-muted-foreground">
+                    Versão 1.0.2025 - Desenvolvedor Alex Alves
+                </p>
+            </div>
+        </footer>
+    )
+}
+
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -84,6 +96,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <main className="flex-1">
             {children}
         </main>
+        <Footer />
     </div>
   );
 }
