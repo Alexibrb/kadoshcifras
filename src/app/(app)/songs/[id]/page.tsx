@@ -57,7 +57,7 @@ export default function SongPage() {
   }, [songs, songId]);
 
   useEffect(() => {
-    if (isEditing && textareaRef.current) {
+    if (isEditing && textareaRef.current && editedSong) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
@@ -111,13 +111,9 @@ export default function SongPage() {
   const handleSave = () => {
     if (!editedSong) return;
 
-    const finalSong = {
-        ...editedSong,
-    };
-
-    const updatedSongs = songs.map((s) => (s.id === finalSong.id ? finalSong : s));
+    const updatedSongs = songs.map((s) => (s.id === editedSong.id ? editedSong : s));
     setSongs(updatedSongs);
-    setSong(finalSong);
+    setSong(editedSong);
     
     setTranspose(0);
     setIsEditing(false);
@@ -235,8 +231,15 @@ export default function SongPage() {
 
       {isEditing ? (
         <Card>
-          <CardContent className="p-4 md:p-6">
+          <CardContent className="p-4 md:p-6 space-y-4">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="content-editor">Letra &amp; Cifras</Label>
+                <Button onClick={handleSave} size="sm">
+                    <Save className="mr-2 h-4 w-4" /> Salvar
+                </Button>
+              </div>
               <Textarea
+                id="content-editor"
                 ref={textareaRef}
                 value={editedSong?.content || ''}
                 onChange={(e) => {
@@ -247,6 +250,12 @@ export default function SongPage() {
                 className="font-code text-base overflow-hidden resize-none"
                 style={{ whiteSpace: 'pre', overflowX: 'auto' }}
               />
+              <p className="text-sm text-muted-foreground">
+                Use "---" em uma nova linha para dividir a música em várias páginas/seções.
+              </p>
+              <div className="flex justify-end">
+                <Button onClick={handleSave}>Salvar Música</Button>
+              </div>
           </CardContent>
         </Card>
       ) : showChords ? (
