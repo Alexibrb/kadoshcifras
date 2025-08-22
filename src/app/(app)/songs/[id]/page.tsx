@@ -332,12 +332,12 @@ export default function SongPage() {
       
       {!isEditing && (
         <Card className="mt-4 bg-accent/10">
-          <CardContent className="p-4 flex justify-center items-center gap-2">
+          <CardContent className="p-4 flex flex-col sm:flex-row justify-center items-center gap-2">
               <div className="flex items-center gap-2 rounded-md border p-1 bg-background">
                   <Button variant="ghost" size="icon" onClick={decreaseTranspose} className="h-8 w-8">
                       <Minus className="h-4 w-4" />
                   </Button>
-                  <Badge variant="secondary" className="px-3 py-1 text-sm">
+                  <Badge variant="secondary" className="px-3 py-1 text-xs">
                       Tom: {transpose > 0 ? '+' : ''}{transpose}
                   </Badge>
                   <Button variant="ghost" size="icon" onClick={increaseTranspose} className="h-8 w-8">
@@ -349,7 +349,7 @@ export default function SongPage() {
                   </Button>
               </div>
               <div className="flex items-center space-x-2 rounded-md border p-1 px-2 bg-background h-10">
-                <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
+                <Label htmlFor="show-chords" className="text-xs whitespace-nowrap">Mostrar Cifras</Label>
                 <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
               </div>
           </CardContent>
