@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/use-auth';
 
 export default function PendingApprovalPage() {
   const router = useRouter();
-  const { user } = useAuth(); // Use useAuth to get user info
+  const { user } = useAuth(); // Use useAuth para obter informações do usuário
 
   const handleLogout = async () => {
     await signOut(auth);

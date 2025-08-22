@@ -39,15 +39,19 @@ export default function SignupPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+      
+      // Garante que o perfil e o documento do Firestore sejam criados
       if (user) {
         await updateProfile(user, {
             displayName: name,
         });
-        // Create user document in Firestore and wait for it to complete
+        // CRUCIAL: Aguarda a criação do documento do usuário no Firestore antes de continuar
         await createUserDocument(user, { displayName: name });
       }
-      // Redirect to pending approval page after successful signup
+      
+      // Agora é seguro redirecionar, pois o documento do usuário existe
       router.push('/pending-approval');
+
     } catch (error: any) {
         if (error.code === 'auth/email-already-in-use') {
             setError("Este endereço de e-mail já está em uso. Tente fazer o <a href='/login' class='font-bold underline'>login</a>.");
@@ -58,7 +62,7 @@ export default function SignupPage() {
         } else {
             setError("Ocorreu um erro ao criar a conta.");
         }
-        console.error(error);
+        console.error("Signup Error:", error);
     } finally {
         setLoading(false);
     }
