@@ -20,7 +20,7 @@ export default function DashboardPage() {
             <ListMusic className="mr-4 h-6 w-6" /> Repertórios
           </Link>
         </Button>
-        <Button asChild size="lg" variant="outline" className="h-16 text-lg justify-start">
+        <Button asChild size="lg" variant="destructive" className="h-16 text-lg justify-start">
           <Link href="/">
             <LogOut className="mr-4 h-6 w-6" /> Sair
           </Link>
