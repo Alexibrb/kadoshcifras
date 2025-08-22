@@ -1,7 +1,7 @@
 
 'use client';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { type Song } from '@/types';
 import { Music, PlusCircle, Trash2, ArrowUpDown, X } from 'lucide-react';
@@ -32,7 +32,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 type SortOption = 'title-asc' | 'title-desc' | 'artist-asc' | 'artist-desc' | 'date-desc';
 
 export default function SongsPage() {
-  const { data: songs, loading, deleteDocument } = useFirestoreCollection<Song>('songs', 'title');
+  const { data: songs, loading, deleteDocument } = useFirestoreCollection<Song>('songs');
   const [isClient, setIsClient] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOption>('title-asc');
@@ -46,13 +46,13 @@ export default function SongsPage() {
   const uniqueArtists = useMemo(() => {
     if (!isClient) return [];
     const artists = new Set(songs.map(song => song.artist).filter(Boolean));
-    return ['all', ...Array.from(artists)];
+    return ['all', ...Array.from(artists).sort()];
   }, [songs, isClient]);
 
   const uniqueCategories = useMemo(() => {
     if (!isClient) return [];
     const categories = new Set(songs.map(song => song.category).filter(Boolean));
-    return ['all', ...Array.from(categories)];
+    return ['all', ...Array.from(categories).sort()];
   }, [songs, isClient]);
 
 
@@ -89,7 +89,7 @@ export default function SongsPage() {
           case 'date-desc':
             return (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0);
           default:
-            return 0;
+            return a.title.localeCompare(b.title);
         }
     });
   }, [songs, searchQuery, sortOrder, selectedArtist, selectedCategory, isClient]);
@@ -110,6 +110,18 @@ export default function SongsPage() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2 flex-wrap gap-4">
         <h2 className="text-3xl font-bold font-headline tracking-tight">Minhas Músicas</h2>
+         <Card className="hidden sm:block">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3">
+            <CardTitle className="text-sm font-medium">Total de Músicas</CardTitle>
+            <Music className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            <div className="text-2xl font-bold">{loading ? '...' : songs.length}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+       <Card className="p-4">
         <div className="flex items-center gap-2 flex-wrap">
             <Input
                 placeholder="Buscar por título ou artista..."
@@ -156,14 +168,17 @@ export default function SongsPage() {
                 <X className="mr-2 h-4 w-4" />
                 Limpar
             </Button>
-            <Button asChild className="w-full sm:w-auto">
+            <Button asChild className="w-full sm:w-auto ml-auto">
                 <Link href="/songs/new">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     <span className="hidden md:inline">Nova Música</span>
+                    <span className="md:hidden">Adicionar</span>
                 </Link>
             </Button>
         </div>
-      </div>
+      </Card>
+
+
       {loading && isClient ? (
         <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -186,6 +201,18 @@ export default function SongsPage() {
             </Button>
           </div>
         </div>
+      ) : isClient && filteredAndSortedSongs.length === 0 ? (
+         <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm mt-8 py-24">
+            <div className="flex flex-col items-center gap-1 text-center">
+                <Music className="h-12 w-12 text-muted-foreground" />
+                <h3 className="text-2xl font-bold tracking-tight">Nenhuma música encontrada</h3>
+                <p className="text-sm text-muted-foreground">Tente ajustar seus filtros de busca ou adicione uma nova música.</p>
+                <Button variant="ghost" onClick={handleClearFilters} className="mt-4">
+                    <X className="mr-2 h-4 w-4" />
+                    Limpar Filtros
+                </Button>
+            </div>
+         </div>
       ) : (
         <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {isClient &&

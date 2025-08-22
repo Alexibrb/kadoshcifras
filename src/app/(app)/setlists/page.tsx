@@ -1,7 +1,7 @@
 
 'use client';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { type Setlist, type Song } from '@/types';
 import { ListMusic, PlusCircle, Trash2 } from 'lucide-react';
@@ -22,19 +22,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SetlistsPage() {
   const { data: setlists, loading, deleteDocument } = useFirestoreCollection<Setlist>('setlists', 'name');
-  const { data: songs } = useFirestoreCollection<Song>('songs');
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  const songsById = useMemo(() => {
-    return songs.reduce((acc, song) => {
-      acc[song.id] = song;
-      return acc;
-    }, {} as Record<string, Song>);
-  }, [songs]);
 
   const deleteSetlist = (id: string) => {
     deleteDocument(id);
@@ -44,11 +36,22 @@ export default function SetlistsPage() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold font-headline tracking-tight">Repertórios</h2>
-        <Button asChild>
-          <Link href="/setlists/new">
-            <PlusCircle className="mr-2 h-4 w-4" /> Novo Repertório
-          </Link>
-        </Button>
+         <div className="flex items-center gap-4">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3">
+                    <CardTitle className="text-sm font-medium">Total de Repertórios</CardTitle>
+                    <ListMusic className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent className="p-3 pt-0">
+                    <div className="text-2xl font-bold">{loading ? '...' : setlists.length}</div>
+                </CardContent>
+            </Card>
+            <Button asChild>
+              <Link href="/setlists/new">
+                <PlusCircle className="mr-2 h-4 w-4" /> Novo Repertório
+              </Link>
+            </Button>
+        </div>
       </div>
       {loading && isClient ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
