@@ -164,8 +164,8 @@ export default function SongPage() {
         {!isEditing ? (
             <div className="flex-1 flex items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-base font-bold font-headline tracking-tight">{song.title}</h1>
-                    <p className="text-muted-foreground text-[10px] whitespace-nowrap">{song.artist}</p>
+                    <h1 className="text-lg font-bold font-headline tracking-tight">{song.title}</h1>
+                    <p className="text-muted-foreground text-[11px] whitespace-nowrap">{song.artist}</p>
                 </div>
                 <div className="flex flex-col items-center gap-1 shrink-0">
                     {song.key && <Badge variant="outline" className="whitespace-nowrap">Tom: {transposeContent(song.key, transpose)}</Badge>}
@@ -310,10 +310,6 @@ export default function SongPage() {
               <div className="absolute -right-4 top-1/2 -translate-y-1/2">
                 <CarouselNext className="hidden md:flex" />
               </div>
-              <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex gap-4 md:hidden">
-                <CarouselPrevious />
-                <CarouselNext />
-              </div>
             </Carousel>
         </div>
       ) : (
@@ -331,7 +327,7 @@ export default function SongPage() {
       )}
       
       {!isEditing && (
-        <div className="flex justify-center items-center flex-wrap gap-4 mt-4">
+        <div className="flex justify-center items-center flex-wrap gap-4 mt-8">
             <div className="flex items-center gap-2 rounded-md border p-1">
                 <Button variant="ghost" size="icon" onClick={decreaseTranspose}>
                     <Minus className="h-4 w-4" />
