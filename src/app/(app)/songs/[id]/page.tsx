@@ -307,17 +307,17 @@ export default function SongPage() {
                   </CarouselItem>
                 ))}
               </CarouselContent>
-               <div className="absolute left-0 top-1/2 -translate-y-1/2 md:hidden">
-                    <CarouselPrevious />
-                </div>
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 md:hidden">
-                    <CarouselNext />
-                </div>
-            </Carousel>
-             <div className="hidden md:block">
+              <div className="absolute -left-4 top-1/2 -translate-y-1/2">
+                <CarouselPrevious className="hidden md:flex" />
+              </div>
+              <div className="absolute -right-4 top-1/2 -translate-y-1/2">
+                <CarouselNext className="hidden md:flex" />
+              </div>
+              <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex gap-4 md:hidden">
                 <CarouselPrevious />
                 <CarouselNext />
-            </div>
+              </div>
+            </Carousel>
         </div>
       ) : (
          <Card>
@@ -334,5 +334,3 @@ export default function SongPage() {
     </div>
   );
 }
-
-    
