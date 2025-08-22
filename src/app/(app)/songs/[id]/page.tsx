@@ -11,6 +11,7 @@ import { transposeContent } from '@/lib/music';
 import { Textarea } from '@/components/ui/textarea';
 import { SongDisplay } from '@/components/song-display';
 import { Card, CardContent } from '@/components/ui/card';
+import { ScrollButtons } from '@/components/scroll-buttons';
 
 export default function SongPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -106,6 +107,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
           )}
         </CardContent>
       </Card>
+      {!isEditing && <ScrollButtons />}
     </div>
   );
 }
