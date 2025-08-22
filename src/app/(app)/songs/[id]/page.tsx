@@ -248,7 +248,7 @@ export default function SongPage() {
                     <span className="sr-only">Salvar Tom</span>
                 </Button>
             </div>
-            <div className="flex items-center space-x-2 rounded-md border p-2 py-1">
+            <div className="flex flex-col items-center space-y-1 rounded-md border p-2 py-1">
               <Label htmlFor="show-chords" className="text-sm">Mostrar Cifras</Label>
               <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
             </div>
