@@ -152,38 +152,57 @@ export default function SongPage() {
   const decreaseTranspose = () => setTranspose(t => Math.max(-12, t - 1));
 
   return (
-    <div className="flex-1 space-y-2 p-4 md:p-8 pt-6" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
-      <div className="flex items-start gap-4">
-        <Button asChild variant="outline" size="icon" className="shrink-0">
-            <Link href="/songs">
-                <ArrowLeft className="h-4 w-4" />
-                <span className="sr-only">Voltar para as músicas</span>
-            </Link>
-        </Button>
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
+      <Card className="mb-4 bg-accent/10">
+        <CardContent className="p-4 space-y-4">
+            <div className="flex items-start gap-4">
+                <Button asChild variant="outline" size="icon" className="shrink-0">
+                    <Link href="/songs">
+                        <ArrowLeft className="h-4 w-4" />
+                        <span className="sr-only">Voltar para as músicas</span>
+                    </Link>
+                </Button>
 
-        {!isEditing ? (
-            <div className="flex-1">
-                <h1 className="text-lg font-bold font-headline tracking-tight">{song.title}</h1>
-                <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                    <p className="text-muted-foreground text-[11px] whitespace-nowrap">{song.artist}</p>
-                    {song.key && <Badge variant="outline" className="whitespace-nowrap">Tom: {transposeContent(song.key, transpose)}</Badge>}
-                    <Button variant="outline" onClick={handleStartEditing} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-7 text-xs">
-                        <Edit className="mr-1.5 h-3 w-3" /> Editar
-                    </Button>
-                </div>
+                {!isEditing ? (
+                    <div className="flex-1">
+                        <h1 className="text-lg font-bold font-headline tracking-tight">{song.title}</h1>
+                        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                            <p className="text-muted-foreground text-[11px] whitespace-nowrap">{song.artist}</p>
+                            {song.key && <Badge variant="outline" className="whitespace-nowrap">Tom: {transposeContent(song.key, transpose)}</Badge>}
+                            <Button variant="outline" onClick={handleStartEditing} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-7 text-xs">
+                                <Edit className="mr-1.5 h-3 w-3" /> Editar
+                            </Button>
+                        </div>
+                    </div>
+                ) : (
+                     <div className="flex-1 flex items-center justify-between">
+                        <h1 className="text-base font-bold font-headline tracking-tight">Editando: {song.title}</h1>
+                         <div className="flex items-center gap-2">
+                            <Button variant="outline" onClick={handleCancelEditing} size="sm">Cancelar</Button>
+                            <Button onClick={handleSave} size="sm">
+                                <Save className="mr-2 h-4 w-4" /> Salvar
+                            </Button>
+                         </div>
+                     </div>
+                )}
             </div>
-        ) : (
-             <div className="flex-1 flex items-center justify-between">
-                <h1 className="text-base font-bold font-headline tracking-tight">Editando: {song.title}</h1>
-                 <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={handleCancelEditing} size="sm">Cancelar</Button>
-                    <Button onClick={handleSave} size="sm">
-                        <Save className="mr-2 h-4 w-4" /> Salvar
-                    </Button>
-                 </div>
-             </div>
-        )}
-    </div>
+          
+            {!isEditing && (
+                 <div className="flex justify-center">
+                    <div className="flex items-center gap-2 rounded-md border p-1 w-full max-w-xs bg-background">
+                        <Label className="text-sm pl-1 whitespace-nowrap">Tam. da Fonte</Label>
+                        <Button variant="ghost" size="icon" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-6 w-6">
+                            <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm font-medium w-full text-center">{fontSize}px</span>
+                        <Button variant="ghost" size="icon" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-6 w-6">
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </CardContent>
+      </Card>
       
       {isEditing && editedSong ? (
         <Card className="mb-4">
@@ -233,20 +252,7 @@ export default function SongPage() {
                 </div>
             </CardContent>
         </Card>
-      ) : (
-        <div className="flex justify-center my-2">
-            <div className="flex items-center gap-2 rounded-md border p-1 w-full max-w-xs">
-                <Label className="text-sm pl-1 whitespace-nowrap">Tam. da Fonte</Label>
-                <Button variant="ghost" size="icon" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-6 w-6">
-                    <Minus className="h-4 w-4" />
-                </Button>
-                <span className="text-sm font-medium w-full text-center">{fontSize}px</span>
-                <Button variant="ghost" size="icon" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-6 w-6">
-                    <Plus className="h-4 w-4" />
-                </Button>
-            </div>
-        </div>
-      )}
+      ) : null}
 
       {isEditing && editedSong ? (
         <Card>
@@ -302,11 +308,11 @@ export default function SongPage() {
                   </CarouselItem>
                 ))}
               </CarouselContent>
-              <div className="absolute -left-4 top-1/2 -translate-y-1/2">
-                <CarouselPrevious className="hidden md:flex" />
+              <div className="absolute -left-4 top-1/2 -translate-y-1/2 hidden md:block">
+                <CarouselPrevious />
               </div>
-              <div className="absolute -right-4 top-1/2 -translate-y-1/2">
-                <CarouselNext className="hidden md:flex" />
+              <div className="absolute -right-4 top-1/2 -translate-y-1/2 hidden md:block">
+                <CarouselNext />
               </div>
             </Carousel>
         </div>
