@@ -163,13 +163,10 @@ export default function SongPage() {
 
         {!isEditing ? (
             <div className="flex-1 flex items-start justify-between gap-4">
-                {/* Coluna 1: Título e Artista */}
                 <div>
                     <h1 className="text-base font-bold font-headline tracking-tight">{song.title}</h1>
                     <p className="text-muted-foreground text-[10px] whitespace-nowrap">{song.artist}</p>
                 </div>
-
-                {/* Coluna 2: Tom e Botão Editar */}
                 <div className="flex flex-col items-center gap-1 shrink-0">
                     {song.key && <Badge variant="outline" className="whitespace-nowrap">Tom: {transposeContent(song.key, transpose)}</Badge>}
                     <Button variant="outline" onClick={handleStartEditing} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-7 text-xs">
@@ -240,25 +237,6 @@ export default function SongPage() {
         </Card>
       ) : (
         <div className="flex justify-center items-center flex-wrap gap-4 my-2">
-            <div className="flex items-center gap-2 rounded-md border p-1">
-                <Button variant="ghost" size="icon" onClick={decreaseTranspose}>
-                    <Minus className="h-4 w-4" />
-                </Button>
-                <Badge variant="secondary" className="px-3 py-1 text-sm">
-                    Tom: {transpose > 0 ? '+' : ''}{transpose}
-                </Badge>
-                <Button variant="ghost" size="icon" onClick={increaseTranspose}>
-                    <Plus className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon" onClick={handleSaveKey} disabled={transpose === 0} className="ml-2">
-                    <Save className="h-4 w-4" />
-                    <span className="sr-only">Salvar Tom</span>
-                </Button>
-            </div>
-            <div className="flex flex-col items-center space-y-1 rounded-md border p-2 py-1">
-              <Label htmlFor="show-chords" className="text-sm">Mostrar Cifras</Label>
-              <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
-            </div>
             <div className="flex items-center gap-1 rounded-md border p-1">
                 <Label className="text-sm pl-1">Tam.</Label>
                 <Button variant="ghost" size="icon" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-6 w-6">
@@ -276,7 +254,7 @@ export default function SongPage() {
         <Card>
           <CardContent className="p-4 md:p-6 space-y-4">
               <div className="flex justify-between items-center">
-                <Label htmlFor="content-editor">Letra &amp; Cifras</Label>
+                <Label htmlFor="content-editor">Letra & Cifras</Label>
                 <Button onClick={handleSave} size="sm">
                     <Save className="mr-2 h-4 w-4" /> Salvar
                 </Button>
@@ -350,6 +328,30 @@ export default function SongPage() {
                 </ScrollArea>
             </CardContent>
          </Card>
+      )}
+      
+      {!isEditing && (
+        <div className="flex justify-center items-center flex-wrap gap-4 mt-4">
+            <div className="flex items-center gap-2 rounded-md border p-1">
+                <Button variant="ghost" size="icon" onClick={decreaseTranspose}>
+                    <Minus className="h-4 w-4" />
+                </Button>
+                <Badge variant="secondary" className="px-3 py-1 text-sm">
+                    Tom: {transpose > 0 ? '+' : ''}{transpose}
+                </Badge>
+                <Button variant="ghost" size="icon" onClick={increaseTranspose}>
+                    <Plus className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={handleSaveKey} disabled={transpose === 0} className="ml-2">
+                    <Save className="h-4 w-4" />
+                    <span className="sr-only">Salvar Tom</span>
+                </Button>
+            </div>
+            <div className="flex flex-col items-center space-y-1 rounded-md border p-2 py-1">
+              <Label htmlFor="show-chords" className="text-sm">Mostrar Cifras</Label>
+              <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
+            </div>
+        </div>
       )}
     </div>
   );
