@@ -153,7 +153,7 @@ export default function SongPage() {
 
   return (
     <div className="flex-1 space-y-2 p-4 md:p-8 pt-6" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
-      <div className="flex items-center gap-4">
+      <div className="flex items-start gap-4">
         <Button asChild variant="outline" size="icon" className="shrink-0">
             <Link href="/songs">
                 <ArrowLeft className="h-4 w-4" />
@@ -162,12 +162,10 @@ export default function SongPage() {
         </Button>
 
         {!isEditing ? (
-            <div className="flex-1 flex items-start justify-between gap-4">
-                <div>
-                    <h1 className="text-lg font-bold font-headline tracking-tight">{song.title}</h1>
+            <div className="flex-1">
+                <h1 className="text-lg font-bold font-headline tracking-tight">{song.title}</h1>
+                <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                     <p className="text-muted-foreground text-[11px] whitespace-nowrap">{song.artist}</p>
-                </div>
-                <div className="flex flex-col items-center gap-1 shrink-0">
                     {song.key && <Badge variant="outline" className="whitespace-nowrap">Tom: {transposeContent(song.key, transpose)}</Badge>}
                     <Button variant="outline" onClick={handleStartEditing} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-7 text-xs">
                         <Edit className="mr-1.5 h-3 w-3" /> Editar
