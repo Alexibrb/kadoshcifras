@@ -34,7 +34,7 @@ export default function SongsPage() {
   const [songs, setSongs] = useLocalStorage<Song[]>('songs', []);
   const [isClient, setIsClient] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortOrder, setSortOrder] = useState<SortOption>('date-desc');
+  const [sortOrder, setSortOrder] = useState<SortOption>('title-asc');
 
 
   useEffect(() => {
