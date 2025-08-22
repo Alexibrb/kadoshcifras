@@ -37,15 +37,6 @@ export default function SetlistsPage() {
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold font-headline tracking-tight">Repertórios</h2>
          <div className="flex items-center gap-4">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3">
-                    <CardTitle className="text-sm font-medium">Total de Repertórios</CardTitle>
-                    <ListMusic className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent className="p-3 pt-0">
-                    <div className="text-2xl font-bold">{loading ? '...' : setlists.length}</div>
-                </CardContent>
-            </Card>
             <Button asChild>
               <Link href="/setlists/new">
                 <PlusCircle className="mr-2 h-4 w-4" /> Novo Repertório

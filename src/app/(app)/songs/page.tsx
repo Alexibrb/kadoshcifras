@@ -3,8 +3,8 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
-import { type Song } from '@/types';
-import { Music, PlusCircle, Trash2, ArrowUpDown, X } from 'lucide-react';
+import { type Song, type Setlist } from '@/types';
+import { Music, PlusCircle, Trash2, ArrowUpDown, X, ListMusic } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
 import {
@@ -32,12 +32,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 type SortOption = 'title-asc' | 'title-desc' | 'artist-asc' | 'artist-desc' | 'date-desc';
 
 export default function SongsPage() {
-  const { data: songs, loading, deleteDocument } = useFirestoreCollection<Song>('songs');
+  const { data: songs, loading: loadingSongs, deleteDocument } = useFirestoreCollection<Song>('songs');
+  const { data: setlists, loading: loadingSetlists } = useFirestoreCollection<Setlist>('setlists');
   const [isClient, setIsClient] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOption>('title-asc');
   const [selectedArtist, setSelectedArtist] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const loading = loadingSongs || loadingSetlists;
 
   useEffect(() => {
     setIsClient(true);
@@ -110,15 +112,26 @@ export default function SongsPage() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2 flex-wrap gap-4">
         <h2 className="text-3xl font-bold font-headline tracking-tight">Minhas Músicas</h2>
-         <Card className="hidden sm:block">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3">
-            <CardTitle className="text-sm font-medium">Total de Músicas</CardTitle>
-            <Music className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="p-3 pt-0">
-            <div className="text-2xl font-bold">{loading ? '...' : songs.length}</div>
-          </CardContent>
-        </Card>
+         <div className="flex items-center gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3">
+                <CardTitle className="text-sm font-medium">Total de Músicas</CardTitle>
+                <Music className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <div className="text-2xl font-bold">{loading ? '...' : songs.length}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3">
+                <CardTitle className="text-sm font-medium">Total de Repertórios</CardTitle>
+                <ListMusic className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <div className="text-2xl font-bold">{loading ? '...' : setlists.length}</div>
+              </CardContent>
+            </Card>
+        </div>
       </div>
 
        <Card className="p-4">
