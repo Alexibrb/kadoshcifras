@@ -153,39 +153,42 @@ export default function SongPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button asChild variant="outline" size="icon" className="shrink-0">
+      <div className="flex items-center gap-4">
+        <Button asChild variant="outline" size="icon" className="shrink-0">
             <Link href="/songs">
-              <ArrowLeft className="h-4 w-4" />
-              <span className="sr-only">Voltar para as músicas</span>
+                <ArrowLeft className="h-4 w-4" />
+                <span className="sr-only">Voltar para as músicas</span>
             </Link>
-          </Button>
-          {!isEditing ? (
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                <div className="flex items-baseline gap-2">
+        </Button>
+
+        {!isEditing ? (
+            <div className="flex-1 flex items-start justify-between gap-4">
+                {/* Coluna 1: Título e Artista */}
+                <div>
                     <h1 className="text-base font-bold font-headline tracking-tight">{song.title}</h1>
                     <p className="text-muted-foreground text-[10px] whitespace-nowrap">{song.artist}</p>
                 </div>
-                {song.key && <Badge variant="outline" className="whitespace-nowrap">Tom: {transposeContent(song.key, transpose)}</Badge>}
+
+                {/* Coluna 2: Tom e Botão Editar */}
+                <div className="flex items-center gap-3 shrink-0">
+                    {song.key && <Badge variant="outline" className="whitespace-nowrap">Tom: {transposeContent(song.key, transpose)}</Badge>}
+                    <Button variant="outline" onClick={handleStartEditing} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
+                        <Edit className="mr-2 h-4 w-4" /> Editar
+                    </Button>
+                </div>
             </div>
-           ) : null}
-        </div>
-        <div className="flex items-center gap-2">
-           {isEditing ? (
-            <>
-              <Button variant="outline" onClick={handleCancelEditing} size="sm">Cancelar</Button>
-              <Button onClick={handleSave} size="sm">
-                <Save className="mr-2 h-4 w-4" /> Salvar
-              </Button>
-            </>
-          ) : (
-            <Button variant="outline" onClick={handleStartEditing} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
-              <Edit className="mr-2 h-4 w-4" /> Editar
-            </Button>
-          )}
-        </div>
-      </div>
+        ) : (
+             <div className="flex-1 flex items-center justify-between">
+                <h1 className="text-base font-bold font-headline tracking-tight">Editando: {song.title}</h1>
+                 <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={handleCancelEditing} size="sm">Cancelar</Button>
+                    <Button onClick={handleSave} size="sm">
+                        <Save className="mr-2 h-4 w-4" /> Salvar
+                    </Button>
+                 </div>
+             </div>
+        )}
+    </div>
       
       {isEditing && editedSong ? (
         <Card className="mb-4">
