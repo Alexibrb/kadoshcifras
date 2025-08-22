@@ -27,7 +27,6 @@ const ALL_KEYS = [
     'Cm', 'C#m', 'Dbm', 'Dm', 'D#m', 'Ebm', 'Em', 'Fm', 'F#m', 'Gbm', 'Gm', 'G#m', 'Abm', 'Am', 'A#m', 'Bbm', 'Bm'
 ];
 
-
 export default function SongPage() {
   const params = useParams();
   const [songs, setSongs] = useLocalStorage<Song[]>('songs', []);
@@ -63,6 +62,33 @@ export default function SongPage() {
     }
   }, [isEditing, editedSong?.content]);
 
+  const isChordLine = (line: string) => {
+    // Implemente a lógica para detectar se uma linha contém apenas cifras
+    // Esta é uma implementação de exemplo
+    const trimmedLine = line.trim();
+    if (!trimmedLine) return false;
+    const parts = trimmedLine.split(/\s+/);
+    return parts.every(part => /^[A-G](b|#)?(m|maj|min|dim|aug|sus|°|[0-9])*/.test(part));
+  }
+  
+  const contentToDisplay = useMemo(() => {
+    const currentContent = song?.content;
+    if (!currentContent) return '';
+    return transposeContent(currentContent, transpose);
+  }, [song, transpose]);
+
+  const songParts = useMemo(() => {
+    if (showChords) {
+      return contentToDisplay.split(/\n---\n/);
+    }
+    const contentWithoutChords = contentToDisplay
+      .split('\n')
+      .filter(line => !isChordLine(line))
+      .join('\n');
+
+    return [contentWithoutChords.replace(/\n---\n/g, '\n\n')];
+  }, [contentToDisplay, showChords]);
+
 
   const handleStartEditing = () => {
     if (!song) return;
@@ -84,34 +110,6 @@ export default function SongPage() {
       },
       [api, isEditing]
     )
-  
-  const contentToDisplay = useMemo(() => {
-    const currentContent = isEditing && editedSong ? song?.content : song?.content;
-    if (!currentContent) return '';
-    return transposeContent(currentContent, transpose);
-  }, [song, editedSong, isEditing, transpose]);
-
-  const isChordLine = (line: string) => {
-    // Implemente a lógica para detectar se uma linha contém apenas cifras
-    // Esta é uma implementação de exemplo
-    const trimmedLine = line.trim();
-    if (!trimmedLine) return false;
-    const parts = trimmedLine.split(/\s+/);
-    return parts.every(part => /^[A-G](b|#)?(m|maj|min|dim|aug|sus|°|[0-9])*/.test(part));
-  }
-
-  const songParts = useMemo(() => {
-    if (showChords) {
-      return contentToDisplay.split(/\n---\n/);
-    }
-    const contentWithoutChords = contentToDisplay
-      .split('\n')
-      .filter(line => !isChordLine(line))
-      .join('\n');
-
-    return [contentWithoutChords.replace(/\n---\n/g, '\n\n')];
-  }, [contentToDisplay, showChords]);
-
 
   if (isClient && !song) {
     notFound();
@@ -300,7 +298,7 @@ export default function SongPage() {
           </CardContent>
         </Card>
       ) : showChords ? (
-        <Carousel className="w-full" opts={{ watchDrag: false }} setApi={setApi}>
+        <Carousel className="w-full" setApi={setApi}>
             <CarouselContent>
               {songParts.map((part, index) => (
                 <CarouselItem key={index}>
