@@ -7,12 +7,12 @@ import { Song } from '@/types';
 import { ArrowLeft, Edit, Minus, Plus, Save } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState, use, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { transposeContent } from '@/lib/music';
 import { Textarea } from '@/components/ui/textarea';
 import { SongDisplay } from '@/components/song-display';
 import { Card, CardContent } from '@/components/ui/card';
-import { Carousel, CarouselApi, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Carousel, CarouselApi, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -26,7 +26,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
   const [showChords, setShowChords] = useState(true);
   const [api, setApi] = useState<CarouselApi>()
   
-  const { id: songId } = use(params);
+  const songId = params.id;
   
   const [song, setSong] = useState<Song | undefined>(undefined);
   const [editedContent, setEditedContent] = useState('');
@@ -42,10 +42,10 @@ export default function SongPage({ params }: { params: { id: string } }) {
 
   const handleKeyDown = useCallback(
       (event: React.KeyboardEvent<HTMLDivElement>) => {
-        if (event.key === "ArrowLeft") {
+        if (event.key === "ArrowLeft" || event.key === 'PageUp') {
           event.preventDefault()
           api?.scrollPrev()
-        } else if (event.key === "ArrowRight") {
+        } else if (event.key === "ArrowRight" || event.key === 'PageDown') {
           event.preventDefault()
           api?.scrollNext()
         }
@@ -83,7 +83,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
     // Aplica a transposição ao conteúdo antes de salvar
     const newContent = transposeContent(editedContent, transpose);
 
-    const newKey = transposeContent(song.key || 'C', transpose);
+    const newKey = song.key ? transposeContent(song.key, transpose) : undefined;
 
     setSongs(
       songs.map((s) => (s.id === song.id ? { ...s, content: newContent, key: newKey } : s))
