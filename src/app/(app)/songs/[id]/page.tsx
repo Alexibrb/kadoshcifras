@@ -7,7 +7,7 @@ import { Song } from '@/types';
 import { ArrowLeft, Edit, Minus, Plus, Save } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useRouter, useParams } from 'next/navigation';
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { transposeContent } from '@/lib/music';
 import { Textarea } from '@/components/ui/textarea';
 import { SongDisplay } from '@/components/song-display';
@@ -45,6 +45,8 @@ export default function SongPage() {
   
   const [song, setSong] = useState<Song | undefined>(undefined);
   const [editedSong, setEditedSong] = useState<Song | null>(null);
+  
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -53,6 +55,14 @@ export default function SongPage() {
         setSong(currentSong);
     }
   }, [songs, songId]);
+
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [isEditing, editedSong?.content]);
+
 
   const handleStartEditing = () => {
     if (!song) return;
@@ -103,13 +113,11 @@ export default function SongPage() {
 
     const finalSong = {
         ...editedSong,
-        content: transposeContent(editedSong.content, -transpose),
-        key: transposeContent(editedSong.key || '', -transpose),
     };
 
     const updatedSongs = songs.map((s) => (s.id === finalSong.id ? finalSong : s));
     setSongs(updatedSongs);
-    setSong(finalSong); // Directly update the displayed song
+    setSong(finalSong);
     
     setTranspose(0);
     setIsEditing(false);
@@ -194,12 +202,8 @@ export default function SongPage() {
                 <div className="space-y-2">
                     <Label htmlFor="key">Tom</Label>
                      <Select 
-                        value={transposeContent(editedSong.key || '', transpose)} 
-                        onValueChange={(v) => {
-                            if (editedSong) {
-                                setEditedSong({...editedSong, key: transposeContent(v, -transpose)})
-                            }
-                        }}
+                        value={editedSong.key} 
+                        onValueChange={(v) => updateEditedSongField('key', v)}
                     >
                         <SelectTrigger><SelectValue placeholder="Selecione um tom" /></SelectTrigger>
                         <SelectContent>
@@ -233,13 +237,14 @@ export default function SongPage() {
         <Card>
           <CardContent className="p-4 md:p-6">
               <Textarea
-                value={contentToDisplay}
+                ref={textareaRef}
+                value={editedSong?.content || ''}
                 onChange={(e) => {
                   if (editedSong) {
-                    setEditedSong({ ...editedSong, content: transposeContent(e.target.value, -transpose)});
+                    setEditedSong({ ...editedSong, content: e.target.value});
                   }
                 }}
-                className="min-h-[60vh] font-code text-base"
+                className="font-code text-base overflow-hidden resize-none"
                 style={{ whiteSpace: 'pre', overflowX: 'auto' }}
               />
           </CardContent>

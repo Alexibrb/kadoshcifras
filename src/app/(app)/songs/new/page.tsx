@@ -10,7 +10,7 @@ import type { Song } from '@/types';
 import { ArrowLeft, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
@@ -47,6 +47,15 @@ export default function NewSongPage() {
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [isGenreDialogOpen, setIsGenreDialogOpen] = useState(false);
   const [isArtistDialogOpen, setIsArtistDialogOpen] = useState(false);
+  
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [content]);
 
 
   const handleAddCategory = () => {
@@ -243,10 +252,11 @@ export default function NewSongPage() {
               </div>
               <Textarea
                 id="content"
+                ref={textareaRef}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Verso 1:&#10;C                      G&#10;Olha que coisa mais linda, mais cheia de graça&#10;&#10;---&#10;&#10;Refrão:&#10;F                      C&#10;E o seu balançado é mais que um poema"
-                className="h-64 font-code"
+                className="font-code resize-none overflow-hidden"
                 required
                 style={{ whiteSpace: 'nowrap', overflowX: 'auto' }}
               />
