@@ -70,7 +70,7 @@ export default function SongPage() {
   }, [song, editedSong, transpose, isEditing]);
 
   const songParts = useMemo(() => {
-    // Splits the content by two or more consecutive newlines (blank lines)
+    // Splits the content by three or more consecutive newlines (two blank lines)
     return contentToDisplay.split(/\n\s*\n\s*\n/);
   }, [contentToDisplay]);
 
