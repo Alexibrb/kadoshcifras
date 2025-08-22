@@ -21,6 +21,7 @@ const nextConfig: NextConfig = {
   devIndicators: {
     position: 'bottom-right',
   },
+  transpilePackages: ['next-themes'],
 };
 
 export default nextConfig;
