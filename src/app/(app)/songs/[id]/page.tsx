@@ -8,7 +8,7 @@ import { ArrowLeft, Edit, Minus, Plus, Save } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useRouter, useParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { transposeContent } from '@/lib/music';
+import { transposeContent, transposeChord } from '@/lib/music';
 import { Textarea } from '@/components/ui/textarea';
 import { SongDisplay } from '@/components/song-display';
 import { Card, CardContent } from '@/components/ui/card';
@@ -126,6 +126,18 @@ export default function SongPage() {
     }
   };
 
+  const handleSaveKey = () => {
+    if (!song || !song.key || transpose === 0) return;
+    
+    const newKey = transposeChord(song.key, transpose);
+    const updatedSong = { ...song, key: newKey };
+
+    const updatedSongs = songs.map((s) => (s.id === updatedSong.id ? updatedSong : s));
+    setSongs(updatedSongs);
+    setSong(updatedSong); // Atualiza o estado local imediatamente
+    setTranspose(0); // Reseta a transposição
+  };
+
 
   const increaseTranspose = () => setTranspose(t => Math.min(12, t + 1));
   const decreaseTranspose = () => setTranspose(t => Math.max(-12, t - 1));
@@ -224,6 +236,12 @@ export default function SongPage() {
               <Button variant="ghost" size="icon" onClick={increaseTranspose}>
                   <Plus className="h-4 w-4" />
               </Button>
+               {transpose !== 0 && !isEditing && (
+                <Button variant="outline" size="icon" onClick={handleSaveKey} className="ml-2">
+                    <Save className="h-4 w-4" />
+                    <span className="sr-only">Salvar Tom</span>
+                </Button>
+              )}
           </div>
           <div className="flex items-center space-x-2 rounded-md border p-2 py-1">
             <Label htmlFor="show-chords" className="text-sm">Mostrar Cifras</Label>
