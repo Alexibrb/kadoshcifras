@@ -1,5 +1,7 @@
+
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,15 +9,35 @@ import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/logo';
+import { auth } from '@/lib/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Em um aplicativo real, você lidaria com a autenticação aqui.
-    // Para este protótipo, vamos apenas navegar para o painel.
-    router.push('/dashboard');
+    setError(null);
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      router.push('/dashboard');
+    } catch (error: any) {
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        setError("Email ou senha inválidos. Por favor, tente novamente.");
+      } else {
+        setError("Ocorreu um erro ao fazer login. Por favor, tente novamente mais tarde.");
+      }
+      console.error(error);
+    } finally {
+        setLoading(false);
+    }
   };
 
   return (
@@ -29,16 +51,23 @@ export default function LoginPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="voce@exemplo.com" required />
+            <Input id="email" type="email" placeholder="voce@exemplo.com" required value={email} onChange={e => setEmail(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Senha</Label>
-            <Input id="password" type="password" required />
+            <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} />
           </div>
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Erro de Login</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full font-bold">
-            Entrar
+          <Button type="submit" className="w-full font-bold" disabled={loading}>
+            {loading ? 'Entrando...' : 'Entrar'}
           </Button>
           <p className="text-sm text-center text-muted-foreground">
             Não tem uma conta?{' '}

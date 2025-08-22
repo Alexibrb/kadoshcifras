@@ -1,5 +1,7 @@
+
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,15 +9,54 @@ import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/logo';
+import { auth } from '@/lib/firebase';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
+
 
 export default function SignupPage() {
   const router = useRouter();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Em um aplicativo real, você lidaria com a criação do usuário aqui.
-    // Para este protótipo, vamos apenas navegar para o painel.
-    router.push('/dashboard');
+    setError(null);
+    setLoading(true);
+
+    if (password.length < 6) {
+        setError("A senha deve ter pelo menos 6 caracteres.");
+        setLoading(false);
+        return;
+    }
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      if (userCredential.user) {
+        await updateProfile(userCredential.user, {
+            displayName: name,
+        });
+      }
+      router.push('/dashboard');
+    } catch (error: any) {
+        if (error.code === 'auth/email-already-in-use') {
+            setError("Este endereço de e-mail já está em uso.");
+        } else if (error.code === 'auth/invalid-email') {
+            setError("O formato do e-mail é inválido.");
+        } else if (error.code === 'auth/weak-password') {
+            setError("A senha é muito fraca. Tente uma mais forte.");
+        } else {
+            setError("Ocorreu um erro ao criar a conta.");
+        }
+        console.error(error);
+    } finally {
+        setLoading(false);
+    }
   };
 
   return (
@@ -29,20 +70,27 @@ export default function SignupPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Nome</Label>
-            <Input id="name" type="text" placeholder="Seu Nome" required />
+            <Input id="name" type="text" placeholder="Seu Nome" required value={name} onChange={e => setName(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="voce@exemplo.com" required />
+            <Input id="email" type="email" placeholder="voce@exemplo.com" required value={email} onChange={e => setEmail(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Senha</Label>
-            <Input id="password" type="password" required />
+            <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} />
           </div>
+           {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Erro de Cadastro</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full font-bold">
-            Cadastre-se
+          <Button type="submit" className="w-full font-bold" disabled={loading}>
+            {loading ? 'Criando conta...' : 'Cadastre-se'}
           </Button>
           <p className="text-sm text-center text-muted-foreground">
             Já tem uma conta?{' '}
