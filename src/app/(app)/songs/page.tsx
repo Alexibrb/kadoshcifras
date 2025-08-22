@@ -1,11 +1,23 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
-import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { type Song } from '@/types';
 import { Music, PlusCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export default function SongsPage() {
   const [songs, setSongs] = useLocalStorage<Song[]>('songs', []);
@@ -49,18 +61,39 @@ export default function SongsPage() {
             songs.map((song) => (
               <Card key={song.id}>
                 <CardHeader>
-                  <CardTitle className="font-headline truncate">{song.title}</CardTitle>
-                  <CardDescription>{song.artist}</CardDescription>
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                            <CardTitle className="font-headline truncate">{song.title}</CardTitle>
+                            <CardDescription>{song.artist}</CardDescription>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <Button asChild variant="outline" size="sm">
+                                <Link href={`/songs/${song.id}`}>Abrir</Link>
+                            </Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                        <span className="sr-only">Excluir</span>
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Essa ação não pode ser desfeita. Isso excluirá permanentemente a música
+                                        e removerá seus dados de nossos servidores.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => deleteSong(song.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    </div>
                 </CardHeader>
-                <CardFooter className="flex justify-between">
-                  <Button asChild variant="outline">
-                    <Link href={`/songs/${song.id}`}>Abrir</Link>
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => deleteSong(song.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                    <span className="sr-only">Excluir</span>
-                  </Button>
-                </CardFooter>
               </Card>
             ))}
         </div>
