@@ -59,14 +59,21 @@ export default function SongPage() {
     const currentSong = songs.find((s) => s.id === songId);
     if (currentSong) {
         setSong(currentSong);
-        setEditedTitle(currentSong.title);
-        setEditedArtist(currentSong.artist);
-        setEditedCategory(currentSong.category || '');
-        setEditedGenre(currentSong.genre || '');
-        setEditedKey(currentSong.key || '');
-        setEditedContent(currentSong.content);
+        // We only set the edited state if we are in editing mode
+        // to avoid overwriting user changes with stale data.
+        if (isEditing) {
+            // This part is handled by handleStartEditing now
+        } else {
+            // When not editing, ensure the display is up-to-date
+             setEditedTitle(currentSong.title);
+             setEditedArtist(currentSong.artist);
+             setEditedCategory(currentSong.category || '');
+             setEditedGenre(currentSong.genre || '');
+             setEditedKey(currentSong.key || '');
+             setEditedContent(currentSong.content);
+        }
     }
-  }, [songs, songId]);
+  }, [songs, songId, isEditing]);
 
   const handleStartEditing = () => {
     if (!song) return;
@@ -81,29 +88,32 @@ export default function SongPage() {
 
   const handleKeyDown = useCallback(
       (event: React.KeyboardEvent<HTMLDivElement>) => {
-        if (event.key === "ArrowLeft" || event.key === 'PageUp') {
-          event.preventDefault()
-          api?.scrollPrev()
-        } else if (event.key === "ArrowRight" || event.key === 'PageDown') {
-          event.preventDefault()
-          api?.scrollNext()
+        if (!isEditing) {
+            if (event.key === "ArrowLeft" || event.key === 'PageUp') {
+              event.preventDefault()
+              api?.scrollPrev()
+            } else if (event.key === "ArrowRight" || event.key === 'PageDown') {
+              event.preventDefault()
+              api?.scrollNext()
+            }
         }
       },
-      [api]
+      [api, isEditing]
     )
   
   const transposedContent = useMemo(() => {
     if (!song) return '';
-    const contentToTranspose = isEditing ? editedContent : song.content;
-    return transposeContent(contentToTranspose, transpose);
-  }, [song, editedContent, transpose, isEditing]);
+    // Use editedContent directly, as it's synced with the song's content
+    return transposeContent(editedContent, transpose);
+  }, [song, editedContent, transpose]);
 
   const songParts = useMemo(() => {
+    const contentToDisplay = isEditing ? transposedContent : (song ? transposeContent(song.content, transpose) : '');
     if (showChords) {
-      return transposedContent.split(/\n---\n/);
+      return contentToDisplay.split(/\n---\n/);
     }
-    return [transposedContent.replace(/\n---\n/g, '\n\n')];
-  }, [transposedContent, showChords]);
+    return [contentToDisplay.replace(/\n---\n/g, '\n\n')];
+  }, [transposedContent, showChords, song, transpose, isEditing]);
 
 
   if (isClient && !song) {
@@ -115,37 +125,32 @@ export default function SongPage() {
   }
 
   const handleSave = () => {
-    if (!song) return;
-
-    const newContent = transposeContent(editedContent, transpose);
-    const newKey = transposeContent(editedKey, transpose);
-
     const updatedSong: Song = {
-      ...song,
+      // id, title, etc. can be taken from `song` state if not edited
+      // but we use the `edited` states to capture all changes.
+      id: song.id,
       title: editedTitle,
       artist: editedArtist,
       category: editedCategory,
       genre: editedGenre,
-      key: newKey,
-      content: newContent,
+      // The key and content are transposed back to their original state before saving.
+      key: transposeContent(editedKey, -transpose),
+      content: transposeContent(editedContent, -transpose),
     };
 
     const updatedSongs = songs.map((s) => (s.id === song.id ? updatedSong : s));
-    setSongs(updatedSongs);
+    setSongs(updatedSongs); // This triggers the useEffect to update `song` state
     
-    // We update the local song state from the full list to ensure reactivity
-    const reloadedSong = updatedSongs.find(s => s.id === song.id);
-    setSong(reloadedSong);
-
     setTranspose(0);
     setIsEditing(false);
   };
+
 
   const increaseTranspose = () => setTranspose(t => Math.min(12, t + 1));
   const decreaseTranspose = () => setTranspose(t => Math.max(-12, t - 1));
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button asChild variant="outline" size="icon" className="shrink-0">
@@ -254,7 +259,7 @@ export default function SongPage() {
           </CardContent>
         </Card>
       ) : showChords ? (
-        <Carousel className="w-full" onKeyDownCapture={handleKeyDown} tabIndex={0} setApi={setApi}>
+        <Carousel className="w-full" opts={{ watchDrag: false }} setApi={setApi}>
             <CarouselContent>
               {songParts.map((part, index) => (
                 <CarouselItem key={index}>
