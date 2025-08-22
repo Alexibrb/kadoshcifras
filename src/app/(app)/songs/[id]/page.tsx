@@ -47,7 +47,7 @@ export default function SongPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [transpose, setTranspose] = useState(0);
   const [showChords, setShowChords] = useState(true);
-  const [fontSize, setFontSize] = useLocalStorage('song-font-size', 16);
+  const [fontSize, setFontSize] = useLocalStorage('song-font-size', 12);
   const [api, setApi] = useState<CarouselApi>()
   
   const [editedSong, setEditedSong] = useState<Song | null>(null);
