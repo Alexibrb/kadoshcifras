@@ -26,7 +26,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
   const [showChords, setShowChords] = useState(true);
   const [api, setApi] = useState<CarouselApi>()
   
-  const songId = use(Promise.resolve(params.id));
+  const songId = use(params).id;
   
   const [song, setSong] = useState<Song | undefined>(undefined);
   const [editedContent, setEditedContent] = useState('');
