@@ -256,17 +256,15 @@ export default function SongPage() {
               <Label htmlFor="show-chords" className="text-sm">Mostrar Cifras</Label>
               <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
             </div>
-            <div className="flex flex-col items-center space-y-1 rounded-md border p-2 py-1">
-                <Label htmlFor="font-size" className="text-sm">Fonte</Label>
-                <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-6 w-6">
-                        <Minus className="h-4 w-4" />
-                    </Button>
-                    <span className="text-sm font-medium w-6 text-center">{fontSize}px</span>
-                    <Button variant="ghost" size="icon" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-6 w-6">
-                        <Plus className="h-4 w-4" />
-                    </Button>
-                </div>
+            <div className="flex items-center gap-1 rounded-md border p-1">
+                <Label className="text-sm pl-1">Tam.</Label>
+                <Button variant="ghost" size="icon" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-6 w-6">
+                    <Minus className="h-4 w-4" />
+                </Button>
+                <span className="text-sm font-medium w-6 text-center">{fontSize}px</span>
+                <Button variant="ghost" size="icon" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-6 w-6">
+                    <Plus className="h-4 w-4" />
+                </Button>
             </div>
         </div>
       )}
