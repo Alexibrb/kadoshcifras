@@ -86,11 +86,19 @@ export default function SongPage() {
     )
   
   const contentToDisplay = useMemo(() => {
-    const currentContent = isEditing && editedSong ? editedSong.content : song?.content;
+    const currentContent = isEditing && editedSong ? song?.content : song?.content;
     if (!currentContent) return '';
     return transposeContent(currentContent, transpose);
   }, [song, editedSong, isEditing, transpose]);
 
+  const isChordLine = (line: string) => {
+    // Implemente a lógica para detectar se uma linha contém apenas cifras
+    // Esta é uma implementação de exemplo
+    const trimmedLine = line.trim();
+    if (!trimmedLine) return false;
+    const parts = trimmedLine.split(/\s+/);
+    return parts.every(part => /^[A-G](b|#)?(m|maj|min|dim|aug|sus|°|[0-9])*/.test(part));
+  }
 
   const songParts = useMemo(() => {
     if (showChords) {
@@ -103,15 +111,6 @@ export default function SongPage() {
 
     return [contentWithoutChords.replace(/\n---\n/g, '\n\n')];
   }, [contentToDisplay, showChords]);
-
-  const isChordLine = (line: string) => {
-    // Implemente a lógica para detectar se uma linha contém apenas cifras
-    // Esta é uma implementação de exemplo
-    const trimmedLine = line.trim();
-    if (!trimmedLine) return false;
-    const parts = trimmedLine.split(/\s+/);
-    return parts.every(part => /^[A-G](b|#)?(m|maj|min|dim|aug|sus|°|[0-9])*/.test(part));
-  }
 
 
   if (isClient && !song) {
