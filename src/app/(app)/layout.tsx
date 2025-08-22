@@ -51,7 +51,7 @@ function Header() {
                                <Button
                                  key={link.href}
                                  asChild
-                                 variant="ghost"
+                                 variant={isActive ? 'secondary' : 'ghost'}
                                  size="icon"
                                  className={cn(
                                     "text-accent-foreground hover:bg-secondary hover:text-secondary-foreground",
