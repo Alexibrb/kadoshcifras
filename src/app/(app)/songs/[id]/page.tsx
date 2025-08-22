@@ -152,7 +152,7 @@ export default function SongPage() {
   const decreaseTranspose = () => setTranspose(t => Math.max(-12, t - 1));
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
+    <div className="flex-1 space-y-2 p-4 md:p-8 pt-6" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
       <div className="flex items-center gap-4">
         <Button asChild variant="outline" size="icon" className="shrink-0">
             <Link href="/songs">
@@ -170,10 +170,10 @@ export default function SongPage() {
                 </div>
 
                 {/* Coluna 2: Tom e Botão Editar */}
-                <div className="flex items-center gap-3 shrink-0">
+                <div className="flex flex-col items-center gap-1 shrink-0">
                     {song.key && <Badge variant="outline" className="whitespace-nowrap">Tom: {transposeContent(song.key, transpose)}</Badge>}
-                    <Button variant="outline" onClick={handleStartEditing} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
-                        <Edit className="mr-2 h-4 w-4" /> Editar
+                    <Button variant="outline" onClick={handleStartEditing} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-7 text-xs">
+                        <Edit className="mr-1.5 h-3 w-3" /> Editar
                     </Button>
                 </div>
             </div>
@@ -239,7 +239,7 @@ export default function SongPage() {
             </CardContent>
         </Card>
       ) : (
-        <div className="flex justify-center items-center flex-wrap gap-4 my-4">
+        <div className="flex justify-center items-center flex-wrap gap-4 my-2">
             <div className="flex items-center gap-2 rounded-md border p-1">
                 <Button variant="ghost" size="icon" onClick={decreaseTranspose}>
                     <Minus className="h-4 w-4" />
