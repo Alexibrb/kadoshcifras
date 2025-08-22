@@ -1,41 +1,37 @@
 
 'use client';
 
-// Regex para identificar a nota base (C, C#, Db) e o resto do acorde (m7, maj9, /G, etc.)
+// Regex para encontrar todas as notas que podem ser transpostas dentro de uma linha.
+// Captura a nota (C, C#, Db, etc.) e o resto do acorde (m7, maj9, /G) separadamente.
 const CHORD_REGEX = /([A-G](?:#|b)?)([^A-G\s/]*)/g;
-
-// Regex mais estrita para validar se uma string é um acorde provável.
-// Reconhece a nota base, qualidades (m, maj, dim, aug, sus), extensões (7, 9, 11, 13),
-// alterações (b5, #9) e inversões de baixo (/G, /F#).
-const STRICT_CHORD_REGEX = /^[A-G](b|#)?(maj|m|min|dim|aug|sus|M)?(2|4|5|6|7|9|11|13)?(b5|#5|b9|#9|#11|b11|b13|#13)?(°)?(\/[A-G](b|#)?)?$/;
 
 /**
  * Verifica se uma linha de texto consiste principalmente de acordes.
+ * A nova abordagem é mais simples e robusta: se não parece ser letra de música,
+ * provavelmente é uma linha de cifras.
+ *
  * @param line A linha de texto a ser verificada.
- * @returns true se for uma linha de cifras, false caso contrário.
+ * @returns `true` se for uma linha de cifras, `false` caso contrário.
  */
 export const isChordLine = (line: string): boolean => {
     const trimmedLine = line.trim();
     if (!trimmedLine) return false;
 
-    // Se a linha contiver letras minúsculas (exceto 'b' para bemóis em inversões),
-    // é provável que seja letra de música.
-    const hasLyrics = /[a-ce-z]/.test(trimmedLine.replace(/\s+/g, ''));
-     if (hasLyrics) {
+    // Se a linha contiver números sozinhos (ex: "1", "2"), é provável que seja um indicador de ordem, não cifra.
+    if (/^\d+\s*$/.test(trimmedLine)) {
         return false;
     }
+    
+    // Remove notações comuns de acordes para não classificar a linha erroneamente como letra.
+    const sanitizedLine = trimmedLine
+      .replace(/sus|add|aug|dim|maj/gi, '') // Remove palavras-chave de acordes
+      .replace(/[0-9]/g, ''); // Remove números (extensões, etc.)
 
-
-    const parts = trimmedLine.split(/\s+/).filter(p => p.length > 0);
-    if (parts.length === 0) return false;
-
-    // Conta quantas partes parecem ser acordes.
-    const chordCount = parts.filter(part => STRICT_CHORD_REGEX.test(part)).length;
-
-    // Considera uma linha de cifras se a maioria das partes (ex: 75%) forem acordes.
-    // Isso adiciona flexibilidade para anotações como "2x" ou "Riff".
-    const percentage = chordCount / parts.length;
-    return percentage >= 0.75;
+    // Verifica se a linha higienizada contém letras minúsculas (exceto 'm' para menor e 'b' para bemol).
+    // A presença de outras letras minúsculas é um forte indicador de que é uma linha de letra.
+    const hasLyrics = /[a-ce-ln-z]/.test(sanitizedLine);
+    
+    return !hasLyrics;
 };
 
 
@@ -55,7 +51,9 @@ const transposeNote = (note: string, semitones: number): string => {
     const noteIndex = getNoteIndex(note);
     if (noteIndex === -1) return note;
     const newIndex = (noteIndex + semitones + 12) % 12;
-    return SHARP_SCALE[newIndex];
+    // Prioriza bemóis para certas tonalidades para legibilidade, mas mantém sustenidos como padrão por simplicidade.
+    const useFlats = ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb'].includes(SHARP_SCALE[newIndex]);
+    return useFlats ? FLAT_SCALE[newIndex] : SHARP_SCALE[newIndex];
 }
 
 export const transposeChord = (chord: string, semitones: number): string => {
@@ -89,8 +87,9 @@ export const transposeContent = (content: string, semitones: number): string => 
     const lines = content.split('\n');
     const transposedLines = lines.map(line => {
         if (isChordLine(line)) {
-            // Usa regex para encontrar todos os acordes na linha.
-            return line.replace(/([A-G](?:#|b)?(?:maj|m|min|dim|aug|sus|M)?(?:2|4|5|6|7|9|11|13)?(?:b5|#5|b9|#9|#11|b11|b13|#13)?(?:°)?(?:\/[A-G](?:#|b)?)?)/g, (match) => {
+            // Usa uma regex para encontrar qualquer coisa que pareça um acorde na linha
+            // e aplica a transposição a cada correspondência.
+            return line.replace(/([A-G](?:#|b)?(?:maj|m|min|dim|aug|sus|M|°|4|6|7|9|11|13)?(?:(?:b|#)\d{1,2})*(?:\/[A-G](?:#|b)?)?)/g, (match) => {
                 return transposeChord(match, semitones);
             });
         }
@@ -109,4 +108,3 @@ export const parseChordsFromContent = (content: string): string[] => {
   }
   return Array.from(chords);
 }
-
