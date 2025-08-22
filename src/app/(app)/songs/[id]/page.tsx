@@ -41,6 +41,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
   
   const transposedContent = useMemo(() => {
     if (!song) return '';
+    // Usa o conteúdo editado se estiver editando, senão o conteúdo original
     const contentToTranspose = isEditing ? editedContent : song.content;
     return transposeContent(contentToTranspose, transpose);
   }, [song, editedContent, transpose, isEditing]);
@@ -63,9 +64,18 @@ export default function SongPage({ params }: { params: { id: string } }) {
   }
 
   const handleSave = () => {
+    if (!song) return;
+
+    // Aplica a transposição ao conteúdo antes de salvar
+    const newContent = transposeContent(editedContent, transpose);
+
     setSongs(
-      songs.map((s) => (s.id === song.id ? { ...s, content: editedContent } : s))
+      songs.map((s) => (s.id === song.id ? { ...s, content: newContent } : s))
     );
+    
+    // Reseta o estado local
+    setEditedContent(newContent);
+    setTranspose(0);
     setIsEditing(false);
   };
 
@@ -82,6 +92,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold font-headline tracking-tight">{song.title}</h1>
             <p className="text-muted-foreground text-sm">{song.artist}</p>
+            {song.key && <Badge variant="outline">Tom: {song.key}</Badge>}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -99,13 +110,13 @@ export default function SongPage({ params }: { params: { id: string } }) {
 
       <div className="flex justify-center items-center gap-4 mb-4">
           <div className="flex items-center gap-2 rounded-md border p-1">
-              <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose - 1)} disabled={!showChords}>
+              <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose - 1)}>
                   <Minus className="h-4 w-4" />
               </Button>
               <Badge variant="secondary" className="px-3 py-1 text-sm">
-                  Tom: {transpose >= 0 ? '+' : ''}{transpose}
+                  Tom: {transpose > 0 ? '+' : ''}{transpose}
               </Badge>
-              <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose + 1)} disabled={!showChords}>
+              <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose + 1)}>
                   <Plus className="h-4 w-4" />
               </Button>
           </div>
@@ -119,8 +130,12 @@ export default function SongPage({ params }: { params: { id: string } }) {
         <Card>
           <CardContent className="p-4 md:p-6">
               <Textarea
-                value={editedContent}
-                onChange={(e) => setEditedContent(e.target.value)}
+                value={transposedContent}
+                onChange={(e) => {
+                  // Como a transposição é aplicada visualmente, precisamos "destranspor"
+                  // para salvar a alteração de texto corretamente.
+                  setEditedContent(transposeContent(e.target.value, -transpose));
+                }}
                 className="min-h-[60vh] font-code text-base"
                 style={{ whiteSpace: 'nowrap', overflowX: 'auto' }}
               />

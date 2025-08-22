@@ -18,6 +18,7 @@ export default function NewSongPage() {
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [genre, setGenre] = useState('');
+  const [key, setKey] = useState('');
   const [content, setContent] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -27,6 +28,7 @@ export default function NewSongPage() {
       title,
       artist,
       genre,
+      key,
       content,
     };
     setSongs([...songs, newSong]);
@@ -60,10 +62,16 @@ export default function NewSongPage() {
                 <Input id="artist" value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="ex: Tom Jobim" required />
               </div>
             </div>
-             <div className="space-y-2">
-                <Label htmlFor="genre">Gênero</Label>
-                <Input id="genre" value={genre} onChange={(e) => setGenre(e.target.value)} placeholder="ex: Bossa Nova" />
-              </div>
+             <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="genre">Gênero</Label>
+                    <Input id="genre" value={genre} onChange={(e) => setGenre(e.target.value)} placeholder="ex: Bossa Nova" />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="key">Tom Original</Label>
+                    <Input id="key" value={key} onChange={(e) => setKey(e.target.value)} placeholder="ex: C" />
+                </div>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="content">Letra & Cifras</Label>
               <Textarea
