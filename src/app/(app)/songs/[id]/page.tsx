@@ -127,7 +127,7 @@ export default function SongPage() {
                     <Skeleton className="h-4 w-32" />
                 </div>
             </div>
-            <Skeleton className="h-[70vh] w-full" />
+            <Skeleton className="h-[60vh] w-full" />
         </div>
     );
   }
@@ -296,7 +296,7 @@ export default function SongPage() {
                   <CarouselItem key={index}>
                     <Card>
                       <CardContent className="p-0">
-                        <ScrollArea className="h-[70vh] p-4 md:p-6">
+                        <ScrollArea className="h-[60vh] p-4 md:p-6">
                           <SongDisplay style={{ fontSize: `${fontSize}px` }} content={part} showChords={showChords} />
                         </ScrollArea>
                       </CardContent>
@@ -315,7 +315,7 @@ export default function SongPage() {
       ) : (
          <Card>
             <CardContent className="p-0">
-                <ScrollArea className="h-[70vh] p-4 md:p-6">
+                <ScrollArea className="h-[60vh] p-4 md:p-6">
                     <SongDisplay 
                         style={{ fontSize: `${fontSize}px` }}
                         content={contentToDisplay.replace(/\n\s*\n\s*\n/g, '\n\n')}
@@ -352,3 +352,5 @@ export default function SongPage() {
     </div>
   );
 }
+
+    
