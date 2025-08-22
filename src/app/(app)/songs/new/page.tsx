@@ -247,7 +247,7 @@ export default function NewSongPage() {
                   <Label htmlFor="content">Letra &amp; Cifras</Label>
                   <Button type="submit">Salvar Música</Button>
               </div>
-               <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Use duas linhas em branco para dividir a música em várias páginas/seções.
               </p>
               <Textarea
@@ -255,7 +255,7 @@ export default function NewSongPage() {
                 ref={textareaRef}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="Verso 1:&#10;C                      G&#10;Olha que coisa mais linda, mais cheia de graça&#10;&#10;&#10;Refrão:&#10;F                      C&#10;E o seu balançado é mais que um poema"
+                placeholder="Digite ou cole sua cifra aqui"
                 className="font-code"
                 required
                 style={{ whiteSpace: 'pre', overflowX: 'auto', minHeight: '200px' }}
@@ -270,5 +270,3 @@ export default function NewSongPage() {
     </div>
   );
 }
-
-    
