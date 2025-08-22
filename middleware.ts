@@ -7,7 +7,7 @@ export function middleware(request: NextRequest) {
     
     // Proteger a página de aprovação pendente
     if (path.startsWith('/pending-approval')) {
-        const hasSession = request.cookies.has('firebase-session-cookie'); // Exemplo, o nome do cookie pode variar
+        const hasSession = request.cookies.has('__session'); // Check for a generic firebase auth cookie
         if (!hasSession) {
             return NextResponse.redirect(new URL('/login', request.url))
         }
