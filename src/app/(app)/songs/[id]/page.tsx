@@ -15,6 +15,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function SongPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -45,8 +46,12 @@ export default function SongPage({ params }: { params: { id: string } }) {
   }, [song, editedContent, transpose, isEditing]);
 
   const songParts = useMemo(() => {
-    return transposedContent.split(/\n---\n/);
-  }, [transposedContent]);
+    if (showChords) {
+      return transposedContent.split(/\n---\n/);
+    }
+    // Quando as cifras estão ocultas, tratamos a música como uma parte única.
+    return [transposedContent.replace(/\n---\n/g, '\n\n')];
+  }, [transposedContent, showChords]);
 
 
   if (isClient && !song) {
@@ -92,6 +97,24 @@ export default function SongPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
+      <div className="flex justify-center items-center gap-4 mb-4">
+          <div className="flex items-center gap-2 rounded-md border p-1">
+              <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose - 1)} disabled={!showChords}>
+                  <Minus className="h-4 w-4" />
+              </Button>
+              <Badge variant="secondary" className="px-3 py-1 text-sm">
+                  Tom: {transpose >= 0 ? '+' : ''}{transpose}
+              </Badge>
+              <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose + 1)} disabled={!showChords}>
+                  <Plus className="h-4 w-4" />
+              </Button>
+          </div>
+          <div className="flex items-center space-x-2 rounded-md border p-2 py-1">
+            <Label htmlFor="show-chords" className="text-sm">Mostrar Cifras</Label>
+            <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
+          </div>
+      </div>
+
       {isEditing ? (
         <Card>
           <CardContent className="p-4 md:p-6">
@@ -103,25 +126,8 @@ export default function SongPage({ params }: { params: { id: string } }) {
               />
           </CardContent>
         </Card>
-      ) : (
+      ) : showChords ? (
         <Carousel className="w-full">
-            <div className="flex justify-center items-center gap-4 mb-4">
-                <div className="flex items-center gap-2 rounded-md border p-1">
-                    <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose - 1)}>
-                        <Minus className="h-4 w-4" />
-                    </Button>
-                    <Badge variant="secondary" className="px-3 py-1 text-sm">
-                        Tom: {transpose >= 0 ? '+' : ''}{transpose}
-                    </Badge>
-                    <Button variant="ghost" size="icon" onClick={() => setTranspose(transpose + 1)}>
-                        <Plus className="h-4 w-4" />
-                    </Button>
-                </div>
-                <div className="flex items-center space-x-2 rounded-md border p-2 py-1">
-                  <Label htmlFor="show-chords" className="text-sm">Mostrar Cifras</Label>
-                  <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
-                </div>
-            </div>
             <CarouselContent>
               {songParts.map((part, index) => (
                 <CarouselItem key={index}>
@@ -134,6 +140,15 @@ export default function SongPage({ params }: { params: { id: string } }) {
               ))}
             </CarouselContent>
           </Carousel>
+      ) : (
+        // Visualização contínua para cantores (sem cifras)
+        <Card>
+            <CardContent className="p-0">
+                <ScrollArea className="h-[70vh] p-4 md:p-6">
+                    <SongDisplay content={songParts[0]} showChords={false} />
+                </ScrollArea>
+            </CardContent>
+        </Card>
       )}
     </div>
   );
