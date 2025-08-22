@@ -7,7 +7,7 @@ import { Song } from '@/types';
 import { ArrowLeft, Edit, Minus, Plus, Save } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState, useCallback, use } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { transposeContent } from '@/lib/music';
 import { Textarea } from '@/components/ui/textarea';
 import { SongDisplay } from '@/components/song-display';
@@ -22,9 +22,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 export default function SongPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [songs, setSongs] = useLocalStorage<Song[]>('songs', []);
-  const [artists] = useLocalStorage<string[]>('song-artists', []);
-  const [genres] = useLocalStorage<string[]>('song-genres', []);
-  const [categories] = useLocalStorage<string[]>('song-categories', []);
+  const [artists, setArtists] = useLocalStorage<string[]>('song-artists', []);
+  const [genres, setGenres] = useLocalStorage<string[]>('song-genres', []);
+  const [categories, setCategories] = useLocalStorage<string[]>('song-categories', []);
   
   const [isClient, setIsClient] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -32,7 +32,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
   const [showChords, setShowChords] = useState(true);
   const [api, setApi] = useState<CarouselApi>()
   
-  const songId = use(params).id;
+  const songId = params.id;
   
   const [song, setSong] = useState<Song | undefined>(undefined);
   
