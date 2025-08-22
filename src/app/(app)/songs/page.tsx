@@ -61,7 +61,7 @@ export default function SongsPage() {
     return songs
       .filter((song) => {
         const searchMatch = song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            song.artist.toLowerCase().includes(searchQuery.toLowerCase());
+                            (song.artist && song.artist.toLowerCase().includes(searchQuery.toLowerCase()));
         const artistMatch = selectedArtist === 'all' || song.artist === selectedArtist;
         const categoryMatch = selectedCategory === 'all' || song.category === selectedCategory;
 
@@ -74,12 +74,12 @@ export default function SongsPage() {
           case 'title-desc':
             return b.title.localeCompare(a.title);
           case 'artist-asc':
-            return a.artist.localeCompare(b.artist);
+            return (a.artist || '').localeCompare(b.artist || '');
           case 'artist-desc':
-            return b.artist.localeCompare(a.artist);
+            return (b.artist || '').localeCompare(a.artist || '');
           case 'date-desc':
-            // This sort is tricky with local storage. A proper timestamp would be better.
-            // For now, we can simulate it by reversing the array as it is.
+            // Note: date-based sorting requires a timestamp on the song object
+            // For now, we'll keep the previous logic as a placeholder.
             return songs.indexOf(b) - songs.indexOf(a);
           default:
             return 0;
@@ -125,7 +125,7 @@ export default function SongsPage() {
                     ))}
                 </SelectContent>
             </Select>
-            <Select onValueChange={(value) => setSortOrder(value as SortOption)} defaultValue={sortOrder}>
+            <Select onValueChange={(value) => setSortOrder(value as SortOption)} value={sortOrder}>
                 <SelectTrigger className="w-full sm:w-auto md:w-[180px]">
                     <ArrowUpDown className="mr-2 h-4 w-4" />
                     <SelectValue placeholder="Ordenar por" />
@@ -187,7 +187,7 @@ export default function SongsPage() {
                             <AlertDialogDescription>
                                 Essa ação não pode ser desfeita. Isso excluirá permanentemente a música
                                 e removerá seus dados de nossos servidores.
-                            </DialogDescription>
+                            </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
