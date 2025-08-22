@@ -86,18 +86,32 @@ export default function SongPage() {
     )
   
   const contentToDisplay = useMemo(() => {
-    const currentContent = isEditing ? editedSong?.content : song?.content;
+    const currentContent = song?.content;
     if (!currentContent) return '';
     return transposeContent(currentContent, transpose);
-  }, [song, editedSong, isEditing, transpose]);
+  }, [song, transpose]);
 
 
   const songParts = useMemo(() => {
     if (showChords) {
       return contentToDisplay.split(/\n---\n/);
     }
-    return [contentToDisplay.replace(/\n---\n/g, '\n\n')];
+    const contentWithoutChords = contentToDisplay
+      .split('\n')
+      .filter(line => !isChordLine(line))
+      .join('\n');
+
+    return [contentWithoutChords.replace(/\n---\n/g, '\n\n')];
   }, [contentToDisplay, showChords]);
+
+  const isChordLine = (line: string) => {
+    // Implemente a lógica para detectar se uma linha contém apenas cifras
+    // Esta é uma implementação de exemplo
+    const trimmedLine = line.trim();
+    if (!trimmedLine) return false;
+    const parts = trimmedLine.split(/\s+/);
+    return parts.every(part => /^[A-G](b|#)?(m|maj|min|dim|aug|sus|°|[0-9])*/.test(part));
+  }
 
 
   if (isClient && !song) {
@@ -120,22 +134,28 @@ export default function SongPage() {
     setEditedSong(null);
   };
 
-  const updateEditedSongField = (field: keyof Song, value: string) => {
+  const updateEditedSongField = (field: keyof Song, value: string | string[]) => {
     if (editedSong) {
         setEditedSong({ ...editedSong, [field]: value });
     }
   };
 
   const handleSaveKey = () => {
-    if (!song || !song.key || transpose === 0) return;
+    if (!song || transpose === 0) return;
     
-    const newKey = transposeChord(song.key, transpose);
-    const updatedSong = { ...song, key: newKey };
+    const newKey = song.key ? transposeChord(song.key, transpose) : '';
+    const newContent = transposeContent(song.content, transpose);
+
+    const updatedSong = { 
+        ...song, 
+        key: newKey,
+        content: newContent
+    };
 
     const updatedSongs = songs.map((s) => (s.id === updatedSong.id ? updatedSong : s));
     setSongs(updatedSongs);
-    setSong(updatedSong); // Atualiza o estado local imediatamente
-    setTranspose(0); // Reseta a transposição
+    setSong(updatedSong);
+    setTranspose(0);
   };
 
 
@@ -249,7 +269,7 @@ export default function SongPage() {
           </div>
       </div>
 
-      {isEditing ? (
+      {isEditing && editedSong ? (
         <Card>
           <CardContent className="p-4 md:p-6 space-y-4">
               <div className="flex justify-between items-center">
@@ -261,10 +281,10 @@ export default function SongPage() {
               <Textarea
                 id="content-editor"
                 ref={textareaRef}
-                value={editedSong?.content || ''}
+                value={editedSong.content || ''}
                 onChange={(e) => {
                   if (editedSong) {
-                    setEditedSong({ ...editedSong, content: e.target.value});
+                    updateEditedSongField('content', e.target.value);
                   }
                 }}
                 className="font-code text-base overflow-hidden resize-none"
