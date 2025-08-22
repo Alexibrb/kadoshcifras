@@ -37,16 +37,19 @@ export function useFirestoreCollection<T extends { id: string }>(
     });
 
     return () => unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collectionName, initialSort, JSON.stringify(initialFilters)]);
 
   const addDocument = async (newData: Omit<T, 'id' | 'createdAt'>) => {
     try {
-      await addDoc(collection(db, collectionName), {
+      const docRef = await addDoc(collection(db, collectionName), {
         ...newData,
         createdAt: serverTimestamp(),
       });
+      return docRef.id;
     } catch (error) {
       console.error("Error adding document: ", error);
+      return null;
     }
   };
 

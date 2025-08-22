@@ -1,13 +1,11 @@
 
-
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Song } from '@/types';
 import { ArrowLeft, Edit, Minus, Plus, Save } from 'lucide-react';
 import Link from 'next/link';
-import { notFound, useRouter, useParams } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { transposeContent, transposeChord } from '@/lib/music';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,8 +17,11 @@ import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
+import { useFirestoreDocument } from '@/hooks/use-firestore-document';
+
 
 const defaultCategories = ['Hinário', 'Adoração', 'Ceia', 'Alegre', 'Cantor Cristão', 'Harpa Cristã', 'Outros'];
 const defaultGenres = ['Gospel', 'Worship', 'Pop', 'Rock', 'Reggae'];
@@ -30,19 +31,12 @@ const ALL_KEYS = [
     'Cm', 'C#m', 'Dbm', 'Dm', 'D#m', 'Ebm', 'Em', 'Fm', 'F#m', 'Gbm', 'Gm', 'G#m', 'Abm', 'Am', 'A#m', 'Bbm', 'Bm'
 ];
 
-const isChordLine = (line: string) => {
-    // Implemente a lógica para detectar se uma linha contém apenas cifras
-    // Esta é uma implementação de exemplo
-    const trimmedLine = line.trim();
-    if (!trimmedLine) return false;
-    const parts = trimmedLine.split(/\s+/);
-    return parts.every(part => /^[A-G](b|#)?(m|maj|min|dim|aug|sus|°|[0-9])*/.test(part));
-};
-
 export default function SongPage() {
   const params = useParams();
   const songId = params.id as string;
-  const { data: songs, loading, updateDocument } = useFirestoreCollection<Song>('songs');
+  const { data: song, loading: loadingSong } = useFirestoreDocument<Song>('songs', songId);
+  const { updateDocument } = useFirestoreCollection<Song>('songs');
+  
   const [artists, setArtists] = useLocalStorage<string[]>('song-artists', defaultArtists);
   const [genres, setGenres] = useLocalStorage<string[]>('song-genres', defaultGenres);
   const [categories, setCategories] = useLocalStorage<string[]>('song-categories', defaultCategories);
@@ -53,28 +47,19 @@ export default function SongPage() {
   const [showChords, setShowChords] = useState(true);
   const [api, setApi] = useState<CarouselApi>()
   
-  const [song, setSong] = useState<Song | undefined>(undefined);
   const [editedSong, setEditedSong] = useState<Song | null>(null);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setIsClient(true);
-    if (!loading) {
-      const currentSong = songs.find((s) => s.id === songId);
-      if (currentSong) {
-          setSong(currentSong);
-      }
-    }
-  }, [songs, songId, loading]);
+  }, []);
 
   useEffect(() => {
-    if (isEditing && textareaRef.current && editedSong) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    if (song) {
+        setEditedSong(song);
     }
-  }, [isEditing, editedSong?.content]);
-
+  }, [song]);
   
   const contentToDisplay = useMemo(() => {
     const currentContent = isEditing ? editedSong?.content : song?.content;
@@ -83,17 +68,8 @@ export default function SongPage() {
   }, [song, editedSong, transpose, isEditing]);
 
   const songParts = useMemo(() => {
-    if (showChords) {
-      return contentToDisplay.split(/\n---\n/);
-    }
-    const contentWithoutChords = contentToDisplay
-      .split('\n')
-      .filter(line => !isChordLine(line))
-      .join('\n');
-
-    return [contentWithoutChords.replace(/\n---\n/g, '\n\n')];
-  }, [contentToDisplay, showChords]);
-
+    return contentToDisplay.split(/\\n---\\n|---/);
+  }, [contentToDisplay]);
 
   const handleStartEditing = () => {
     if (!song) return;
@@ -120,18 +96,22 @@ export default function SongPage() {
     if (!editedSong) return;
     
     await updateDocument(editedSong.id, editedSong);
-    setSong(editedSong);
     
     setTranspose(0);
     setIsEditing(false);
-    setEditedSong(null);
   };
 
-  if (isClient && !loading && !song) {
+  const handleCancelEditing = () => {
+    setEditedSong(song || null);
+    setIsEditing(false);
+    setTranspose(0);
+  }
+
+  if (isClient && !loadingSong && !song) {
     notFound();
   }
   
-  if (!isClient || loading || !song) {
+  if (!isClient || loadingSong || !song) {
     return (
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
             <div className="flex items-center gap-4">
@@ -158,17 +138,9 @@ export default function SongPage() {
     const newKey = song.key ? transposeChord(song.key, transpose) : '';
     const newContent = transposeContent(song.content, transpose);
 
-    const updatedSong = { 
-        ...song, 
-        key: newKey,
-        content: newContent
-    };
-    
     await updateDocument(song.id, { key: newKey, content: newContent });
-    setSong(updatedSong);
     setTranspose(0);
   };
-
 
   const increaseTranspose = () => setTranspose(t => Math.min(12, t + 1));
   const decreaseTranspose = () => setTranspose(t => Math.max(-12, t - 1));
@@ -195,9 +167,12 @@ export default function SongPage() {
         </div>
         <div className="flex items-center gap-2">
            {isEditing ? (
-            <Button onClick={handleSave} size="sm">
-              <Save className="mr-2 h-4 w-4" /> Salvar
-            </Button>
+            <>
+              <Button variant="outline" onClick={handleCancelEditing} size="sm">Cancelar</Button>
+              <Button onClick={handleSave} size="sm">
+                <Save className="mr-2 h-4 w-4" /> Salvar
+              </Button>
+            </>
           ) : (
             <Button variant="outline" onClick={handleStartEditing} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
               <Edit className="mr-2 h-4 w-4" /> Editar
@@ -300,8 +275,8 @@ export default function SongPage() {
                     updateEditedSongField('content', e.target.value);
                   }
                 }}
-                className="font-code text-base overflow-hidden resize-none"
-                style={{ whiteSpace: 'pre', overflowX: 'auto' }}
+                className="font-code text-base"
+                style={{ whiteSpace: 'pre', overflowX: 'auto', minHeight: '400px' }}
               />
               <p className="text-sm text-muted-foreground">
                 Use "---" em uma nova linha para dividir a música em várias páginas/seções.
@@ -311,28 +286,22 @@ export default function SongPage() {
               </div>
           </CardContent>
         </Card>
-      ) : showChords ? (
+      ) : (
         <Carousel className="w-full" setApi={setApi}>
             <CarouselContent>
               {songParts.map((part, index) => (
                 <CarouselItem key={index}>
                   <Card>
-                    <CardContent className="p-4 md:p-6 min-h-[60vh] flex flex-col">
+                    <CardContent className="p-0">
+                      <ScrollArea className="h-[70vh] p-4 md:p-6">
                         <SongDisplay content={part} showChords={showChords} />
+                      </ScrollArea>
                     </CardContent>
                   </Card>
                 </CarouselItem>
               ))}
             </CarouselContent>
           </Carousel>
-      ) : (
-        <Card>
-            <CardContent className="p-0">
-                <ScrollArea className="h-[70vh] p-4 md:p-6">
-                    <SongDisplay content={songParts[0]} showChords={false} />
-                </ScrollArea>
-            </CardContent>
-        </Card>
       )}
     </div>
   );

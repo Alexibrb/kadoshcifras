@@ -51,14 +51,6 @@ export default function NewSongPage() {
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
-    if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-        textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [content]);
-
-
   const handleAddCategory = () => {
     if (newCategory && !categories.includes(newCategory)) {
       const updatedCategories = [...categories, newCategory];
@@ -100,8 +92,13 @@ export default function NewSongPage() {
       key,
       content,
     };
-    await addDocument(newSong);
-    router.push(`/songs`);
+    const newSongId = await addDocument(newSong);
+    if (newSongId) {
+      router.push(`/songs/${newSongId}`);
+    } else {
+      // Opcional: mostrar um erro para o usuário.
+      router.push('/songs');
+    }
   };
 
   return (
@@ -256,9 +253,9 @@ export default function NewSongPage() {
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Verso 1:&#10;C                      G&#10;Olha que coisa mais linda, mais cheia de graça&#10;&#10;---&#10;&#10;Refrão:&#10;F                      C&#10;E o seu balançado é mais que um poema"
-                className="font-code resize-none overflow-hidden"
+                className="font-code"
                 required
-                style={{ whiteSpace: 'pre', overflowX: 'auto' }}
+                style={{ whiteSpace: 'pre', overflowX: 'auto', minHeight: '200px' }}
               />
                <p className="text-sm text-muted-foreground">
                 Use "---" em uma nova linha para dividir a música em várias páginas/seções.
