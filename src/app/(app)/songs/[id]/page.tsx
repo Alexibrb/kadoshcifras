@@ -234,13 +234,13 @@ export default function SongPage() {
             </CardContent>
         </Card>
       ) : (
-        <div className="flex justify-center items-center flex-wrap gap-4 my-2">
-            <div className="flex items-center gap-1 rounded-md border p-1">
+        <div className="flex justify-center my-2">
+            <div className="flex items-center gap-2 rounded-md border p-1 w-full max-w-xs">
                 <Label className="text-sm pl-1">Tam.</Label>
                 <Button variant="ghost" size="icon" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-6 w-6">
                     <Minus className="h-4 w-4" />
                 </Button>
-                <span className="text-sm font-medium w-6 text-center">{fontSize}px</span>
+                <span className="text-sm font-medium w-full text-center">{fontSize}px</span>
                 <Button variant="ghost" size="icon" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-6 w-6">
                     <Plus className="h-4 w-4" />
                 </Button>
@@ -350,5 +350,3 @@ export default function SongPage() {
     </div>
   );
 }
-
-    
