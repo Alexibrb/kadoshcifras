@@ -34,7 +34,7 @@ function Header() {
                 <div className="flex flex-1 items-center justify-end space-x-4">
                     <nav className="flex items-center space-x-1">
                        {navLinks.map(link => (
-                           <Button key={link.href} asChild variant={pathname.startsWith(link.href) ? "destructive" : "ghost"} size="icon" className="text-accent-foreground hover:bg-accent-foreground/10">
+                           <Button key={link.href} asChild variant={pathname.startsWith(link.href) ? "secondary" : "ghost"} size="icon" className="text-accent-foreground hover:bg-accent-foreground/10">
                                <Link href={link.href}>
                                    <link.icon className="h-5 w-5" />
                                    <span className="sr-only">{link.label}</span>
