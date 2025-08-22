@@ -28,6 +28,10 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 const defaultCategories = ['Hinário', 'Adoração', 'Ceia', 'Alegre', 'Cantor Cristão', 'Harpa Cristã', 'Outros'];
 const defaultGenres = ['Gospel', 'Worship', 'Pop', 'Rock', 'Reggae'];
 const defaultArtists = ['Aline Barros', 'Fernandinho', 'Gabriela Rocha', 'Anderson Freire', 'Bruna Karla', 'Isaias Saad', 'Midian Lima', 'Outros'];
+const ALL_KEYS = [
+    'C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B',
+    'Cm', 'C#m', 'Dbm', 'Dm', 'D#m', 'Ebm', 'Em', 'Fm', 'F#m', 'Gbm', 'Gm', 'G#m', 'Abm', 'Am', 'A#m', 'Bbm', 'Bm'
+];
 
 export default function NewSongPage() {
   const router = useRouter();
@@ -245,7 +249,14 @@ export default function NewSongPage() {
             </div>
              <div className="space-y-2">
                 <Label htmlFor="key">Tom Original</Label>
-                <Input id="key" value={key} onChange={(e) => setKey(e.target.value)} placeholder="ex: C" />
+                <Select value={key} onValueChange={setKey}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Selecione um tom" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {ALL_KEYS.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
+                    </SelectContent>
+                </Select>
             </div>
 
             <div className="space-y-4">
