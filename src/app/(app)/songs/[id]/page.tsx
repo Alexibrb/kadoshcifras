@@ -96,7 +96,10 @@ export default function SongPage() {
     )
   
   const handleSave = async () => {
-    if (!editedSong) return;
+    if (!editedSong || !editedSong.title || !editedSong.artist || !editedSong.category || !editedSong.genre) {
+      alert("Por favor, preencha todos os campos obrigatórios (Título, Artista, Categoria, Gênero).");
+      return;
+    }
     
     await updateDocument(editedSong.id, editedSong);
     
@@ -189,11 +192,11 @@ export default function SongPage() {
             <CardContent className="p-4 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                  <div className="space-y-2">
                     <Label htmlFor="title">Título</Label>
-                    <Input id="title" value={editedSong.title} onChange={(e) => updateEditedSongField('title', e.target.value)} />
+                    <Input id="title" value={editedSong.title} onChange={(e) => updateEditedSongField('title', e.target.value)} required/>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="artist">Artista</Label>
-                    <Select value={editedSong.artist} onValueChange={(value) => updateEditedSongField('artist', value)}>
+                    <Select value={editedSong.artist} onValueChange={(value) => updateEditedSongField('artist', value)} required>
                         <SelectTrigger><SelectValue placeholder="Selecione um artista" /></SelectTrigger>
                         <SelectContent>
                             {artists.map(art => <SelectItem key={art} value={art}>{art}</SelectItem>)}
@@ -202,7 +205,7 @@ export default function SongPage() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="category">Categoria</Label>
-                    <Select value={editedSong.category} onValueChange={(value) => updateEditedSongField('category', value)}>
+                    <Select value={editedSong.category} onValueChange={(value) => updateEditedSongField('category', value)} required>
                         <SelectTrigger><SelectValue placeholder="Selecione uma categoria" /></SelectTrigger>
                         <SelectContent>
                             {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
@@ -211,7 +214,7 @@ export default function SongPage() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="genre">Gênero</Label>
-                    <Select value={editedSong.genre} onValueChange={(value) => updateEditedSongField('genre', value)}>
+                    <Select value={editedSong.genre} onValueChange={(value) => updateEditedSongField('genre', value)} required>
                         <SelectTrigger><SelectValue placeholder="Selecione um gênero" /></SelectTrigger>
                         <SelectContent>
                            {genres.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
@@ -282,6 +285,7 @@ export default function SongPage() {
                 }}
                 className="font-code text-base"
                 style={{ whiteSpace: 'pre', overflowX: 'auto', minHeight: '400px' }}
+                required
               />
               <div className="flex justify-end">
                 <Button onClick={handleSave}>Salvar Música</Button>

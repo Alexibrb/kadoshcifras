@@ -1,3 +1,4 @@
+
 // src/hooks/use-firestore-collection.ts
 'use client';
 import { useState, useEffect } from 'react';
@@ -42,8 +43,13 @@ export function useFirestoreCollection<T extends { id: string }>(
 
   const addDocument = async (newData: Omit<T, 'id' | 'createdAt'>) => {
     try {
+      // Remove campos nulos ou indefinidos antes de salvar
+      const cleanedData = Object.fromEntries(
+        Object.entries(newData).filter(([_, v]) => v != null && v !== '')
+      );
+
       const docRef = await addDoc(collection(db, collectionName), {
-        ...newData,
+        ...cleanedData,
         createdAt: serverTimestamp(),
       });
       return docRef.id;

@@ -86,6 +86,10 @@ export default function NewSongPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!title || !selectedArtist || !selectedCategory || !selectedGenre) {
+        alert("Por favor, preencha todos os campos obrigatórios (Título, Artista, Categoria, Gênero).");
+        return;
+    }
     const newSong: Omit<Song, 'id'> = {
       title,
       artist: selectedArtist,
@@ -128,7 +132,7 @@ export default function NewSongPage() {
               <div className="space-y-2">
                 <Label htmlFor="artist">Artista</Label>
                 <div className="flex gap-2">
-                  <Select value={selectedArtist} onValueChange={setSelectedArtist}>
+                  <Select value={selectedArtist} onValueChange={setSelectedArtist} required>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione um artista" />
                     </SelectTrigger>
@@ -167,7 +171,7 @@ export default function NewSongPage() {
                 <div className="space-y-2">
                     <Label htmlFor="category">Categoria</Label>
                     <div className="flex gap-2">
-                      <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                      <Select value={selectedCategory} onValueChange={setSelectedCategory} required>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione uma categoria" />
                         </SelectTrigger>
@@ -204,7 +208,7 @@ export default function NewSongPage() {
                 <div className="space-y-2">
                     <Label htmlFor="genre">Gênero</Label>
                     <div className="flex gap-2">
-                      <Select value={selectedGenre} onValueChange={setSelectedGenre}>
+                      <Select value={selectedGenre} onValueChange={setSelectedGenre} required>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione um gênero" />
                         </SelectTrigger>
