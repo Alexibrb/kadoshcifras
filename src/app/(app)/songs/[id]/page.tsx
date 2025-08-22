@@ -79,7 +79,7 @@ export default function SongPage() {
 
   const handleKeyDown = useCallback(
       (event: React.KeyboardEvent<HTMLDivElement>) => {
-        if (!isEditing) {
+        if (!isEditing && showChords) {
             if (event.key === "ArrowLeft" || event.key === 'PageUp') {
               event.preventDefault()
               api?.scrollPrev()
@@ -89,7 +89,7 @@ export default function SongPage() {
             }
         }
       },
-      [api, isEditing]
+      [api, isEditing, showChords]
     )
   
   const handleSave = async () => {
@@ -286,7 +286,7 @@ export default function SongPage() {
               </div>
           </CardContent>
         </Card>
-      ) : (
+      ) : showChords ? (
         <Carousel className="w-full" setApi={setApi}>
             <CarouselContent>
               {songParts.map((part, index) => (
@@ -302,6 +302,17 @@ export default function SongPage() {
               ))}
             </CarouselContent>
           </Carousel>
+      ) : (
+         <Card>
+            <CardContent className="p-0">
+                <ScrollArea className="h-[70vh] p-4 md:p-6">
+                    <SongDisplay 
+                        content={contentToDisplay.replace(/\\n---\\n|---/g, '\n\n')} 
+                        showChords={false} 
+                    />
+                </ScrollArea>
+            </CardContent>
+         </Card>
       )}
     </div>
   );
