@@ -34,7 +34,7 @@ function Header() {
                 <div className="flex flex-1 items-center justify-end space-x-4">
                     <nav className="flex items-center space-x-1">
                        {navLinks.map(link => (
-                           <Button key={link.href} asChild variant={pathname.startsWith(link.href) ? "secondary" : "ghost"} size="icon" className="text-accent-foreground hover:bg-accent-foreground/10">
+                           <Button key={link.href} asChild variant={pathname.startsWith(link.href) ? "secondary" : "ghost"} size="icon" className="text-accent-foreground hover:bg-secondary hover:text-secondary-foreground">
                                <Link href={link.href}>
                                    <link.icon className="h-5 w-5" />
                                    <span className="sr-only">{link.label}</span>
@@ -45,7 +45,7 @@ function Header() {
                     </nav>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="relative h-8 w-8 rounded-full text-accent-foreground hover:bg-accent-foreground/10">
+                        <Button variant="ghost" className="relative h-8 w-8 rounded-full text-accent-foreground hover:bg-secondary hover:text-secondary-foreground">
                           <Avatar className="h-8 w-8">
                             <AvatarImage src="https://placehold.co/100x100.png" alt="Avatar do Usuário" data-ai-hint="person music" />
                             <AvatarFallback><User /></AvatarFallback>
