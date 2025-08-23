@@ -5,7 +5,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User as FirebaseAuthUser } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
 import type { User as AppUser } from '@/types';
 
@@ -23,46 +23,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-      // If there's no Firebase user, we can stop loading and clear appUser.
-      if (!firebaseUser) {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        // User is logged in, now we fetch the user document from Firestore.
+        // This might come from cache if offline.
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        const unsubscribeFirestore = onSnapshot(userDocRef, (docSnap) => {
+          if (docSnap.exists()) {
+            setAppUser({ id: docSnap.id, ...docSnap.data() } as AppUser);
+          } else {
+            setAppUser(null);
+          }
+          // Only stop loading after we have both auth and firestore state.
+          setLoading(false);
+        }, (error) => {
+          console.error("Error fetching user document:", error);
+          setAppUser(null);
+          setLoading(false);
+        });
+        return () => unsubscribeFirestore();
+      } else {
+        // User is logged out
+        setUser(null);
         setAppUser(null);
         setLoading(false);
       }
     });
-    // Cleanup the auth listener on unmount.
+
     return () => unsubscribeAuth();
   }, []);
-
-  useEffect(() => {
-    // If there's no user, no need to fetch from Firestore.
-    if (!user) {
-      setLoading(false); // Ensure loading is false if user logs out.
-      return;
-    }
-
-    // Start loading user data from Firestore.
-    setLoading(true);
-    const userDocRef = doc(db, 'users', user.uid);
-    
-    const unsubscribeFirestore = onSnapshot(userDocRef, (docSnap) => {
-      if (docSnap.exists()) {
-        setAppUser({ id: docSnap.id, ...docSnap.data() } as AppUser);
-      } else {
-        // This case can happen right after signup, before the user document is created.
-        setAppUser(null);
-      }
-      setLoading(false); // Firestore data has been fetched (or confirmed not to exist).
-    }, (error) => {
-      console.error("Error fetching user document:", error);
-      setAppUser(null);
-      setLoading(false);
-    });
-
-    // Cleanup the Firestore listener on unmount.
-    return () => unsubscribeFirestore();
-  }, [user]); // This effect depends only on the user object.
 
   return (
     <AuthContext.Provider value={{ user, appUser, loading }}>
