@@ -131,7 +131,7 @@ export default function NewSongPage() {
                   </Select>
                   <Dialog open={isArtistDialogOpen} onOpenChange={setIsArtistDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="outline" size="icon"><PlusCircle className="h-4 w-4" /></Button>
+                      <Button type="button" variant="outline" size="icon"><PlusCircle className="h-4 w-4" /></Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
@@ -172,7 +172,7 @@ export default function NewSongPage() {
                       </Select>
                       <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
                         <DialogTrigger asChild>
-                          <Button variant="outline" size="icon"><PlusCircle className="h-4 w-4" /></Button>
+                          <Button type="button" variant="outline" size="icon"><PlusCircle className="h-4 w-4" /></Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[425px]">
                           <DialogHeader>
@@ -211,7 +211,7 @@ export default function NewSongPage() {
                       </Select>
                        <Dialog open={isGenreDialogOpen} onOpenChange={setIsGenreDialogOpen}>
                         <DialogTrigger asChild>
-                          <Button variant="outline" size="icon"><PlusCircle className="h-4 w-4" /></Button>
+                          <Button type="button" variant="outline" size="icon"><PlusCircle className="h-4 w-4" /></Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[425px]">
                           <DialogHeader>
