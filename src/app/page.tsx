@@ -12,9 +12,6 @@ export default function Home() {
         <div className="inline-flex items-center justify-center">
           <Image src="/android-chrome-512x512.png" alt="CifraFácil Logo" width={96} height={96} data-ai-hint="logo music" />
         </div>
-        <h1 className="text-5xl md:text-7xl font-headline font-bold text-primary tracking-tighter">
-          CifraFácil
-        </h1>
         <p className="max-w-xl mx-auto text-lg md:text-xl text-foreground/80 font-body">
           Seu companheiro definitivo para criar, gerenciar e apresentar músicas. Transponha tons, crie repertórios facilmente.
         </p>
