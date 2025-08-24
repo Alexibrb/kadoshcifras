@@ -10,7 +10,7 @@ import type { Song, MetadataItem } from '@/types';
 import { ArrowLeft, PlusCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
@@ -91,7 +91,6 @@ export default function NewSongPage() {
     if (newSongId) {
       router.push(`/songs/${newSongId}`);
     } else {
-      // Opcional: mostrar um erro para o usuário.
       router.push('/songs');
     }
   };
@@ -140,19 +139,17 @@ export default function NewSongPage() {
                           Digite o nome do novo artista que você deseja adicionar à lista.
                         </DialogDescription>
                       </DialogHeader>
-                      <form onSubmit={(e) => { e.preventDefault(); handleAddMetadata('artist'); }}>
-                          <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="new-artist-name" className="text-right">
-                                Nome
-                              </Label>
-                              <Input id="new-artist-name" value={newArtist} onChange={(e) => setNewArtist(e.target.value)} className="col-span-3" />
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <Button type="submit">Adicionar</Button>
-                          </DialogFooter>
-                      </form>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="new-artist-name" className="text-right">
+                            Nome
+                          </Label>
+                          <Input id="new-artist-name" value={newArtist} onChange={(e) => setNewArtist(e.target.value)} className="col-span-3" />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button type="button" onClick={() => handleAddMetadata('artist')}>Adicionar</Button>
+                      </DialogFooter>
                     </DialogContent>
                   </Dialog>
                 </div>
@@ -181,19 +178,17 @@ export default function NewSongPage() {
                               Digite o nome da nova categoria que você deseja adicionar à lista.
                             </DialogDescription>
                           </DialogHeader>
-                          <form onSubmit={(e) => { e.preventDefault(); handleAddMetadata('category'); }}>
-                            <div className="grid gap-4 py-4">
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="new-category-name" className="text-right">
-                                    Nome
-                                </Label>
-                                <Input id="new-category-name" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="col-span-3" />
-                                </div>
-                            </div>
-                            <DialogFooter>
-                                <Button type="submit">Adicionar</Button>
-                            </DialogFooter>
-                          </form>
+                          <div className="grid gap-4 py-4">
+                              <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="new-category-name" className="text-right">
+                                  Nome
+                              </Label>
+                              <Input id="new-category-name" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="col-span-3" />
+                              </div>
+                          </div>
+                          <DialogFooter>
+                              <Button type="button" onClick={() => handleAddMetadata('category')}>Adicionar</Button>
+                          </DialogFooter>
                         </DialogContent>
                       </Dialog>
                     </div>
@@ -220,19 +215,17 @@ export default function NewSongPage() {
                               Digite o nome do novo gênero que você deseja adicionar à lista.
                             </DialogDescription>
                           </DialogHeader>
-                          <form onSubmit={(e) => { e.preventDefault(); handleAddMetadata('genre'); }}>
-                            <div className="grid gap-4 py-4">
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="new-genre-name" className="text-right">
-                                    Nome
-                                </Label>
-                                <Input id="new-genre-name" value={newGenre} onChange={(e) => setNewGenre(e.target.value)} className="col-span-3" />
-                                </div>
-                            </div>
-                            <DialogFooter>
-                                <Button type="submit">Adicionar</Button>
-                            </DialogFooter>
-                          </form>
+                          <div className="grid gap-4 py-4">
+                              <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="new-genre-name" className="text-right">
+                                  Nome
+                              </Label>
+                              <Input id="new-genre-name" value={newGenre} onChange={(e) => setNewGenre(e.target.value)} className="col-span-3" />
+                              </div>
+                          </div>
+                          <DialogFooter>
+                              <Button type="button" onClick={() => handleAddMetadata('genre')}>Adicionar</Button>
+                          </DialogFooter>
                         </DialogContent>
                       </Dialog>
                     </div>
@@ -281,3 +274,5 @@ export default function NewSongPage() {
     </div>
   );
 }
+
+    
