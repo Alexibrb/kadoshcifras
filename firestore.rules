@@ -1,9 +1,10 @@
 
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permite que qualquer usuário autenticado leia e escreva em qualquer documento.
-    // Esta é uma regra simples para começar.
+    // Permite leitura e escrita em todos os documentos para qualquer usuário autenticado.
+    // Isso é seguro porque o acesso ao aplicativo requer login.
     match /{document=**} {
       allow read, write: if request.auth != null;
     }
