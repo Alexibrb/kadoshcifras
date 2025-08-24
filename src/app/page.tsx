@@ -1,13 +1,13 @@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Music } from 'lucide-react';
+import Image from 'next/image';
 
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-background to-secondary p-8">
       <div className="text-center space-y-6">
-        <div className="inline-flex items-center justify-center p-4 bg-primary/10 rounded-full">
-          <Music className="w-16 h-16 text-primary" />
+        <div className="inline-flex items-center justify-center p-4">
+          <Image src="/logo.png" alt="CifraFácil Logo" width={96} height={96} data-ai-hint="logo music" />
         </div>
         <h1 className="text-5xl md:text-7xl font-headline font-bold text-primary tracking-tighter">
           CifraFácil
