@@ -49,7 +49,7 @@ export default function SongsPage() {
   }, []);
 
   const filteredAndSortedSongs = useMemo(() => {
-    if (!isClient) return [];
+    if (loading || !isClient) return [];
 
     let filtered = songs;
 
@@ -84,7 +84,7 @@ export default function SongsPage() {
             return a.title.localeCompare(b.title);
         }
     });
-  }, [songs, searchQuery, sortOrder, selectedArtist, selectedCategory, isClient]);
+  }, [songs, searchQuery, sortOrder, selectedArtist, selectedCategory, isClient, loading]);
 
 
   const deleteSong = (id: string) => {
