@@ -1,12 +1,61 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permite leitura e escrita em todos os documentos para qualquer usuário autenticado.
-    // Isso é seguro porque o acesso ao aplicativo requer login.
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+
+    // Helper function to check if a user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to get the user's app data from the 'users' collection
+    function getAppUser(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+
+    // Helper function to check if the requesting user is an admin
+    function isAdmin() {
+      return isAuthenticated() && getAppUser(request.auth.uid).role == 'admin';
+    }
+    
+    // Helper function to check if the requesting user is approved
+    function isApproved() {
+      return isAuthenticated() && getAppUser(request.auth.uid).isApproved == true;
+    }
+
+    // USERS COLLECTION
+    match /users/{userId} {
+      // READ: 
+      // - An admin can read any user's profile.
+      // - A non-admin user can only read their own profile.
+      allow read: if isAdmin() || request.auth.uid == userId;
+
+      // CREATE:
+      // A user can create their own document upon signup, but:
+      // - They must be the owner of the document.
+      // - The `isApproved` field must be false.
+      // - The `role` must be 'user'.
+      // - They can only provide displayName and email.
+      allow create: if request.auth.uid == userId
+                      && request.resource.data.isApproved == false
+                      && request.resource.data.role == 'user'
+                      && request.resource.data.keys().hasOnly(['displayName', 'email', 'isApproved', 'role', 'createdAt']);
+
+      // UPDATE:
+      // - An admin can update anyone's `isApproved` or `role`.
+      // - A user can only update their own displayName.
+      allow update: if isAdmin() 
+                    || (request.auth.uid == userId && request.resource.data.keys().hasOnly(['displayName']));
+      
+      // DELETE: No one should delete user documents.
+      allow delete: if false;
+    }
+    
+    // For other collections like songs, setlists, artists, genres, categories
+    match /{collection}/{docId} {
+      // Any authenticated and approved user can perform actions on these collections.
+      // We explicitly exclude the 'users' collection from this rule.
+      allow read, write: if isApproved() && collection != 'users';
     }
   }
 }
