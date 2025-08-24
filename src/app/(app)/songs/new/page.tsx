@@ -53,18 +53,24 @@ export default function NewSongPage() {
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleAddMetadata = async (type: 'artist' | 'category' | 'genre') => {
-    if (type === 'artist' && newArtist) {
+  const handleAddArtist = async () => {
+    if (newArtist) {
       await addArtist({ name: newArtist });
       setSelectedArtist(newArtist);
       setNewArtist('');
       setIsArtistDialogOpen(false);
-    } else if (type === 'category' && newCategory) {
+    }
+  };
+  const handleAddCategory = async () => {
+    if (newCategory) {
       await addCategory({ name: newCategory });
       setSelectedCategory(newCategory);
       setNewCategory('');
       setIsCategoryDialogOpen(false);
-    } else if (type === 'genre' && newGenre) {
+    }
+  };
+  const handleAddGenre = async () => {
+    if (newGenre) {
       await addGenre({ name: newGenre });
       setSelectedGenre(newGenre);
       setNewGenre('');
@@ -148,7 +154,7 @@ export default function NewSongPage() {
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button type="button" onClick={() => handleAddMetadata('artist')}>Adicionar</Button>
+                        <Button type="button" onClick={handleAddArtist}>Adicionar</Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
@@ -187,7 +193,7 @@ export default function NewSongPage() {
                               </div>
                           </div>
                           <DialogFooter>
-                              <Button type="button" onClick={() => handleAddMetadata('category')}>Adicionar</Button>
+                              <Button type="button" onClick={handleAddCategory}>Adicionar</Button>
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
@@ -224,7 +230,7 @@ export default function NewSongPage() {
                               </div>
                           </div>
                           <DialogFooter>
-                              <Button type="button" onClick={() => handleAddMetadata('genre')}>Adicionar</Button>
+                              <Button type="button" onClick={handleAddGenre}>Adicionar</Button>
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
