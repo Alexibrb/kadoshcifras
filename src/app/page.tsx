@@ -6,7 +6,10 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-background to-secondary p-8">
       <div className="text-center space-y-6">
-        <div className="inline-flex items-center justify-center p-4">
+        <h2 className="text-3xl font-headline text-muted-foreground tracking-tight">
+          Bem-vindo ao
+        </h2>
+        <div className="inline-flex items-center justify-center">
           <Image src="/android-chrome-512x512.png" alt="CifraFácil Logo" width={96} height={96} data-ai-hint="logo music" />
         </div>
         <h1 className="text-5xl md:text-7xl font-headline font-bold text-primary tracking-tighter">
