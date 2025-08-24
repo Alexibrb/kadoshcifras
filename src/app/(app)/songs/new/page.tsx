@@ -5,9 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
-import type { Song } from '@/types';
+import type { Song, MetadataItem } from '@/types';
 import { ArrowLeft, PlusCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -25,9 +24,6 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
-const defaultCategories = ['Hinário', 'Adoração', 'Ceia', 'Alegre', 'Cantor Cristão', 'Harpa Cristã', 'Outros'];
-const defaultGenres = ['Gospel', 'Worship', 'Pop', 'Rock', 'Reggae'];
-const defaultArtists = ['Aline Barros', 'Fernandinho', 'Gabriela Rocha', 'Anderson Freire', 'Bruna Karla', 'Isaias Saad', 'Midian Lima', 'Outros'];
 const ALL_KEYS = [
     'C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B',
     'Cm', 'C#m', 'Dbm', 'Dm', 'D#m', 'Ebm', 'Em', 'Fm', 'F#m', 'Gbm', 'Gm', 'G#m', 'Abm', 'Am', 'A#m', 'Bbm', 'Bm'
@@ -35,10 +31,10 @@ const ALL_KEYS = [
 
 export default function NewSongPage() {
   const router = useRouter();
-  const { addDocument } = useFirestoreCollection<Song>('songs');
-  const [categories, setCategories] = useLocalStorage<string[]>('song-categories', defaultCategories);
-  const [genres, setGenres] = useLocalStorage<string[]>('song-genres', defaultGenres);
-  const [artists, setArtists] = useLocalStorage<string[]>('song-artists', defaultArtists);
+  const { addDocument: addSong } = useFirestoreCollection<Song>('songs');
+  const { data: categories, addDocument: addCategory } = useFirestoreCollection<MetadataItem>('categories', 'name');
+  const { data: genres, addDocument: addGenre } = useFirestoreCollection<MetadataItem>('genres', 'name');
+  const { data: artists, addDocument: addArtist } = useFirestoreCollection<MetadataItem>('artists', 'name');
 
   const [title, setTitle] = useState('');
   const [selectedArtist, setSelectedArtist] = useState('');
@@ -57,30 +53,27 @@ export default function NewSongPage() {
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleAddCategory = () => {
-    if (newCategory && !categories.includes(newCategory)) {
-      const updatedCategories = [...categories, newCategory];
-      setCategories(updatedCategories);
+  const handleAddCategory = async () => {
+    if (newCategory) {
+      await addCategory({ name: newCategory });
       setSelectedCategory(newCategory);
     }
     setNewCategory('');
     setIsCategoryDialogOpen(false);
   };
 
-  const handleAddGenre = () => {
-    if (newGenre && !genres.includes(newGenre)) {
-      const updatedGenres = [...genres, newGenre];
-      setGenres(updatedGenres);
+  const handleAddGenre = async () => {
+    if (newGenre) {
+      await addGenre({ name: newGenre });
       setSelectedGenre(newGenre);
     }
     setNewGenre('');
     setIsGenreDialogOpen(false);
   };
 
-  const handleAddArtist = () => {
-    if (newArtist && !artists.includes(newArtist)) {
-      const updatedArtists = [...artists, newArtist];
-      setArtists(updatedArtists);
+  const handleAddArtist = async () => {
+    if (newArtist) {
+      await addArtist({ name: newArtist });
       setSelectedArtist(newArtist);
     }
     setNewArtist('');
@@ -102,7 +95,7 @@ export default function NewSongPage() {
       key,
       content,
     };
-    const newSongId = await addDocument(newSong);
+    const newSongId = await addSong(newSong);
     if (newSongId) {
       router.push(`/songs/${newSongId}`);
     } else {
@@ -141,7 +134,7 @@ export default function NewSongPage() {
                       <SelectValue placeholder="Selecione um artista" />
                     </SelectTrigger>
                     <SelectContent>
-                      {artists.map(art => <SelectItem key={art} value={art}>{art}</SelectItem>)}
+                      {artists.map(art => <SelectItem key={art.id} value={art.name}>{art.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                   <Dialog open={isArtistDialogOpen} onOpenChange={setIsArtistDialogOpen}>
@@ -180,7 +173,7 @@ export default function NewSongPage() {
                           <SelectValue placeholder="Selecione uma categoria" />
                         </SelectTrigger>
                         <SelectContent>
-                          {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                          {categories.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
@@ -217,7 +210,7 @@ export default function NewSongPage() {
                           <SelectValue placeholder="Selecione um gênero" />
                         </SelectTrigger>
                         <SelectContent>
-                          {genres.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                          {genres.map(g => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                        <Dialog open={isGenreDialogOpen} onOpenChange={setIsGenreDialogOpen}>

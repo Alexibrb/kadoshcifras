@@ -25,3 +25,9 @@ export interface User {
     role: 'admin' | 'user';
     createdAt: Timestamp;
 }
+
+export interface MetadataItem {
+    id: string;
+    name: string;
+    createdAt?: Timestamp;
+}

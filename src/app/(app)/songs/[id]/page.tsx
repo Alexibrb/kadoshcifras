@@ -2,7 +2,7 @@
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Song } from '@/types';
+import { Song, type MetadataItem } from '@/types';
 import { ArrowLeft, Edit, Minus, Plus, Save } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useSearchParams } from 'next/navigation';
@@ -25,9 +25,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
 
-const defaultCategories = ['Hinário', 'Adoração', 'Ceia', 'Alegre', 'Cantor Cristão', 'Harpa Cristã', 'Outros'];
-const defaultGenres = ['Gospel', 'Worship', 'Pop', 'Rock', 'Reggae'];
-const defaultArtists = ['Aline Barros', 'Fernandinho', 'Gabriela Rocha', 'Anderson Freire', 'Bruna Karla', 'Isaias Saad', 'Midian Lima', 'Outros'];
 const ALL_KEYS = [
     'C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B',
     'Cm', 'C#m', 'Dbm', 'Dm', 'D#m', 'Ebm', 'Em', 'Fm', 'F#m', 'Gbm', 'Gm', 'G#m', 'Abm', 'Am', 'A#m', 'Bbm', 'Bm'
@@ -42,9 +39,9 @@ export default function SongPage() {
   const { data: song, loading: loadingSong } = useFirestoreDocument<Song>('songs', songId);
   const { updateDocument } = useFirestoreCollection<Song>('songs');
   
-  const [artists, setArtists] = useLocalStorage<string[]>('song-artists', defaultArtists);
-  const [genres, setGenres] = useLocalStorage<string[]>('song-genres', defaultGenres);
-  const [categories, setCategories] = useLocalStorage<string[]>('song-categories', defaultCategories);
+  const { data: artists, loading: loadingArtists } = useFirestoreCollection<MetadataItem>('artists', 'name');
+  const { data: genres, loading: loadingGenres } = useFirestoreCollection<MetadataItem>('genres', 'name');
+  const { data: categories, loading: loadingCategories } = useFirestoreCollection<MetadataItem>('categories', 'name');
   
   const [isClient, setIsClient] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -120,7 +117,7 @@ export default function SongPage() {
     notFound();
   }
   
-  if (!isClient || loadingSong || !song) {
+  if (!isClient || loadingSong || !song || loadingArtists || loadingGenres || loadingCategories) {
     return (
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
             <div className="flex items-center gap-4">
@@ -222,7 +219,7 @@ export default function SongPage() {
                     <Select value={editedSong.artist} onValueChange={(value) => updateEditedSongField('artist', value)} required>
                         <SelectTrigger><SelectValue placeholder="Selecione um artista" /></SelectTrigger>
                         <SelectContent>
-                            {artists.map(art => <SelectItem key={art} value={art}>{art}</SelectItem>)}
+                            {artists.map(art => <SelectItem key={art.id} value={art.name}>{art.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>
@@ -231,7 +228,7 @@ export default function SongPage() {
                     <Select value={editedSong.category} onValueChange={(value) => updateEditedSongField('category', value)} required>
                         <SelectTrigger><SelectValue placeholder="Selecione uma categoria" /></SelectTrigger>
                         <SelectContent>
-                            {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                            {categories.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>
@@ -240,7 +237,7 @@ export default function SongPage() {
                     <Select value={editedSong.genre} onValueChange={(value) => updateEditedSongField('genre', value)} required>
                         <SelectTrigger><SelectValue placeholder="Selecione um gênero" /></SelectTrigger>
                         <SelectContent>
-                           {genres.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                           {genres.map(g => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>

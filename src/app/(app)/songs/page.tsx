@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
-import { type Song, type Setlist } from '@/types';
+import { type Song, type Setlist, type MetadataItem } from '@/types';
 import { Music, PlusCircle, Trash2, ArrowUpDown, X, ListMusic } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
@@ -34,29 +34,19 @@ type SortOption = 'title-asc' | 'title-desc' | 'artist-asc' | 'artist-desc' | 'd
 export default function SongsPage() {
   const { data: songs, loading: loadingSongs, deleteDocument } = useFirestoreCollection<Song>('songs');
   const { data: setlists, loading: loadingSetlists } = useFirestoreCollection<Setlist>('setlists');
+  const { data: artists, loading: loadingArtists } = useFirestoreCollection<MetadataItem>('artists', 'name');
+  const { data: categories, loading: loadingCategories } = useFirestoreCollection<MetadataItem>('categories', 'name');
+
   const [isClient, setIsClient] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOption>('title-asc');
   const [selectedArtist, setSelectedArtist] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const loading = loadingSongs || loadingSetlists;
+  const loading = loadingSongs || loadingSetlists || loadingArtists || loadingCategories;
 
   useEffect(() => {
     setIsClient(true);
   }, []);
-  
-  const uniqueArtists = useMemo(() => {
-    if (!isClient) return [];
-    const artists = new Set(songs.map(song => song.artist).filter(Boolean));
-    return ['all', ...Array.from(artists).sort()];
-  }, [songs, isClient]);
-
-  const uniqueCategories = useMemo(() => {
-    if (!isClient) return [];
-    const categories = new Set(songs.map(song => song.category).filter(Boolean));
-    return ['all', ...Array.from(categories).sort()];
-  }, [songs, isClient]);
-
 
   const filteredAndSortedSongs = useMemo(() => {
     if (!isClient) return [];
@@ -148,8 +138,8 @@ export default function SongsPage() {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">Todos os Artistas</SelectItem>
-                    {uniqueArtists.filter(a => a !== 'all').map(artist => (
-                       <SelectItem key={artist} value={artist}>{artist}</SelectItem>
+                    {artists.map(artist => (
+                       <SelectItem key={artist.id} value={artist.name}>{artist.name}</SelectItem>
                     ))}
                 </SelectContent>
             </Select>
@@ -159,8 +149,8 @@ export default function SongsPage() {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">Todas as Categorias</SelectItem>
-                     {uniqueCategories.filter(c => c !== 'all').map(category => (
-                       <SelectItem key={category} value={category}>{category}</SelectItem>
+                     {categories.map(category => (
+                       <SelectItem key={category.id} value={category.name}>{category.name}</SelectItem>
                     ))}
                 </SelectContent>
             </Select>
