@@ -13,11 +13,11 @@ export default function Home() {
           CifraFácil
         </h1>
         <p className="max-w-xl mx-auto text-lg md:text-xl text-foreground/80 font-body">
-          Seu companheiro definitivo para criar, gerenciar e apresentar músicas. Transponha tons, crie repertórios e aperfeiçoe seu som com ferramentas de IA.
+          Seu companheiro definitivo para criar, gerenciar e apresentar músicas. Transponha tons, crie repertórios facilmente.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button asChild size="lg" className="font-bold">
-            <Link href="/signup">Comece Gratuitamente</Link>
+            <Link href="/signup">Cadastre-se</Link>
           </Button>
           <Button asChild size="lg" variant="outline" className="font-bold">
             <Link href="/login">Eu tenho uma conta</Link>
