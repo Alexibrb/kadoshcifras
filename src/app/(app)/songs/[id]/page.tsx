@@ -182,13 +182,13 @@ export default function SongPage() {
                 </Button>
 
                 {!isEditing ? (
-                    <div className="flex-1 space-y-2">
+                    <div className="flex-1 space-y-1">
                         <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{song.title}</h1>
                         <div className="flex items-center gap-3 flex-wrap">
                             <p className="text-muted-foreground text-sm">{song.artist}</p>
                             {song.key && <Badge variant="outline" className="whitespace-nowrap text-sm">Tom: {transposeContent(song.key, transpose)}</Badge>}
                         </div>
-                         <div className="flex flex-col items-start gap-2 pt-1">
+                         <div className="flex flex-row items-start gap-2 pt-1">
                             <Button variant="outline" onClick={handleStartEditing} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-8 text-xs">
                                 <Edit className="mr-1.5 h-3 w-3" /> Editar
                             </Button>
