@@ -1,3 +1,4 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
 export interface Song {
@@ -17,6 +18,7 @@ export interface Setlist {
   songIds: string[];
   creatorId?: string;
   creatorName?: string;
+  isPublic?: boolean;
 }
 
 export interface User {

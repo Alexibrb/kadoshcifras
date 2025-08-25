@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { type Setlist, type Song } from '@/types';
-import { ListMusic, PlusCircle, Trash2, User } from 'lucide-react';
+import { ListMusic, PlusCircle, Trash2, User, Globe, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
 import {
@@ -79,11 +79,14 @@ export default function SetlistsPage() {
                 <div className="flex items-start justify-between gap-4 flex-grow">
                   <div className="flex-grow overflow-hidden">
                      <Link href={`/setlists/${setlist.id}`} className="block">
-                        <p className="font-semibold text-lg truncate font-headline">{setlist.name}</p>
+                        <div className="flex items-center gap-2">
+                          {setlist.isPublic ? <Globe className="h-4 w-4 shrink-0 text-muted-foreground" /> : <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                          <p className="font-semibold text-lg truncate font-headline">{setlist.name}</p>
+                        </div>
                      </Link>
-                     <p className="text-sm text-muted-foreground">{setlist.songIds?.length || 0} música(s)</p>
+                     <p className="text-sm text-muted-foreground ml-6">{setlist.songIds?.length || 0} música(s)</p>
                      {setlist.creatorName && (
-                        <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground ml-6">
                             <User className="h-3 w-3" />
                             <span>{setlist.creatorName}</span>
                         </div>

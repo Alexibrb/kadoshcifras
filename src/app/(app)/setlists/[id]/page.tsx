@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useFirestoreDocument } from '@/hooks/use-firestore-document';
 import { type Setlist, type Song } from '@/types';
-import { ArrowLeft, Music, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock } from 'lucide-react';
+import { ArrowLeft, Music, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
@@ -22,14 +22,15 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/use-auth';
-
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 export default function SetlistPage() {
   const params = useParams();
   const setlistId = params.id as string;
   
   const { appUser } = useAuth();
-  const { data: setlist, loading: loadingSetlist } = useFirestoreDocument<Setlist>('setlists', setlistId);
+  const { data: setlist, loading: loadingSetlist, updateDocument: updateSetlistDoc } = useFirestoreDocument<Setlist>('setlists', setlistId);
   const { data: allSongs, loading: loadingSongs } = useFirestoreCollection<Song>('songs', 'title');
   const { updateDocument } = useFirestoreCollection('setlists');
 
@@ -40,6 +41,15 @@ export default function SetlistPage() {
   useEffect(() => { setIsClient(true) }, []);
 
   const canEdit = useMemo(() => {
+    if (!appUser || !setlist) return false;
+    // Se for público, todos podem editar.
+    if (setlist.isPublic) return true;
+    // Se for privado, apenas o criador ou admin podem editar.
+    return appUser.role === 'admin' || appUser.id === setlist.creatorId;
+  }, [appUser, setlist]);
+
+  // Permissão específica para alterar as configurações do repertório (público/privado)
+  const canChangeSettings = useMemo(() => {
     if (!appUser || !setlist) return false;
     return appUser.role === 'admin' || appUser.id === setlist.creatorId;
   }, [appUser, setlist]);
@@ -87,6 +97,11 @@ export default function SetlistPage() {
     const newSongIds = (setlist.songIds || []).filter(id => id !== songId);
     await updateDocument(setlistId, { songIds: newSongIds });
   };
+
+  const handlePublicToggle = async (isPublic: boolean) => {
+    if (!canChangeSettings) return;
+    await updateSetlistDoc({ isPublic });
+  };
   
   const onDragEnd = (result: DropResult) => {
     if (!result.destination || !canEdit) {
@@ -122,17 +137,34 @@ export default function SetlistPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-       <div className="flex items-center gap-4 mb-4">
-        <Button asChild variant="outline" size="icon">
-          <Link href="/setlists">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="sr-only">Voltar para os repertórios</span>
-          </Link>
-        </Button>
-        <div>
-            <h2 className="text-3xl font-bold font-headline tracking-tight">{setlist.name}</h2>
-            <p className="text-muted-foreground">{orderedSongs.length} música(s)</p>
-        </div>
+       <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+          <div className="flex items-center gap-4">
+            <Button asChild variant="outline" size="icon">
+              <Link href="/setlists">
+                <ArrowLeft className="h-4 w-4" />
+                <span className="sr-only">Voltar para os repertórios</span>
+              </Link>
+            </Button>
+            <div className="flex items-center gap-2">
+                {setlist.isPublic ? <Globe className="h-7 w-7 text-muted-foreground" /> : <Lock className="h-7 w-7 text-muted-foreground" />}
+                <div>
+                    <h2 className="text-3xl font-bold font-headline tracking-tight">{setlist.name}</h2>
+                    <p className="text-muted-foreground">{orderedSongs.length} música(s)</p>
+                </div>
+            </div>
+          </div>
+          {canChangeSettings && (
+            <div className="flex items-center space-x-2 rounded-md border p-2">
+              <Label htmlFor="public-switch" className="text-sm font-medium">
+                {setlist.isPublic ? 'Público' : 'Privado'}
+              </Label>
+              <Switch
+                id="public-switch"
+                checked={setlist.isPublic}
+                onCheckedChange={handlePublicToggle}
+              />
+            </div>
+          )}
       </div>
       
       <div className="grid gap-8 lg:grid-cols-2">

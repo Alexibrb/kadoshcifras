@@ -1,8 +1,9 @@
+
 // src/hooks/use-firestore-document.ts
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
-import { doc, onSnapshot, DocumentData } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, DocumentData } from 'firebase/firestore';
 
 export function useFirestoreDocument<T extends { id: string }>(collectionName: string, docId: string) {
   const [data, setData] = useState<T | null>(null);
@@ -31,5 +32,14 @@ export function useFirestoreDocument<T extends { id: string }>(collectionName: s
     return () => unsubscribe();
   }, [collectionName, docId]);
 
-  return { data, loading };
+  const updateDocument = useCallback(async (updatedData: Partial<Omit<T, 'id'>>) => {
+    try {
+      const docRef = doc(db, collectionName, docId);
+      await updateDoc(docRef, updatedData);
+    } catch (error) {
+      console.error(`Error updating document in '${collectionName}': `, error);
+    }
+  }, [collectionName, docId]);
+
+  return { data, loading, updateDocument };
 }
