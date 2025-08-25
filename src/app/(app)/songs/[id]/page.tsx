@@ -220,11 +220,11 @@ export default function SongPage() {
                  <div className="flex justify-center pt-2">
                     <div className="flex items-center gap-2 rounded-md border p-1 w-full max-w-xs bg-background">
                         <Label className="text-sm pl-1 whitespace-nowrap">Tam. da Fonte</Label>
-                        <Button variant="ghost" size="icon" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-6 w-6">
+                        <Button variant="secondary" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-6 px-2">
                             <Minus className="h-4 w-4" />
                         </Button>
                         <span className="text-sm font-medium w-full text-center">{fontSize}px</span>
-                        <Button variant="ghost" size="icon" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-6 w-6">
+                        <Button variant="secondary" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-6 px-2">
                             <Plus className="h-4 w-4" />
                         </Button>
                     </div>
