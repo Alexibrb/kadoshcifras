@@ -340,11 +340,9 @@ export default function SongPage() {
                 <CarouselNext />
               </div>
             </Carousel>
-             {count > 1 && (
-                <div className="text-center text-sm text-muted-foreground pt-2">
-                    Página {current} de {count}
-                </div>
-              )}
+             <div className="text-center text-sm text-muted-foreground pt-2">
+                {count > 1 && `Página ${current} de ${count}`}
+            </div>
         </div>
       ) : (
          <Card>
@@ -363,6 +361,9 @@ export default function SongPage() {
       {!isEditing && (
         <Card className="fixed bottom-0 left-0 right-0 z-50 rounded-none border-t border-x-0 bg-accent/10">
           <CardContent className="p-2 flex flex-col justify-center items-center gap-2">
+             <div className="text-center text-sm text-muted-foreground">
+                {count > 1 && `Página ${current} de ${count}`}
+              </div>
               <div className="flex flex-row justify-center items-center gap-2">
                 <div className="flex items-center gap-2 rounded-md border p-1 bg-background">
                     <Button variant="ghost" size="icon" onClick={decreaseTranspose} className="h-8 w-8">
