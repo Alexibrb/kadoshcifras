@@ -101,24 +101,28 @@ export default function SongsPage() {
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
        <div className="flex items-center gap-4 mb-4">
-            <Card>
-              <CardContent className="p-3 flex items-center gap-4">
-                <Music className="h-6 w-6 text-muted-foreground" />
-                <div className="flex items-baseline gap-2">
-                    <p className="text-2xl font-bold">{loading ? '...' : songs.length}</p>
-                    <p className="text-sm text-muted-foreground">Músicas</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-3 flex items-center gap-4">
-                <ListMusic className="h-6 w-6 text-muted-foreground" />
-                 <div className="flex items-baseline gap-2">
-                    <p className="text-2xl font-bold">{loading ? '...' : setlists.length}</p>
-                    <p className="text-sm text-muted-foreground">Repertórios</p>
-                </div>
-              </CardContent>
-            </Card>
+            <Link href="/songs">
+                <Card className="hover:bg-accent/50 transition-colors">
+                  <CardContent className="p-3 flex items-center gap-4">
+                    <Music className="h-6 w-6 text-muted-foreground" />
+                    <div className="flex items-baseline gap-2">
+                        <p className="text-2xl font-bold">{loading ? '...' : songs.length}</p>
+                        <p className="text-sm text-muted-foreground">Músicas</p>
+                    </div>
+                  </CardContent>
+                </Card>
+            </Link>
+            <Link href="/setlists">
+                <Card className="hover:bg-accent/50 transition-colors">
+                  <CardContent className="p-3 flex items-center gap-4">
+                    <ListMusic className="h-6 w-6 text-muted-foreground" />
+                     <div className="flex items-baseline gap-2">
+                        <p className="text-2xl font-bold">{loading ? '...' : setlists.length}</p>
+                        <p className="text-sm text-muted-foreground">Repertórios</p>
+                    </div>
+                  </CardContent>
+                </Card>
+            </Link>
         </div>
       <div className="flex items-center justify-between space-y-2 flex-wrap gap-4">
         <h2 className="text-3xl font-bold font-headline tracking-tight">Minhas Músicas</h2>
