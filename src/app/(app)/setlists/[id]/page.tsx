@@ -5,25 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useFirestoreDocument } from '@/hooks/use-firestore-document';
 import { type Setlist, type Song } from '@/types';
-import { ArrowLeft, Music, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown } from 'lucide-react';
+import { ArrowLeft, Music, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Skeleton } from '@/components/ui/skeleton';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 export default function SetlistPage() {
@@ -36,11 +33,8 @@ export default function SetlistPage() {
 
   const [isClient, setIsClient] = useState(false);
   const [orderedSongs, setOrderedSongs] = useState<Song[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   
-  const [comboboxOpen, setComboboxOpen] = useState(false);
-  const [selectedSongId, setSelectedSongId] = useState('');
-
-
   useEffect(() => { setIsClient(true) }, []);
 
   const songsInSetlist = useMemo(() => {
@@ -59,16 +53,26 @@ export default function SetlistPage() {
 
 
   const availableSongs = useMemo(() => {
-    if (!setlist) return allSongs;
-    return allSongs.filter(song => !(setlist.songIds || []).includes(song.id));
-  }, [setlist, allSongs]);
+    if (!setlist) return [];
+    
+    // Filtra músicas que já estão no repertório
+    const songsNotInSetlist = allSongs.filter(song => !(setlist.songIds || []).includes(song.id));
+
+    // Filtra com base na busca
+    const filtered = songsNotInSetlist.filter(song =>
+        song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        song.artist.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Ordena por título
+    return filtered.sort((a, b) => a.title.localeCompare(b.title));
+  }, [setlist, allSongs, searchQuery]);
 
 
   const handleAddSong = async (songId: string) => {
     if (!songId || !setlist) return;
     const newSongIds = [...(setlist.songIds || []), songId];
     await updateDocument(setlistId, { songIds: newSongIds });
-    setSelectedSongId('');
   };
 
   const handleRemoveSong = async (songId: string) => {
@@ -129,54 +133,45 @@ export default function SetlistPage() {
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">Adicionar Músicas ao Repertório</CardTitle>
-            <CardDescription>Comece a digitar para encontrar uma música e adicioná-la.</CardDescription>
+            <CardDescription>Busque por uma música e clique nela para adicioná-la.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-              <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={comboboxOpen}
-                    className="w-full justify-between"
-                  >
-                    {selectedSongId
-                      ? availableSongs.find((song) => song.id === selectedSongId)?.title
-                      : "Selecione uma música..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                  <Command>
-                    <CommandInput placeholder="Buscar música ou artista..." />
-                    <CommandEmpty>Nenhuma música encontrada.</CommandEmpty>
-                    <CommandGroup>
-                      {availableSongs.map((song) => (
-                        <CommandItem
-                          key={song.id}
-                          value={song.id}
-                          onSelect={(currentValue) => {
-                            const songId = currentValue === selectedSongId ? "" : currentValue;
-                            setSelectedSongId(songId);
-                            setComboboxOpen(false);
-                            if (songId) {
-                              handleAddSong(songId);
-                            }
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedSongId === song.id ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {song.title} - <span className="text-xs text-muted-foreground ml-2">{song.artist}</span>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <div className="relative">
+                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                 <Input
+                    placeholder="Buscar por título ou artista..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                 />
+              </div>
+
+             <ScrollArea className="h-72 w-full rounded-md border">
+                <div className="p-4">
+                    {availableSongs.length > 0 ? (
+                        availableSongs.map((song) => (
+                           <div
+                             key={song.id}
+                             className="flex items-center justify-between p-2 rounded-md hover:bg-accent cursor-pointer"
+                             onClick={() => handleAddSong(song.id)}
+                           >
+                                <div>
+                                    <p className="font-medium">{song.title}</p>
+                                    <p className="text-sm text-muted-foreground">{song.artist}</p>
+                                </div>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <PlusCircle className="h-4 w-4" />
+                                </Button>
+                           </div>
+                        ))
+                    ) : (
+                        <p className="text-center text-sm text-muted-foreground py-4">
+                            {loadingSongs ? "Carregando..." : "Nenhuma música encontrada."}
+                        </p>
+                    )}
+                </div>
+             </ScrollArea>
+
           </CardContent>
         </Card>
         
