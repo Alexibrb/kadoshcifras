@@ -373,7 +373,7 @@ export default function SongPage() {
       {!isEditing && (
         <Card className="fixed bottom-0 left-0 right-0 z-50 rounded-none border-t border-x-0 bg-accent">
           <CardContent className="p-2 flex flex-col justify-center items-center gap-2">
-             <div className="text-center text-sm text-muted-foreground">
+             <div className="text-center text-sm text-foreground font-bold">
                 {count > 1 && `Página ${current} de ${count}`}
               </div>
               <div className="flex flex-row justify-center items-center gap-2">
