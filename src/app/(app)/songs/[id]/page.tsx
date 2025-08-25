@@ -355,9 +355,6 @@ export default function SongPage() {
                 <CarouselNext />
               </div>
             </Carousel>
-             <div className="text-center text-sm text-muted-foreground pt-2">
-                {count > 1 && `Página ${current} de ${count}`}
-            </div>
         </div>
       ) : (
          <Card>
@@ -406,3 +403,5 @@ export default function SongPage() {
     </div>
   );
 }
+
+    
