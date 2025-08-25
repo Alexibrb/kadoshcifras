@@ -49,6 +49,8 @@ export default function SongPage() {
   const [showChords, setShowChords] = useState(true);
   const [fontSize, setFontSize] = useLocalStorage('song-font-size', 12);
   const [api, setApi] = useState<CarouselApi>()
+  const [current, setCurrent] = useState(0)
+  const [count, setCount] = useState(0)
   
   const [editedSong, setEditedSong] = useState<Song | null>(null);
   
@@ -63,6 +65,19 @@ export default function SongPage() {
         setEditedSong(song);
     }
   }, [song]);
+
+  useEffect(() => {
+    if (!api) {
+      return
+    }
+
+    setCount(api.scrollSnapList().length)
+    setCurrent(api.selectedScrollSnap() + 1)
+
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap() + 1)
+    })
+  }, [api])
   
   const contentToDisplay = useMemo(() => {
     const currentContent = isEditing ? editedSong?.content : song?.content;
@@ -325,6 +340,11 @@ export default function SongPage() {
                 <CarouselNext />
               </div>
             </Carousel>
+            {count > 0 && (
+                <div className="py-2 text-center text-sm text-muted-foreground">
+                    Página {current} de {count}
+                </div>
+            )}
         </div>
       ) : (
          <Card>
@@ -368,3 +388,5 @@ export default function SongPage() {
     </div>
   );
 }
+
+    
