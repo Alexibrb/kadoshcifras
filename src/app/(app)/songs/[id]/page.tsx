@@ -311,6 +311,13 @@ export default function SongPage() {
                   </CarouselItem>
                 ))}
               </CarouselContent>
+              {/* Controles de toque */}
+              <div className="absolute inset-0 flex justify-between z-10">
+                <div className="w-1/3 h-full" onClick={() => api?.scrollPrev()} />
+                <div className="w-1/3 h-full" />
+                <div className="w-1/3 h-full" onClick={() => api?.scrollNext()} />
+              </div>
+              {/* Botões de desktop */}
               <div className="absolute -left-4 top-1/2 -translate-y-1/2 hidden md:block">
                 <CarouselPrevious />
               </div>
