@@ -311,42 +311,35 @@ export default function SongPage() {
           </CardContent>
         </Card>
       ) : showChords ? (
-        <div>
-          <div className="relative">
-            <Carousel className="w-full" setApi={setApi} opts={{ watchDrag: true }}>
-                <CarouselContent>
-                  {songParts.map((part, index) => (
-                    <CarouselItem key={index}>
-                      <Card>
-                        <CardContent className="p-0">
-                          <ScrollArea className="h-[60vh] p-4 md:p-6">
-                            <SongDisplay style={{ fontSize: `${fontSize}px` }} content={part} showChords={showChords} />
-                          </ScrollArea>
-                        </CardContent>
-                      </Card>
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                {/* Controles de toque */}
-                <div className="absolute inset-0 flex justify-between z-10">
-                  <div className="w-1/3 h-full" onClick={() => api?.scrollPrev()} />
-                  <div className="w-1/3 h-full" />
-                  <div className="w-1/3 h-full" onClick={() => api?.scrollNext()} />
-                </div>
-                {/* Botões de desktop */}
-                <div className="absolute -left-4 top-1/2 -translate-y-1/2 hidden md:block">
-                  <CarouselPrevious />
-                </div>
-                <div className="absolute -right-4 top-1/2 -translate-y-1/2 hidden md:block">
-                  <CarouselNext />
-                </div>
-              </Carousel>
-          </div>
-          {count > 0 && (
-              <div className="py-2 text-center text-sm text-muted-foreground">
-                  Página {current} de {count}
+        <div className="relative">
+          <Carousel className="w-full" setApi={setApi} opts={{ watchDrag: true }}>
+              <CarouselContent>
+                {songParts.map((part, index) => (
+                  <CarouselItem key={index}>
+                    <Card>
+                      <CardContent className="p-0">
+                        <ScrollArea className="h-[60vh] p-4 md:p-6">
+                          <SongDisplay style={{ fontSize: `${fontSize}px` }} content={part} showChords={showChords} />
+                        </ScrollArea>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              {/* Controles de toque */}
+              <div className="absolute inset-0 flex justify-between z-10">
+                <div className="w-1/3 h-full" onClick={() => api?.scrollPrev()} />
+                <div className="w-1/3 h-full" />
+                <div className="w-1/3 h-full" onClick={() => api?.scrollNext()} />
               </div>
-          )}
+              {/* Botões de desktop */}
+              <div className="absolute -left-4 top-1/2 -translate-y-1/2 hidden md:block">
+                <CarouselPrevious />
+              </div>
+              <div className="absolute -right-4 top-1/2 -translate-y-1/2 hidden md:block">
+                <CarouselNext />
+              </div>
+            </Carousel>
         </div>
       ) : (
          <Card>
@@ -364,25 +357,32 @@ export default function SongPage() {
       
       {!isEditing && (
         <Card className="fixed bottom-0 left-0 right-0 z-50 rounded-none border-t border-x-0 bg-accent/10">
-          <CardContent className="p-2 flex flex-row justify-center items-center gap-2">
-              <div className="flex items-center gap-2 rounded-md border p-1 bg-background">
-                  <Button variant="ghost" size="icon" onClick={decreaseTranspose} className="h-8 w-8">
-                      <Minus className="h-4 w-4" />
-                  </Button>
-                  <Badge variant="secondary" className="px-3 py-1 text-xs whitespace-nowrap">
-                      Tom: {transpose > 0 ? '+' : ''}{transpose}
-                  </Badge>
-                  <Button variant="ghost" size="icon" onClick={increaseTranspose} className="h-8 w-8">
-                      <Plus className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={handleSaveKey} disabled={transpose === 0} className="ml-2 h-8 w-8">
-                      <Save className="h-4 w-4" />
-                      <span className="sr-only">Salvar Tom</span>
-                  </Button>
-              </div>
-              <div className="flex items-center space-x-2 rounded-md border p-1 px-2 bg-background h-10">
-                <Label htmlFor="show-chords" className="text-xs whitespace-nowrap">Mostrar Cifras</Label>
-                <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
+          <CardContent className="p-2 flex flex-col justify-center items-center gap-2">
+              {count > 1 && (
+                <div className="text-center text-sm text-muted-foreground">
+                    Página {current} de {count}
+                </div>
+              )}
+              <div className="flex flex-row justify-center items-center gap-2">
+                <div className="flex items-center gap-2 rounded-md border p-1 bg-background">
+                    <Button variant="ghost" size="icon" onClick={decreaseTranspose} className="h-8 w-8">
+                        <Minus className="h-4 w-4" />
+                    </Button>
+                    <Badge variant="secondary" className="px-3 py-1 text-xs whitespace-nowrap">
+                        Tom: {transpose > 0 ? '+' : ''}{transpose}
+                    </Badge>
+                    <Button variant="ghost" size="icon" onClick={increaseTranspose} className="h-8 w-8">
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={handleSaveKey} disabled={transpose === 0} className="ml-2 h-8 w-8">
+                        <Save className="h-4 w-4" />
+                        <span className="sr-only">Salvar Tom</span>
+                    </Button>
+                </div>
+                <div className="flex items-center space-x-2 rounded-md border p-1 px-2 bg-background h-10">
+                  <Label htmlFor="show-chords" className="text-xs whitespace-nowrap">Mostrar Cifras</Label>
+                  <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
+                </div>
               </div>
           </CardContent>
         </Card>
