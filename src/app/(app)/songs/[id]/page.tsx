@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Song, type MetadataItem } from '@/types';
-import { ArrowLeft, Edit, Minus, Plus, Save } from 'lucide-react';
+import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -190,6 +190,13 @@ export default function SongPage() {
                             <Button variant="outline" onClick={handleStartEditing} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-7 text-xs">
                                 <Edit className="mr-1.5 h-3 w-3" /> Editar
                             </Button>
+                             {song.url && (
+                                <Button asChild variant="outline" size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-7 text-xs">
+                                    <a href={song.url} target="_blank" rel="noopener noreferrer">
+                                        <PlayCircle className="mr-1.5 h-3 w-3" /> Ouvir
+                                    </a>
+                                </Button>
+                            )}
                         </div>
                     </div>
                 ) : (
@@ -267,6 +274,10 @@ export default function SongPage() {
                             {ALL_KEYS.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
                         </SelectContent>
                     </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="url">URL da Música</Label>
+                    <Input id="url" value={editedSong.url ?? ''} onChange={(e) => updateEditedSongField('url', e.target.value)} placeholder="https://..." />
                 </div>
             </CardContent>
         </Card>
@@ -391,3 +402,5 @@ export default function SongPage() {
     </div>
   );
 }
+
+    

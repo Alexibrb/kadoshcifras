@@ -43,6 +43,7 @@ export default function NewSongPage() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [key, setKey] = useState('');
   const [content, setContent] = useState('');
+  const [url, setUrl] = useState('');
 
   const [newCategory, setNewCategory] = useState('');
   const [newGenre, setNewGenre] = useState('');
@@ -92,6 +93,7 @@ export default function NewSongPage() {
       category: selectedCategory,
       key,
       content,
+      url,
     };
     const newSongId = await addSong(newSong);
     if (newSongId) {
@@ -211,16 +213,22 @@ export default function NewSongPage() {
                     </div>
                 </div>
             </div>
-             <div className="space-y-2">
-                <Label htmlFor="key">Tom Original</Label>
-                <Select value={key} onValueChange={setKey}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Selecione um tom" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {ALL_KEYS.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
-                    </SelectContent>
-                </Select>
+             <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="key">Tom Original</Label>
+                    <Select value={key} onValueChange={setKey}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Selecione um tom" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {ALL_KEYS.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="url">URL da Música (YouTube, Spotify, etc.)</Label>
+                    <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." />
+                </div>
             </div>
 
             <div className="space-y-4">
@@ -253,3 +261,5 @@ export default function NewSongPage() {
     </div>
   );
 }
+
+    

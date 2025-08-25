@@ -9,6 +9,7 @@ export interface Song {
   key?: string;
   genre?: string;
   category?: string;
+  url?: string;
   createdAt?: Timestamp;
 }
 
@@ -35,3 +36,5 @@ export interface MetadataItem {
     name: string;
     createdAt?: Timestamp;
 }
+
+    
