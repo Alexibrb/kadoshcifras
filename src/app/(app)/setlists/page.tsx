@@ -19,9 +19,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function SetlistsPage() {
   const { data: setlists, loading, deleteDocument } = useFirestoreCollection<Setlist>('setlists', 'name');
+  const { appUser } = useAuth();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -70,7 +72,9 @@ export default function SetlistsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {isClient &&
-            setlists.map((setlist) => (
+            setlists.map((setlist) => {
+              const canDelete = appUser?.role === 'admin' || appUser?.id === setlist.creatorId;
+              return (
               <Card key={setlist.id} className="p-4 flex flex-col">
                 <div className="flex items-start justify-between gap-4 flex-grow">
                   <div className="flex-grow overflow-hidden">
@@ -86,30 +90,32 @@ export default function SetlistsPage() {
                      )}
                   </div>
                   <div className="flex items-center shrink-0">
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                                <span className="sr-only">Excluir</span>
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Essa ação não pode ser desfeita. Isso excluirá permanentemente o repertório.
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => deleteSetlist(setlist.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                    {canDelete && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                    <span className="sr-only">Excluir</span>
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Essa ação não pode ser desfeita. Isso excluirá permanentemente o repertório.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteSetlist(setlist.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
                   </div>
                 </div>
               </Card>
-            ))}
+            )})}
         </div>
       )}
     </div>
