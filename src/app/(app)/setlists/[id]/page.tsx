@@ -167,61 +167,9 @@ export default function SetlistPage() {
           )}
       </div>
       
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Coluna de Adicionar Músicas */}
-        <Card className={cn(!canEdit && "bg-muted/30 border-dashed")}>
-          <CardHeader>
-            <CardTitle className="font-headline flex items-center gap-2">
-              Adicionar Músicas
-              {!canEdit && <Lock className="w-4 h-4 text-muted-foreground" />}
-            </CardTitle>
-            <CardDescription>
-                {canEdit ? "Busque por uma música e clique nela para adicioná-la." : "Você não tem permissão para editar este repertório."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-              <fieldset disabled={!canEdit} className="space-y-4">
-                <div className="relative">
-                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                   <Input
-                      placeholder="Buscar por título ou artista..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 bg-background"
-                   />
-                </div>
-
-               <ScrollArea className="h-72 w-full rounded-md border bg-background">
-                  <div className="p-4">
-                      {availableSongs.length > 0 ? (
-                          availableSongs.map((song) => (
-                             <div
-                               key={song.id}
-                               className="flex items-center justify-between p-2 rounded-md hover:bg-accent cursor-pointer"
-                               onClick={() => handleAddSong(song.id)}
-                             >
-                                  <div>
-                                      <p className="font-medium">{song.title}</p>
-                                      <p className="text-sm text-muted-foreground">{song.artist}</p>
-                                  </div>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <PlusCircle className="h-4 w-4" />
-                                  </Button>
-                             </div>
-                          ))
-                      ) : (
-                          <p className="text-center text-sm text-muted-foreground py-4">
-                              {loadingSongs ? "Carregando..." : "Nenhuma música encontrada."}
-                          </p>
-                      )}
-                  </div>
-               </ScrollArea>
-             </fieldset>
-          </CardContent>
-        </Card>
-        
-        {/* Coluna de Músicas no Repertório */}
-        <Card>
+      <div className="flex flex-col gap-8 lg:grid lg:grid-cols-2">
+         {/* Coluna de Músicas no Repertório */}
+        <Card className="lg:order-1">
             <CardHeader>
                 <CardTitle className="font-headline">Músicas no Repertório</CardTitle>
                 <CardDescription>
@@ -274,6 +222,59 @@ export default function SetlistPage() {
                 )}
             </CardContent>
         </Card>
+
+        {/* Coluna de Adicionar Músicas */}
+        <Card className={cn(!canEdit && "bg-muted/30 border-dashed", "lg:order-2")}>
+          <CardHeader>
+            <CardTitle className="font-headline flex items-center gap-2">
+              Adicionar Músicas
+              {!canEdit && <Lock className="w-4 h-4 text-muted-foreground" />}
+            </CardTitle>
+            <CardDescription>
+                {canEdit ? "Busque por uma música e clique nela para adicioná-la." : "Você não tem permissão para editar este repertório."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+              <fieldset disabled={!canEdit} className="space-y-4">
+                <div className="relative">
+                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                   <Input
+                      placeholder="Buscar por título ou artista..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 bg-background"
+                   />
+                </div>
+
+               <ScrollArea className="h-72 w-full rounded-md border bg-background">
+                  <div className="p-4">
+                      {availableSongs.length > 0 ? (
+                          availableSongs.map((song) => (
+                             <div
+                               key={song.id}
+                               className="flex items-center justify-between p-2 rounded-md hover:bg-accent cursor-pointer"
+                               onClick={() => handleAddSong(song.id)}
+                             >
+                                  <div>
+                                      <p className="font-medium">{song.title}</p>
+                                      <p className="text-sm text-muted-foreground">{song.artist}</p>
+                                  </div>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                      <PlusCircle className="h-4 w-4" />
+                                  </Button>
+                             </div>
+                          ))
+                      ) : (
+                          <p className="text-center text-sm text-muted-foreground py-4">
+                              {loadingSongs ? "Carregando..." : "Nenhuma música encontrada."}
+                          </p>
+                      )}
+                  </div>
+               </ScrollArea>
+             </fieldset>
+          </CardContent>
+        </Card>
+        
       </div>
     </div>
   );
