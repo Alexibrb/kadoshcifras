@@ -137,6 +137,11 @@ function Footer() {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { loading } = useRequireAuth();
+    const pathname = usePathname();
+
+    // Regex to check if the path is /songs/[id]
+    const isSongDisplayPage = /^\/songs\/[^/]+$/.test(pathname);
+
 
     if (loading) {
         return (
@@ -170,7 +175,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <main className="flex-1">
             {children}
         </main>
-        <Footer />
+        {!isSongDisplayPage && <Footer />}
     </div>
   );
 }
