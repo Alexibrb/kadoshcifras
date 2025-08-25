@@ -170,7 +170,7 @@ export default function SongPage() {
 
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 pb-24" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 pb-32" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
       <Card className="mb-4 bg-accent/10">
         <CardContent className="p-4 space-y-2">
             <div className="flex items-start justify-between gap-4">
@@ -371,7 +371,7 @@ export default function SongPage() {
       )}
       
       {!isEditing && (
-        <Card className="fixed bottom-0 left-0 right-0 z-50 rounded-none border-t border-x-0 bg-accent/10">
+        <Card className="fixed bottom-0 left-0 right-0 z-50 rounded-none border-t border-x-0 bg-accent">
           <CardContent className="p-2 flex flex-col justify-center items-center gap-2">
              <div className="text-center text-sm text-muted-foreground">
                 {count > 1 && `Página ${current} de ${count}`}
@@ -403,5 +403,3 @@ export default function SongPage() {
     </div>
   );
 }
-
-    
