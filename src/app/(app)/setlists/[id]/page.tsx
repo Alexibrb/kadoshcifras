@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useFirestoreDocument } from '@/hooks/use-firestore-document';
 import { type Setlist, type Song } from '@/types';
-import { ArrowLeft, Music, PlusCircle, Trash2, GripVertical } from 'lucide-react';
+import { ArrowLeft, Music, PlusCircle, Trash2, GripVertical, Search } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/select"
 import { Skeleton } from '@/components/ui/skeleton';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 
 export default function SetlistPage() {
@@ -31,6 +33,8 @@ export default function SetlistPage() {
   const [isClient, setIsClient] = useState(false);
   const [selectedSong, setSelectedSong] = useState('');
   const [orderedSongs, setOrderedSongs] = useState<Song[]>([]);
+  const [songFilter, setSongFilter] = useState('');
+
 
   useEffect(() => { setIsClient(true) }, []);
 
@@ -50,9 +54,19 @@ export default function SetlistPage() {
 
 
   const availableSongs = useMemo(() => {
-    if (!setlist || !setlist.songIds) return allSongs;
-    return allSongs.filter(song => !setlist.songIds.includes(song.id));
-  }, [setlist, allSongs]);
+    if (!setlist) return allSongs;
+
+    let songsNotInSetlist = allSongs.filter(song => !(setlist.songIds || []).includes(song.id));
+    
+    if (songFilter) {
+      songsNotInSetlist = songsNotInSetlist.filter(song => 
+        song.title.toLowerCase().includes(songFilter.toLowerCase()) ||
+        song.artist.toLowerCase().includes(songFilter.toLowerCase())
+      );
+    }
+
+    return songsNotInSetlist;
+  }, [setlist, allSongs, songFilter]);
 
 
   const handleAddSong = async () => {
@@ -120,9 +134,22 @@ export default function SetlistPage() {
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">Adicionar Músicas ao Repertório</CardTitle>
-            <CardDescription>Selecione uma música da sua biblioteca para adicionar.</CardDescription>
+            <CardDescription>Use o filtro para encontrar uma música e adicioná-la.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+             <div className="space-y-2">
+                <Label htmlFor="song-filter">Filtrar por Título ou Artista</Label>
+                <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        id="song-filter"
+                        placeholder="Ex: Sonda-me..."
+                        value={songFilter}
+                        onChange={(e) => setSongFilter(e.target.value)}
+                        className="pl-8"
+                    />
+                </div>
+            </div>
             <div className="flex items-center gap-2">
               <Select value={selectedSong} onValueChange={setSelectedSong}>
                   <SelectTrigger>
@@ -136,7 +163,9 @@ export default function SetlistPage() {
                           <SelectItem key={song.id} value={song.id}>{song.title} - {song.artist}</SelectItem>
                         ))
                       ) : (
-                         <SelectItem value="no-songs" disabled>Nenhuma música disponível</SelectItem>
+                         <SelectItem value="no-songs" disabled>
+                           {songFilter ? 'Nenhum resultado encontrado' : 'Nenhuma música disponível'}
+                         </SelectItem>
                       )}
                   </SelectContent>
               </Select>
