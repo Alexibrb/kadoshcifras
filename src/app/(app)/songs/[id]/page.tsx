@@ -311,40 +311,42 @@ export default function SongPage() {
           </CardContent>
         </Card>
       ) : showChords ? (
-        <div className="relative">
-          <Carousel className="w-full" setApi={setApi} opts={{ watchDrag: true }}>
-              <CarouselContent>
-                {songParts.map((part, index) => (
-                  <CarouselItem key={index}>
-                    <Card>
-                      <CardContent className="p-0">
-                        <ScrollArea className="h-[60vh] p-4 md:p-6">
-                          <SongDisplay style={{ fontSize: `${fontSize}px` }} content={part} showChords={showChords} />
-                        </ScrollArea>
-                      </CardContent>
-                    </Card>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              {/* Controles de toque */}
-              <div className="absolute inset-0 flex justify-between z-10">
-                <div className="w-1/3 h-full" onClick={() => api?.scrollPrev()} />
-                <div className="w-1/3 h-full" />
-                <div className="w-1/3 h-full" onClick={() => api?.scrollNext()} />
-              </div>
-              {/* Botões de desktop */}
-              <div className="absolute -left-4 top-1/2 -translate-y-1/2 hidden md:block">
-                <CarouselPrevious />
-              </div>
-              <div className="absolute -right-4 top-1/2 -translate-y-1/2 hidden md:block">
-                <CarouselNext />
-              </div>
-            </Carousel>
-            {count > 0 && (
-                <div className="py-2 text-center text-sm text-muted-foreground">
-                    Página {current} de {count}
+        <div>
+          <div className="relative">
+            <Carousel className="w-full" setApi={setApi} opts={{ watchDrag: true }}>
+                <CarouselContent>
+                  {songParts.map((part, index) => (
+                    <CarouselItem key={index}>
+                      <Card>
+                        <CardContent className="p-0">
+                          <ScrollArea className="h-[60vh] p-4 md:p-6">
+                            <SongDisplay style={{ fontSize: `${fontSize}px` }} content={part} showChords={showChords} />
+                          </ScrollArea>
+                        </CardContent>
+                      </Card>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                {/* Controles de toque */}
+                <div className="absolute inset-0 flex justify-between z-10">
+                  <div className="w-1/3 h-full" onClick={() => api?.scrollPrev()} />
+                  <div className="w-1/3 h-full" />
+                  <div className="w-1/3 h-full" onClick={() => api?.scrollNext()} />
                 </div>
-            )}
+                {/* Botões de desktop */}
+                <div className="absolute -left-4 top-1/2 -translate-y-1/2 hidden md:block">
+                  <CarouselPrevious />
+                </div>
+                <div className="absolute -right-4 top-1/2 -translate-y-1/2 hidden md:block">
+                  <CarouselNext />
+                </div>
+              </Carousel>
+          </div>
+          {count > 0 && (
+              <div className="py-2 text-center text-sm text-muted-foreground">
+                  Página {current} de {count}
+              </div>
+          )}
         </div>
       ) : (
          <Card>
@@ -388,5 +390,3 @@ export default function SongPage() {
     </div>
   );
 }
-
-    
