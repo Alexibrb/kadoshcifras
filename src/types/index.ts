@@ -15,6 +15,8 @@ export interface Setlist {
   id: string;
   name: string;
   songIds: string[];
+  creatorId?: string;
+  creatorName?: string;
 }
 
 export interface User {

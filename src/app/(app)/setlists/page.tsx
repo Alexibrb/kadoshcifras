@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { type Setlist, type Song } from '@/types';
-import { ListMusic, PlusCircle, Trash2 } from 'lucide-react';
+import { ListMusic, PlusCircle, Trash2, User } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
 import {
@@ -47,9 +47,10 @@ export default function SetlistsPage() {
       {loading && isClient ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="p-4 space-y-2">
+            <Card key={i} className="p-4 space-y-3">
               <Skeleton className="h-5 w-3/4" />
               <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-4 w-1/3" />
             </Card>
           ))}
         </div>
@@ -70,13 +71,19 @@ export default function SetlistsPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {isClient &&
             setlists.map((setlist) => (
-              <Card key={setlist.id} className="p-4">
-                <div className="flex items-start justify-between gap-4">
+              <Card key={setlist.id} className="p-4 flex flex-col">
+                <div className="flex items-start justify-between gap-4 flex-grow">
                   <div className="flex-grow overflow-hidden">
                      <Link href={`/setlists/${setlist.id}`} className="block">
                         <p className="font-semibold text-lg truncate font-headline">{setlist.name}</p>
                      </Link>
                      <p className="text-sm text-muted-foreground">{setlist.songIds?.length || 0} música(s)</p>
+                     {setlist.creatorName && (
+                        <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
+                            <User className="h-3 w-3" />
+                            <span>{setlist.creatorName}</span>
+                        </div>
+                     )}
                   </div>
                   <div className="flex items-center shrink-0">
                      <AlertDialog>

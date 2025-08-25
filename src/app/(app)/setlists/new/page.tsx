@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
+import { useAuthenticatedFirestoreCollection } from '@/hooks/use-authenticated-firestore-collection';
+import { useAuth } from '@/hooks/use-auth';
 import type { Setlist } from '@/types';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -13,13 +14,14 @@ import { useState } from 'react';
 
 export default function NewSetlistPage() {
   const router = useRouter();
-  const { addDocument } = useFirestoreCollection<Setlist>('setlists');
+  const { addDocument } = useAuthenticatedFirestoreCollection<Setlist>('setlists');
+  const { appUser } = useAuth();
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name) {
+    if (!name || !appUser) {
         alert("Por favor, insira um nome para o repertório.");
         return;
     }
@@ -27,6 +29,8 @@ export default function NewSetlistPage() {
     const newSetlist: Omit<Setlist, 'id'> = {
       name,
       songIds: [],
+      creatorId: appUser.id,
+      creatorName: appUser.displayName,
     };
     const newSetlistId = await addDocument(newSetlist);
     if (newSetlistId) {
