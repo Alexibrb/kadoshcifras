@@ -1,128 +1,99 @@
-// public/sw.js
+// Versão do Cache - Mude este valor para forçar a atualização do cache
+const CACHE_VERSION = 11;
+const STATIC_CACHE_NAME = `static-v${CACHE_VERSION}`;
+const DYNAMIC_CACHE_NAME = `dynamic-v${CACHE_VERSION}`;
 
-const CACHE_NAME = 'cifrafacil-cache-v1.3'; // Incremented version
-const OFFLINE_URL = '/offline.html';
-const APP_SHELL_URLS = [
+// Arquivos essenciais do App Shell para serem cacheados na instalação
+const APP_SHELL_ASSETS = [
   '/',
-  '/manifest.json',
-  '/favicon.ico',
-  '/apple-touch-icon.png',
-  '/favicon-16x16.png',
-  '/logocifrafacil.png',
-  '/offline.html',
-  // Rotas principais
-  '/dashboard',
-  '/songs',
-  '/setlists',
-  '/tools',
   '/login',
   '/signup',
-  '/pending-approval',
-  // Página de "molde" para músicas e repertórios
-  // Assegure-se que essas rotas possam renderizar uma "shell" ou "skeleton"
-  // para serem preenchidas com dados do cache do Firestore.
-  // No Next.js, isso geralmente significa que a página base do app router está em cache.
+  '/manifest.json',
+  '/favicon.ico',
+  '/logocifrafacil.png',
+  '/offline.html',
+  '/songs/index.html', // Molde para páginas de música
 ];
 
-
-// Instalação do Service Worker: Cacheia o App Shell
-self.addEventListener('install', event => {
+// 1. Estratégia de Instalação: Cachear o App Shell
+self.addEventListener('install', (event) => {
+  console.log('[SW] Instalando Service Worker...');
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Service Worker: Caching App Shell');
-        return cache.addAll(APP_SHELL_URLS);
-      })
-      .catch(error => {
-        console.error('Failed to cache App Shell:', error);
-      })
+    caches.open(STATIC_CACHE_NAME).then((cache) => {
+      console.log('[SW] Pré-cacheando o App Shell');
+      // Usamos addAll para garantir que todos os assets sejam cacheados. Se um falhar, a instalação falha.
+      return cache.addAll(APP_SHELL_ASSETS).catch(error => {
+        console.error('[SW] Falha ao pré-cachear o App Shell:', error);
+      });
+    })
   );
 });
 
-// Ativação do Service Worker: Limpa caches antigos
-self.addEventListener('activate', event => {
+// 2. Estratégia de Ativação: Limpar caches antigos
+self.addEventListener('activate', (event) => {
+  console.log('[SW] Ativando Service Worker...');
   event.waitUntil(
-    caches.keys().then(cacheNames => {
+    caches.keys().then((keyList) => {
       return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Service Worker: Clearing old cache:', cacheName);
-            return caches.delete(cacheName);
+        keyList.map((key) => {
+          if (key !== STATIC_CACHE_NAME && key !== DYNAMIC_CACHE_NAME) {
+            console.log('[SW] Removendo cache antigo:', key);
+            return caches.delete(key);
           }
         })
       );
     })
   );
-  return self.clients.claim();
+  return self.clients.claim(); // Garante que o SW ativo controle a página imediatamente
 });
 
+// Helper para verificar se a requisição é uma navegação
+function isNavigationRequest(event) {
+  return event.request.mode === 'navigate';
+}
 
-// Interceptação de Requisições: Estratégia Network Falling Back to Cache
-self.addEventListener('fetch', event => {
-  // Ignora requisições que não são GET ou que são para a API do Firebase/Genkit
-  if (
-    event.request.method !== 'GET' ||
-    event.request.url.includes('firestore.googleapis.com') ||
-    event.request.url.includes('firebaseinstallations.googleapis.com') ||
-    event.request.url.includes('/ai/')
-  ) {
+// 3. Estratégia de Fetch: Stale-While-Revalidate com fallback
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Ignora requisições do Firebase e extensões do Chrome
+  if (url.origin.startsWith('https://firestore.googleapis.com') || url.protocol === 'chrome-extension:') {
     return;
   }
-
-  // Para navegações HTML, use a estratégia Network Falling Back to Cache
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          // Se a resposta da rede for bem-sucedida, armazene-a no cache e retorne-a
-          return caches.open(CACHE_NAME).then(cache => {
-            if (response.ok) {
-              cache.put(event.request, response.clone());
-            }
-            return response;
-          });
-        })
-        .catch(() => {
-          // Se a rede falhar, tente obter do cache
-          return caches.match(event.request)
-            .then(cachedResponse => {
-               if (cachedResponse) {
-                   return cachedResponse;
-               }
-
-               // Fallback inteligente para páginas dinâmicas não cacheadas
-               // Tenta servir a página principal se o item específico não existir
-               if (event.request.url.includes('/songs/')) {
-                   return caches.match('/songs');
-               }
-               if (event.request.url.includes('/setlists/')) {
-                   return caches.match('/setlists');
-               }
-
-               // Se nada for encontrado, mostra a página offline genérica
-               return caches.match(OFFLINE_URL);
-            });
-        })
-    );
-  } else {
-    // Para outros recursos (CSS, JS, Imagens), use a estratégia Cache First
-    event.respondWith(
-      caches.match(event.request)
-        .then(cachedResponse => {
-          // Retorna do cache se encontrado
-          if (cachedResponse) {
-            return cachedResponse;
+  
+  // Estratégia: Stale-While-Revalidate
+  event.respondWith(
+    caches.open(DYNAMIC_CACHE_NAME).then(async (cache) => {
+      // 1. Tenta pegar do cache primeiro
+      const cachedResponse = await cache.match(request);
+      
+      // 2. Enquanto isso, busca na rede para atualizar o cache
+      const fetchPromise = fetch(request).then((networkResponse) => {
+        // Se a busca for bem-sucedida, atualiza o cache dinâmico
+        cache.put(request, networkResponse.clone());
+        return networkResponse;
+      }).catch(async () => {
+        // Se a rede falhar, precisamos de um fallback
+        
+        // Se for uma requisição de navegação (mudança de página)
+        if (isNavigationRequest(event)) {
+          // Para páginas de músicas, usa o molde
+          if (url.pathname.startsWith('/songs/')) {
+             const songShell = await caches.match('/songs/index.html');
+             return songShell || caches.match('/offline.html');
           }
-          // Caso contrário, busca na rede, armazena em cache e retorna
-          return fetch(event.request).then(networkResponse => {
-            return caches.open(CACHE_NAME).then(cache => {
-              if (networkResponse && networkResponse.status === 200) {
-                 cache.put(event.request, networkResponse.clone());
-              }
-              return networkResponse;
-            });
-          });
-        })
-    );
-  }
+           // Para outras páginas, tenta encontrar no cache estático
+          const cachedPage = await caches.match(url.pathname);
+          return cachedPage || caches.match('/offline.html');
+        }
+        
+        // Para outros tipos de assets (imagens, etc.), não fazemos nada, apenas deixamos a falha acontecer.
+        // O `cachedResponse` já terá sido retornado se existir.
+      });
+
+      // Retorna a resposta do cache imediatamente se existir, caso contrário, espera a resposta da rede (ou o fallback).
+      return cachedResponse || fetchPromise;
+    })
+  );
 });
