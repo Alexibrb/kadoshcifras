@@ -26,8 +26,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
-        // User is logged in, now we fetch the user document from Firestore.
-        // This might come from cache if offline.
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         const unsubscribeFirestore = onSnapshot(userDocRef, (docSnap) => {
           if (docSnap.exists()) {
@@ -35,7 +33,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           } else {
             setAppUser(null);
           }
-          // Only stop loading after we have both auth and firestore state.
           setLoading(false);
         }, (error) => {
           console.error("Error fetching user document:", error);
@@ -44,7 +41,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         return () => unsubscribeFirestore();
       } else {
-        // User is logged out
         setUser(null);
         setAppUser(null);
         setLoading(false);
@@ -67,10 +63,36 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
     const { user, appUser, loading } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
+    const [isOnline, setIsOnline] = useState(true);
 
     useEffect(() => {
-        // Wait until loading is fully complete before making any decisions.
+      // Monitora o status da conexão
+      const handleOnline = () => setIsOnline(true);
+      const handleOffline = () => setIsOnline(false);
+
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+      
+      // Define o status inicial
+      if (typeof navigator !== 'undefined') {
+        setIsOnline(navigator.onLine);
+      }
+
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }, []);
+
+    useEffect(() => {
         if (loading) {
+            return;
+        }
+
+        // Se estivermos offline e o usuário já estiver logado (no cache do Firebase),
+        // evitamos qualquer redirecionamento para não causar loops.
+        // O service worker deve cuidar de exibir a página correta do cache.
+        if (!isOnline && user) {
             return;
         }
 
@@ -78,19 +100,13 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
         const isPendingApprovalPage = pathname === '/pending-approval';
         const isAdminPage = pathname.startsWith('/users');
 
-        // CASE 1: No firebase user. Not authenticated.
         if (!user) {
-            // Redirect to login if trying to access a protected page.
             if (!isAuthPage) {
                 router.push(redirectUrl);
             }
             return;
         }
         
-        // From here, we have a Firebase user.
-
-        // CASE 2: The Firestore document (`appUser`) does not exist yet.
-        // This can happen right after signup. Send them to the pending page.
         if (!appUser) {
            if (!isPendingApprovalPage) {
              router.push('/pending-approval');
@@ -98,29 +114,24 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
            return;
         }
         
-        // CASE 3: We have both Firebase user and Firestore user (`appUser`).
         if (appUser) {
-            // If user is not approved, they MUST be on the pending page.
             if (!appUser.isApproved && !isPendingApprovalPage) {
                 router.push('/pending-approval');
                 return;
             }
 
-            // If user IS approved, they should NOT be on auth or pending pages.
-            // Redirect them to the main app dashboard.
             if (appUser.isApproved && (isPendingApprovalPage || isAuthPage)) {
                 router.push('/dashboard');
                 return;
             }
 
-            // If user is approved but NOT an admin, they cannot access admin pages.
             if (appUser.isApproved && appUser.role !== 'admin' && isAdminPage) {
-                router.push('/dashboard'); // Redirect to a safe page
+                router.push('/dashboard');
                 return;
             }
         }
 
-    }, [user, appUser, loading, router, redirectUrl, pathname]);
+    }, [user, appUser, loading, router, redirectUrl, pathname, isOnline]);
 
     return { loading, isAdmin: appUser?.role === 'admin' };
 }
