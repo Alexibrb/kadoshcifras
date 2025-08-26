@@ -1,99 +1,80 @@
-// Versão do Cache - Mude este valor para forçar a atualização do cache
-const CACHE_VERSION = 11;
-const STATIC_CACHE_NAME = `static-v${CACHE_VERSION}`;
-const DYNAMIC_CACHE_NAME = `dynamic-v${CACHE_VERSION}`;
 
-// Arquivos essenciais do App Shell para serem cacheados na instalação
-const APP_SHELL_ASSETS = [
+const CACHE_NAME = 'cifrafacil-cache-v1';
+const urlsToCache = [
   '/',
   '/login',
   '/signup',
+  '/dashboard',
+  '/songs',
+  '/setlists',
   '/manifest.json',
   '/favicon.ico',
+  '/apple-touch-icon.png',
   '/logocifrafacil.png',
-  '/offline.html',
-  '/songs/index.html', // Molde para páginas de música
 ];
 
-// 1. Estratégia de Instalação: Cachear o App Shell
-self.addEventListener('install', (event) => {
-  console.log('[SW] Instalando Service Worker...');
+self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(STATIC_CACHE_NAME).then((cache) => {
-      console.log('[SW] Pré-cacheando o App Shell');
-      // Usamos addAll para garantir que todos os assets sejam cacheados. Se um falhar, a instalação falha.
-      return cache.addAll(APP_SHELL_ASSETS).catch(error => {
-        console.error('[SW] Falha ao pré-cachear o App Shell:', error);
-      });
-    })
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('Opened cache');
+        // Cachear recursos essenciais.
+        // Omitir requisições com 'chrome-extension'
+        const cachePromises = urlsToCache.map(urlToCache => {
+            const request = new Request(urlToCache, {mode: 'no-cors'});
+            return fetch(request).then(response => cache.put(urlToCache, response));
+        });
+
+        return Promise.all(cachePromises);
+      })
   );
 });
 
-// 2. Estratégia de Ativação: Limpar caches antigos
-self.addEventListener('activate', (event) => {
-  console.log('[SW] Ativando Service Worker...');
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
-    caches.keys().then((keyList) => {
+    caches.keys().then(cacheNames => {
       return Promise.all(
-        keyList.map((key) => {
-          if (key !== STATIC_CACHE_NAME && key !== DYNAMIC_CACHE_NAME) {
-            console.log('[SW] Removendo cache antigo:', key);
-            return caches.delete(key);
+        cacheNames.map(cacheName => {
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            return caches.delete(cacheName);
           }
         })
       );
     })
   );
-  return self.clients.claim(); // Garante que o SW ativo controle a página imediatamente
+  return self.clients.claim();
 });
 
-// Helper para verificar se a requisição é uma navegação
-function isNavigationRequest(event) {
-  return event.request.mode === 'navigate';
-}
 
-// 3. Estratégia de Fetch: Stale-While-Revalidate com fallback
-self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
+self.addEventListener('fetch', event => {
+    // Apenas lida com requisições de navegação
+    if (event.request.mode !== 'navigate') {
+        return;
+    }
 
-  // Ignora requisições do Firebase e extensões do Chrome
-  if (url.origin.startsWith('https://firestore.googleapis.com') || url.protocol === 'chrome-extension:') {
-    return;
-  }
-  
-  // Estratégia: Stale-While-Revalidate
-  event.respondWith(
-    caches.open(DYNAMIC_CACHE_NAME).then(async (cache) => {
-      // 1. Tenta pegar do cache primeiro
-      const cachedResponse = await cache.match(request);
-      
-      // 2. Enquanto isso, busca na rede para atualizar o cache
-      const fetchPromise = fetch(request).then((networkResponse) => {
-        // Se a busca for bem-sucedida, atualiza o cache dinâmico
-        cache.put(request, networkResponse.clone());
-        return networkResponse;
-      }).catch(async () => {
-        // Se a rede falhar, precisamos de um fallback
-        
-        // Se for uma requisição de navegação (mudança de página)
-        if (isNavigationRequest(event)) {
-          // Para páginas de músicas, usa o molde
-          if (url.pathname.startsWith('/songs/')) {
-             const songShell = await caches.match('/songs/index.html');
-             return songShell || caches.match('/offline.html');
-          }
-           // Para outras páginas, tenta encontrar no cache estático
-          const cachedPage = await caches.match(url.pathname);
-          return cachedPage || caches.match('/offline.html');
-        }
-        
-        // Para outros tipos de assets (imagens, etc.), não fazemos nada, apenas deixamos a falha acontecer.
-        // O `cachedResponse` já terá sido retornado se existir.
-      });
-
-      // Retorna a resposta do cache imediatamente se existir, caso contrário, espera a resposta da rede (ou o fallback).
-      return cachedResponse || fetchPromise;
-    })
-  );
+    event.respondWith(
+        fetch(event.request)
+            .then(response => {
+                // Resposta da rede bem-sucedida, clona e armazena no cache
+                const responseToCache = response.clone();
+                caches.open(CACHE_NAME)
+                    .then(cache => {
+                        cache.put(event.request, responseToCache);
+                    });
+                return response;
+            })
+            .catch(() => {
+                // Falha na rede, tenta buscar do cache
+                return caches.match(event.request)
+                    .then(response => {
+                        if (response) {
+                            return response;
+                        }
+                        // Se não estiver no cache, retorna a página principal como fallback para SPA
+                        return caches.match('/');
+                    });
+            })
+    );
 });
