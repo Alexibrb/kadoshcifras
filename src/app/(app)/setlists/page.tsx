@@ -2,7 +2,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useAuthenticatedFirestoreCollection } from '@/hooks/use-authenticated-firestore-collection';
+import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { type Setlist } from '@/types';
 import { ListMusic, PlusCircle, Trash2, User, Globe, Lock, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
-import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 
 export default function SetlistsPage() {
   const { appUser, loading: authLoading } = useAuth();
@@ -29,18 +28,18 @@ export default function SetlistsPage() {
   // Busca os repertórios do PRÓPRIO usuário (incluindo os ocultos)
   const { data: mySetlistsData, loading: loadingMySetlists } = useFirestoreCollection<Setlist>(
     'setlists',
-    'name',
-    [['creatorId', '==', appUser?.id ?? '']] // O ID vazio previne a query antes do appUser carregar
+    undefined, // Ordenação removida do servidor
+    [['creatorId', '==', appUser?.id ?? '']]
   );
 
   // Busca os repertórios de OUTROS usuários que sejam VISÍVEIS
   const { data: otherSetlistsData, loading: loadingOtherSetlists } = useFirestoreCollection<Setlist>(
     'setlists',
-    'name',
+    undefined, // Ordenação removida do servidor
     [['isVisible', '==', true]]
   );
 
-  const { deleteDocument } = useAuthenticatedFirestoreCollection<Setlist>('setlists');
+  const { deleteDocument } = useFirestoreCollection<Setlist>('setlists');
 
   const loading = authLoading || loadingMySetlists || loadingOtherSetlists;
 
