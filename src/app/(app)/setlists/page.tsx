@@ -1,9 +1,9 @@
 
 'use client';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
-import { type Setlist, type Song } from '@/types';
+import { Card, CardContent } from '@/components/ui/card';
+import { useAuthenticatedFirestoreCollection } from '@/hooks/use-authenticated-firestore-collection';
+import { type Setlist } from '@/types';
 import { ListMusic, PlusCircle, Trash2, User, Globe, Lock, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
@@ -20,47 +20,44 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
-import { useAuthenticatedFirestoreCollection } from '@/hooks/use-authenticated-firestore-collection';
+import { query, where, or } from 'firebase/firestore';
 
 export default function SetlistsPage() {
-  const { appUser } = useAuth();
-
-  // Consulta 1: Busca repertórios de OUTROS usuários que sejam visíveis
-  const { data: otherVisibleSetlists, loading: loadingOthers } = useFirestoreCollection<Setlist>(
-    'setlists',
-    undefined,
-    appUser ? [
-      ['creatorId', '!=', appUser.id],
-      ['isVisible', '==', true]
-    ] : [] // Se não houver usuário, não executa a query.
-  );
-
-  // Consulta 2: Busca TODOS os repertórios criados pelo usuário (visíveis ou não)
-  const { data: mySetlists, loading: loadingMine } = useAuthenticatedFirestoreCollection<Setlist>(
-    'setlists',
-    undefined,
-    appUser ? [['creatorId', '==', appUser.id]] : []
-  );
-
-  const { deleteDocument } = useFirestoreCollection<Setlist>('setlists');
-
+  const { appUser, loading: authLoading } = useAuth();
   const [isClient, setIsClient] = useState(false);
-  const loading = loadingOthers || loadingMine;
+  
+  // Criamos a query de forma reativa, apenas quando o appUser estiver disponível.
+  const setlistsQuery = useMemo(() => {
+    if (!appUser) return null; // Retorna nulo se o usuário não estiver carregado
+    return query(
+      collection(db, 'setlists'),
+      or(
+        where('creatorId', '==', appUser.id),
+        where('isVisible', '==', true)
+      )
+    );
+  }, [appUser]);
+
+  // Usamos o hook com a query reativa. O hook já foi ajustado para lidar com uma query nula.
+  const { data: setlistsData, loading: loadingSetlists } = useAuthenticatedFirestoreCollection<Setlist>(
+    'setlists',
+    setlistsQuery // Passamos a query aqui
+  );
+  
+  const { deleteDocument } = useAuthenticatedFirestoreCollection<Setlist>('setlists');
+
+  const loading = authLoading || loadingSetlists;
 
   useEffect(() => {
     setIsClient(true);
   }, []);
-
+  
   const setlists = useMemo(() => {
     if (!isClient || loading || !appUser) return [];
-
-    // Combina as duas listas e remove duplicatas (embora não deva haver com a nova lógica)
-    const all = [...mySetlists, ...otherVisibleSetlists];
-    const unique = Array.from(new Map(all.map(s => [s.id, s])).values());
     
-    // Ordena no cliente
-    return unique.sort((a,b) => a.name.localeCompare(b.name));
-  }, [otherVisibleSetlists, mySetlists, appUser, loading, isClient]);
+    // Ordena no cliente para evitar a necessidade de índices compostos complexos no Firestore
+    return setlistsData.sort((a,b) => a.name.localeCompare(b.name));
+  }, [setlistsData, appUser, loading, isClient]);
 
 
   const deleteSetlist = (id: string) => {
