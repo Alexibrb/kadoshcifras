@@ -20,33 +20,29 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
-import { query, where, or } from 'firebase/firestore';
+import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 
 export default function SetlistsPage() {
   const { appUser, loading: authLoading } = useAuth();
   const [isClient, setIsClient] = useState(false);
   
-  // Criamos a query de forma reativa, apenas quando o appUser estiver disponível.
-  const setlistsQuery = useMemo(() => {
-    if (!appUser) return null; // Retorna nulo se o usuário não estiver carregado
-    return query(
-      collection(db, 'setlists'),
-      or(
-        where('creatorId', '==', appUser.id),
-        where('isVisible', '==', true)
-      )
-    );
-  }, [appUser]);
-
-  // Usamos o hook com a query reativa. O hook já foi ajustado para lidar com uma query nula.
-  const { data: setlistsData, loading: loadingSetlists } = useAuthenticatedFirestoreCollection<Setlist>(
+  // Busca os repertórios do PRÓPRIO usuário (incluindo os ocultos)
+  const { data: mySetlistsData, loading: loadingMySetlists } = useFirestoreCollection<Setlist>(
     'setlists',
-    setlistsQuery // Passamos a query aqui
+    'name',
+    [['creatorId', '==', appUser?.id ?? '']] // O ID vazio previne a query antes do appUser carregar
   );
-  
+
+  // Busca os repertórios de OUTROS usuários que sejam VISÍVEIS
+  const { data: otherSetlistsData, loading: loadingOtherSetlists } = useFirestoreCollection<Setlist>(
+    'setlists',
+    'name',
+    [['isVisible', '==', true]]
+  );
+
   const { deleteDocument } = useAuthenticatedFirestoreCollection<Setlist>('setlists');
 
-  const loading = authLoading || loadingSetlists;
+  const loading = authLoading || loadingMySetlists || loadingOtherSetlists;
 
   useEffect(() => {
     setIsClient(true);
@@ -54,10 +50,17 @@ export default function SetlistsPage() {
   
   const setlists = useMemo(() => {
     if (!isClient || loading || !appUser) return [];
+
+    // Filtra os repertórios de outros usuários para não incluir os que já são meus
+    const filteredOthers = otherSetlistsData.filter(s => s.creatorId !== appUser.id);
     
-    // Ordena no cliente para evitar a necessidade de índices compostos complexos no Firestore
-    return setlistsData.sort((a,b) => a.name.localeCompare(b.name));
-  }, [setlistsData, appUser, loading, isClient]);
+    // Combina as duas listas, garantindo que não haja duplicatas
+    const combined = [...mySetlistsData, ...filteredOthers];
+    const uniqueSetlists = Array.from(new Map(combined.map(item => [item.id, item])).values());
+    
+    // Ordena no cliente
+    return uniqueSetlists.sort((a,b) => a.name.localeCompare(b.name));
+  }, [mySetlistsData, otherSetlistsData, appUser, loading, isClient]);
 
 
   const deleteSetlist = (id: string) => {

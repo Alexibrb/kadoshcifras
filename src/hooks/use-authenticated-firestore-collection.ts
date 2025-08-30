@@ -1,9 +1,8 @@
-
 // src/hooks/use-authenticated-firestore-collection.ts
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, where, Query, WhereFilterOp, or, QueryConstraint } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, where, Query, WhereFilterOp, or, QueryConstraint, orderBy } from 'firebase/firestore';
 import { useAuth } from './use-auth'; // Importa o hook de autenticação
 
 export type FirestoreQueryFilter = [string, WhereFilterOp, any];
@@ -13,31 +12,32 @@ export type FirestoreQueryFilter = [string, WhereFilterOp, any];
  * estiver autenticado e aprovado (appUser.isApproved === true).
  * Isso previne erros de permissão do Firestore ao tentar ler ou escrever dados
  * em coleções protegidas.
- * Aceita uma query completa do Firestore para flexibilidade máxima.
  */
 export function useAuthenticatedFirestoreCollection<T extends { id: string }>(
   collectionName: string,
-  firestoreQuery?: Query | null // Aceita uma query completa ou nula
+  initialSort?: string
 ) {
   const { appUser, loading: authLoading } = useAuth();
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Se a query explícita for nula (indicando que ainda estamos aguardando dependências),
-    // ou se o usuário não estiver aprovado, não fazemos nada.
-    if (authLoading || !appUser?.isApproved || firestoreQuery === null) {
+    // Se o usuário não estiver aprovado, não fazemos nada.
+    if (authLoading || !appUser?.isApproved) {
       setLoading(false);
-      // Limpa os dados antigos se o usuário for deslogado ou se a query se tornar nula
-      if ((!authLoading && !appUser) || firestoreQuery === null) {
+      // Limpa os dados antigos se o usuário for deslogado
+      if (!authLoading && !appUser) {
         setData([]);
       }
       return;
     }
 
-    // Usa a query passada diretamente se ela existir.
-    // Caso contrário, constrói uma query simples para a coleção inteira.
-    const q = firestoreQuery ?? query(collection(db, collectionName));
+    let q: Query = collection(db, collectionName);
+    
+    if (initialSort) {
+        q = query(q, orderBy(initialSort));
+    }
+
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const collectionData = querySnapshot.docs.map(doc => ({
@@ -53,8 +53,7 @@ export function useAuthenticatedFirestoreCollection<T extends { id: string }>(
     });
 
     return () => unsubscribe();
-  // A dependência de appUser e da query (se passada) garante a re-execução correta.
-  }, [collectionName, authLoading, appUser, firestoreQuery]);
+  }, [collectionName, authLoading, appUser, initialSort]);
 
   const addDocument = useCallback(async (newData: Omit<T, 'id' | 'createdAt'>) => {
     // Previne a escrita se o usuário não for aprovado.
