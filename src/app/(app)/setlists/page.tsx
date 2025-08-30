@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { type Setlist, type Song } from '@/types';
-import { ListMusic, PlusCircle, Trash2, User, Globe, Lock } from 'lucide-react';
+import { ListMusic, PlusCircle, Trash2, User, Globe, Lock, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
 import {
@@ -22,13 +22,28 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 
 export default function SetlistsPage() {
-  const { data: setlists, loading, deleteDocument } = useFirestoreCollection<Setlist>('setlists', 'name');
   const { appUser } = useAuth();
-  const [isClient, setIsClient] = useState(false);
+  // We can't filter with OR queries easily in Firestore, so we fetch all visible setlists
+  // and then all setlists created by the user, and merge them.
+  const { data: visibleSetlists, loading: loadingVisible } = useFirestoreCollection<Setlist>('setlists', 'name', [['isVisible', '==', true]]);
+  const { data: mySetlists, loading: loadingMine } = useFirestoreCollection<Setlist>('setlists', 'name', [['creatorId', '==', appUser?.id ?? '']]);
+  const { deleteDocument } = useFirestoreCollection<Setlist>('setlists');
 
+  const [isClient, setIsClient] = useState(false);
+  const loading = loadingVisible || loadingMine;
+  
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const setlists = useMemo(() => {
+    if (loading) return [];
+    // Combine and deduplicate the lists
+    const all = [...visibleSetlists, ...mySetlists];
+    const unique = Array.from(new Map(all.map(s => [s.id, s])).values());
+    return unique.sort((a,b) => a.name.localeCompare(b.name));
+  }, [visibleSetlists, mySetlists, loading]);
+
 
   const deleteSetlist = (id: string) => {
     deleteDocument(id);
@@ -80,13 +95,16 @@ export default function SetlistsPage() {
                   <div className="flex-grow overflow-hidden">
                      <Link href={`/setlists/${setlist.id}`} className="block">
                         <div className="flex items-center gap-2">
-                          {setlist.isPublic ? <Globe className="h-4 w-4 shrink-0 text-muted-foreground" /> : <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />}
                           <p className="font-semibold text-lg truncate font-headline">{setlist.name}</p>
                         </div>
                      </Link>
-                     <p className="text-sm text-muted-foreground ml-6">{setlist.songIds?.length || 0} música(s)</p>
+                     <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                        {setlist.isPublic ? <Globe className="h-4 w-4 shrink-0" /> : <Lock className="h-4 w-4 shrink-0" />}
+                        {setlist.isVisible === false ? <EyeOff className="h-4 w-4 shrink-0" /> : <Eye className="h-4 w-4 shrink-0" />}
+                        <span>{setlist.songIds?.length || 0} música(s)</span>
+                     </div>
                      {setlist.creatorName && (
-                        <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground ml-6">
+                        <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
                             <User className="h-3 w-3" />
                             <span>{setlist.creatorName}</span>
                         </div>

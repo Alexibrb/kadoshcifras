@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useAuthenticatedFirestoreCollection } from '@/hooks/use-authenticated-firestore-collection';
 import { useAuth } from '@/hooks/use-auth';
 import type { Setlist } from '@/types';
-import { ArrowLeft, Globe, Lock } from 'lucide-react';
+import { ArrowLeft, Globe, Lock, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -19,6 +19,7 @@ export default function NewSetlistPage() {
   const { appUser } = useAuth();
   const [name, setName] = useState('');
   const [isPublic, setIsPublic] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,6 +35,7 @@ export default function NewSetlistPage() {
       creatorId: appUser.id,
       creatorName: appUser.displayName,
       isPublic: isPublic,
+      isVisible: isVisible,
     };
     const newSetlistId = await addDocument(newSetlist);
     if (newSetlistId) {
@@ -72,21 +74,39 @@ export default function NewSetlistPage() {
               />
             </div>
             
-            <div className="flex items-center space-x-4 rounded-md border p-4">
-               {isPublic ? <Globe className="h-5 w-5 text-primary" /> : <Lock className="h-5 w-5 text-primary" />}
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium leading-none">
-                    {isPublic ? 'Repertório Público' : 'Repertório Privado'}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {isPublic ? 'Qualquer usuário poderá editar.' : 'Apenas você e administradores poderão editar.'}
-                  </p>
+            <div className="space-y-4">
+                <div className="flex items-center space-x-4 rounded-md border p-4">
+                   {isPublic ? <Globe className="h-5 w-5 text-primary" /> : <Lock className="h-5 w-5 text-primary" />}
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        Repertório {isPublic ? 'Público (Editável por todos)' : 'Privado (Editável por você)'}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {isPublic ? 'Qualquer usuário poderá adicionar ou remover músicas.' : 'Apenas você e administradores poderão editar as músicas.'}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={isPublic}
+                      onCheckedChange={setIsPublic}
+                      aria-readonly
+                    />
                 </div>
-                <Switch
-                  checked={isPublic}
-                  onCheckedChange={setIsPublic}
-                  aria-readonly
-                />
+                 <div className="flex items-center space-x-4 rounded-md border p-4">
+                   {isVisible ? <Eye className="h-5 w-5 text-primary" /> : <EyeOff className="h-5 w-5 text-primary" />}
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        Repertório {isVisible ? 'Visível' : 'Oculto'}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {isVisible ? 'Aparecerá na lista para outros usuários.' : 'Aparecerá na lista apenas para você.'}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={isVisible}
+                      onCheckedChange={setIsVisible}
+                      aria-readonly
+                    />
+                </div>
             </div>
 
           </CardContent>

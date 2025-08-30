@@ -20,6 +20,7 @@ export interface Setlist {
   creatorId?: string;
   creatorName?: string;
   isPublic?: boolean;
+  isVisible?: boolean;
 }
 
 export interface User {

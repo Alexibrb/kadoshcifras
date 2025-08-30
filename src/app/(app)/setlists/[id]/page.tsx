@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useFirestoreDocument } from '@/hooks/use-firestore-document';
 import { type Setlist, type Song } from '@/types';
-import { ArrowLeft, Music, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X } from 'lucide-react';
+import { ArrowLeft, Music, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
@@ -104,6 +104,11 @@ export default function SetlistPage() {
     await updateSetlistDoc({ isPublic });
   };
   
+   const handleVisibilityToggle = async (isVisible: boolean) => {
+    if (!canChangeSettings) return;
+    await updateSetlistDoc({ isVisible });
+  };
+  
   const handleNameSave = async () => {
     if (!canChangeSettings || !editedName.trim()) return;
     await updateSetlistDoc({ name: editedName.trim() });
@@ -136,6 +141,12 @@ export default function SetlistPage() {
     notFound();
   }
 
+  // Novo: se não for o criador, nem admin, e o repertório não for visível, não mostrar.
+  if (isClient && setlist && appUser && setlist.isVisible === false && setlist.creatorId !== appUser.id && appUser.role !== 'admin') {
+      notFound();
+  }
+
+
   if (!isClient || loadingSetlist || !setlist || !appUser) {
     return (
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -162,7 +173,10 @@ export default function SetlistPage() {
               </Link>
             </Button>
             <div className="flex items-center gap-2">
-                {setlist.isPublic ? <Globe className="h-7 w-7 text-muted-foreground" /> : <Lock className="h-7 w-7 text-muted-foreground" />}
+                <div className="flex items-center gap-2 text-muted-foreground">
+                    {setlist.isPublic ? <Globe className="h-7 w-7" /> : <Lock className="h-7 w-7" />}
+                    {setlist.isVisible ? <Eye className="h-7 w-7" /> : <EyeOff className="h-7 w-7" />}
+                </div>
                 <div>
                     {!isEditingName ? (
                       <div className="flex items-center gap-2">
@@ -191,127 +205,142 @@ export default function SetlistPage() {
             </div>
           </div>
           {canChangeSettings && (
-            <div className="flex items-center space-x-2 rounded-md border p-2">
-              <Label htmlFor="public-switch" className="text-sm font-medium">
-                {setlist.isPublic ? 'Público' : 'Privado'}
-              </Label>
-              <Switch
-                id="public-switch"
-                checked={setlist.isPublic}
-                onCheckedChange={handlePublicToggle}
-              />
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center space-x-2 rounded-md border p-2">
+                <Label htmlFor="public-switch" className="text-sm font-medium">
+                  {setlist.isPublic ? 'Público' : 'Privado'}
+                </Label>
+                <Switch
+                  id="public-switch"
+                  checked={setlist.isPublic}
+                  onCheckedChange={handlePublicToggle}
+                />
+              </div>
+              <div className="flex items-center space-x-2 rounded-md border p-2">
+                <Label htmlFor="visibility-switch" className="text-sm font-medium">
+                  {setlist.isVisible ? 'Visível' : 'Oculto'}
+                </Label>
+                <Switch
+                  id="visibility-switch"
+                  checked={setlist.isVisible}
+                  onCheckedChange={handleVisibilityToggle}
+                />
+              </div>
             </div>
           )}
       </div>
       
       <div className="flex flex-col gap-8 lg:grid lg:grid-cols-2">
         {/* Coluna de Músicas no Repertório */}
-        <Card className="flex flex-col order-1">
-            <CardHeader>
-                <CardTitle className="font-headline">Músicas no Repertório</CardTitle>
-                <CardDescription>
-                    {canEdit ? "Arraste para reordenar as músicas." : "Visualize as músicas do repertório."}
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow">
-                {isClient && orderedSongs.length > 0 ? (
-                    <DragDropContext onDragEnd={onDragEnd}>
-                      <Droppable droppableId="songs" isDropDisabled={!canEdit}>
-                        {(provided) => (
-                          <ul {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
-                            {orderedSongs.map((song, index) => (
-                               <Draggable key={song.id} draggableId={song.id} index={index} isDragDisabled={!canEdit}>
-                                {(provided, snapshot) => (
-                                    <li
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
-                                      className={`flex items-center justify-between p-2 rounded-md border bg-background ${canEdit && "hover:bg-accent/50"} ${snapshot.isDragging ? 'shadow-lg bg-accent/20' : ''}`}
-                                      style={{...provided.draggableProps.style}}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            {canEdit && <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />}
-                                            <div>
-                                                <Link href={`/songs/${song.id}?fromSetlist=${setlistId}`} className="font-medium hover:underline">{song.title}</Link>
-                                                <p className="text-sm text-muted-foreground">{song.artist}</p>
-                                            </div>
-                                        </div>
-                                        {canEdit && (
-                                            <Button variant="ghost" size="icon" onClick={() => handleRemoveSong(song.id)} className="h-8 w-8">
-                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                            </Button>
-                                        )}
-                                    </li>
-                                )}
-                                </Draggable>
-                            ))}
-                            {provided.placeholder}
-                          </ul>
-                        )}
-                      </Droppable>
-                    </DragDropContext>
-                ) : (
-                    <div className="flex flex-col items-center justify-center gap-2 text-center h-full py-12 border-2 border-dashed rounded-lg">
-                        <Music className="h-10 w-10 text-muted-foreground" />
-                        <p className="text-muted-foreground">Nenhuma música neste repertório ainda.</p>
-                         {canEdit && <p className="text-xs text-muted-foreground">Use o painel ao lado para adicionar músicas.</p>}
-                    </div>
-                )}
-            </CardContent>
-        </Card>
+        <div className="flex flex-col order-1 lg:order-1">
+          <Card className="flex flex-col h-full">
+              <CardHeader>
+                  <CardTitle className="font-headline">Músicas no Repertório</CardTitle>
+                  <CardDescription>
+                      {canEdit ? "Arraste para reordenar as músicas." : "Visualize as músicas do repertório."}
+                  </CardDescription>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                  {isClient && orderedSongs.length > 0 ? (
+                      <DragDropContext onDragEnd={onDragEnd}>
+                        <Droppable droppableId="songs" isDropDisabled={!canEdit}>
+                          {(provided) => (
+                            <ul {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+                              {orderedSongs.map((song, index) => (
+                                 <Draggable key={song.id} draggableId={song.id} index={index} isDragDisabled={!canEdit}>
+                                  {(provided, snapshot) => (
+                                      <li
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        className={`flex items-center justify-between p-2 rounded-md border bg-background ${canEdit && "hover:bg-accent/50"} ${snapshot.isDragging ? 'shadow-lg bg-accent/20' : ''}`}
+                                        style={{...provided.draggableProps.style}}
+                                      >
+                                          <div className="flex items-center gap-2">
+                                              {canEdit && <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />}
+                                              <div>
+                                                  <Link href={`/songs/${song.id}?fromSetlist=${setlistId}`} className="font-medium hover:underline">{song.title}</Link>
+                                                  <p className="text-sm text-muted-foreground">{song.artist}</p>
+                                              </div>
+                                          </div>
+                                          {canEdit && (
+                                              <Button variant="ghost" size="icon" onClick={() => handleRemoveSong(song.id)} className="h-8 w-8">
+                                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                              </Button>
+                                          )}
+                                      </li>
+                                  )}
+                                  </Draggable>
+                              ))}
+                              {provided.placeholder}
+                            </ul>
+                          )}
+                        </Droppable>
+                      </DragDropContext>
+                  ) : (
+                      <div className="flex flex-col items-center justify-center gap-2 text-center h-full py-12 border-2 border-dashed rounded-lg">
+                          <Music className="h-10 w-10 text-muted-foreground" />
+                          <p className="text-muted-foreground">Nenhuma música neste repertório ainda.</p>
+                           {canEdit && <p className="text-xs text-muted-foreground">Use o painel ao lado para adicionar músicas.</p>}
+                      </div>
+                  )}
+              </CardContent>
+          </Card>
+        </div>
 
         {/* Coluna de Adicionar Músicas */}
-        <Card className={cn(!canEdit && "bg-muted/30 border-dashed", "order-2")}>
-          <CardHeader>
-            <CardTitle className="font-headline flex items-center gap-2">
-              Adicionar Músicas
-              {!canEdit && <Lock className="w-4 h-4 text-muted-foreground" />}
-            </CardTitle>
-            <CardDescription>
-                {canEdit ? "Busque por uma música e clique nela para adicioná-la." : "Você não tem permissão para editar este repertório."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-              <fieldset disabled={!canEdit} className="space-y-4">
-                <div className="relative">
-                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                   <Input
-                      placeholder="Buscar por título ou artista..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 bg-background"
-                   />
-                </div>
-
-               <ScrollArea className="h-72 w-full rounded-md border bg-background">
-                  <div className="p-4">
-                      {availableSongs.length > 0 ? (
-                          availableSongs.map((song) => (
-                             <div
-                               key={song.id}
-                               className="flex items-center justify-between p-2 rounded-md hover:bg-accent cursor-pointer"
-                               onClick={() => handleAddSong(song.id)}
-                             >
-                                  <div>
-                                      <p className="font-medium">{song.title}</p>
-                                      <p className="text-sm text-muted-foreground">{song.artist}</p>
-                                  </div>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <PlusCircle className="h-4 w-4" />
-                                  </Button>
-                             </div>
-                          ))
-                      ) : (
-                          <p className="text-center text-sm text-muted-foreground py-4">
-                              {loadingSongs ? "Carregando..." : "Nenhuma música encontrada."}
-                          </p>
-                      )}
+        <div className="flex flex-col order-2 lg:order-2">
+          <Card className={cn(!canEdit && "bg-muted/30 border-dashed", "h-full")}>
+            <CardHeader>
+              <CardTitle className="font-headline flex items-center gap-2">
+                Adicionar Músicas
+                {!canEdit && <Lock className="w-4 h-4 text-muted-foreground" />}
+              </CardTitle>
+              <CardDescription>
+                  {canEdit ? "Busque por uma música e clique nela para adicioná-la." : "Você não tem permissão para editar este repertório."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <fieldset disabled={!canEdit} className="space-y-4">
+                  <div className="relative">
+                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                     <Input
+                        placeholder="Buscar por título ou artista..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 bg-background"
+                     />
                   </div>
-               </ScrollArea>
-             </fieldset>
-          </CardContent>
-        </Card>
-        
+
+                 <ScrollArea className="h-72 w-full rounded-md border bg-background">
+                    <div className="p-4">
+                        {availableSongs.length > 0 ? (
+                            availableSongs.map((song) => (
+                               <div
+                                 key={song.id}
+                                 className="flex items-center justify-between p-2 rounded-md hover:bg-accent cursor-pointer"
+                                 onClick={() => handleAddSong(song.id)}
+                               >
+                                    <div>
+                                        <p className="font-medium">{song.title}</p>
+                                        <p className="text-sm text-muted-foreground">{song.artist}</p>
+                                    </div>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <PlusCircle className="h-4 w-4" />
+                                    </Button>
+                               </div>
+                            ))
+                        ) : (
+                            <p className="text-center text-sm text-muted-foreground py-4">
+                                {loadingSongs ? "Carregando..." : "Nenhuma música encontrada."}
+                            </p>
+                        )}
+                    </div>
+                 </ScrollArea>
+               </fieldset>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
