@@ -23,27 +23,46 @@ import { useAuth } from '@/hooks/use-auth';
 
 export default function SetlistsPage() {
   const { appUser } = useAuth();
-  // Removemos a ordenação 'name' da query para evitar a necessidade de um índice composto.
-  // A ordenação será feita no lado do cliente.
-  const { data: visibleSetlists, loading: loadingVisible } = useFirestoreCollection<Setlist>('setlists', undefined, [['isVisible', '==', true]]);
-  const { data: mySetlists, loading: loadingMine } = useFirestoreCollection<Setlist>('setlists', undefined, [['creatorId', '==', appUser?.id ?? '']]);
+
+  // Consulta 1: Busca repertórios públicos e visíveis
+  const { data: publicSetlists, loading: loadingPublic } = useFirestoreCollection<Setlist>(
+    'setlists', 
+    'name', 
+    [
+      ['isPublic', '==', true],
+      ['isVisible', '==', true]
+    ]
+  );
+  
+  // Consulta 2: Busca os repertórios criados pelo usuário (não precisa checar isVisible aqui, pois ele pode ver os seus ocultos)
+  const { data: mySetlists, loading: loadingMine } = useFirestoreCollection<Setlist>(
+      'setlists',
+      'name',
+      appUser ? [['creatorId', '==', appUser.id]] : [] // Só executa a query se o appUser existir
+  );
+
   const { deleteDocument } = useFirestoreCollection<Setlist>('setlists');
 
   const [isClient, setIsClient] = useState(false);
-  const loading = loadingVisible || loadingMine;
+  const loading = loadingPublic || loadingMine;
   
   useEffect(() => {
     setIsClient(true);
   }, []);
 
   const setlists = useMemo(() => {
-    if (loading) return [];
-    // Combine and deduplicate the lists
-    const all = [...visibleSetlists, ...mySetlists];
+    if (!isClient || loading) return [];
+
+    // Filtra os repertórios públicos para não incluir os que já são do usuário (evita duplicatas)
+    const filteredPublicSetlists = publicSetlists.filter(s => s.creatorId !== appUser?.id);
+    
+    // Combina e remove duplicatas
+    const all = [...mySetlists, ...filteredPublicSetlists];
     const unique = Array.from(new Map(all.map(s => [s.id, s])).values());
-    // A ordenação por nome agora é feita aqui, no cliente.
+    
+    // Ordena no cliente
     return unique.sort((a,b) => a.name.localeCompare(b.name));
-  }, [visibleSetlists, mySetlists, loading]);
+  }, [publicSetlists, mySetlists, appUser, loading, isClient]);
 
 
   const deleteSetlist = (id: string) => {
