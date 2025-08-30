@@ -20,25 +20,26 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
+import { useAuthenticatedFirestoreCollection } from '@/hooks/use-authenticated-firestore-collection';
 
 export default function SetlistsPage() {
   const { appUser } = useAuth();
 
-  // Consulta 1: Busca repertórios públicos e visíveis
+  // Consulta 1: Busca repertórios públicos e visíveis (sem ordenação no servidor)
   const { data: publicSetlists, loading: loadingPublic } = useFirestoreCollection<Setlist>(
     'setlists', 
-    'name', 
+    undefined, // Ordenação removida do servidor
     [
       ['isPublic', '==', true],
       ['isVisible', '==', true]
     ]
   );
   
-  // Consulta 2: Busca os repertórios criados pelo usuário (não precisa checar isVisible aqui, pois ele pode ver os seus ocultos)
-  const { data: mySetlists, loading: loadingMine } = useFirestoreCollection<Setlist>(
+  // Consulta 2: Busca os repertórios criados pelo usuário
+  const { data: mySetlists, loading: loadingMine } = useAuthenticatedFirestoreCollection<Setlist>(
       'setlists',
-      'name',
-      appUser ? [['creatorId', '==', appUser.id]] : [] // Só executa a query se o appUser existir
+      undefined, // Ordenação removida do servidor
+      appUser ? [['creatorId', '==', appUser.id]] : []
   );
 
   const { deleteDocument } = useFirestoreCollection<Setlist>('setlists');
