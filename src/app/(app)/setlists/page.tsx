@@ -25,45 +25,42 @@ import { useAuthenticatedFirestoreCollection } from '@/hooks/use-authenticated-f
 export default function SetlistsPage() {
   const { appUser } = useAuth();
 
-  // Consulta 1: Busca repertórios públicos e visíveis (sem ordenação no servidor)
-  const { data: publicSetlists, loading: loadingPublic } = useFirestoreCollection<Setlist>(
-    'setlists', 
-    undefined, // Ordenação removida do servidor
-    [
-      ['isPublic', '==', true],
+  // Consulta 1: Busca repertórios de OUTROS usuários que sejam visíveis
+  const { data: otherVisibleSetlists, loading: loadingOthers } = useFirestoreCollection<Setlist>(
+    'setlists',
+    undefined,
+    appUser ? [
+      ['creatorId', '!=', appUser.id],
       ['isVisible', '==', true]
-    ]
+    ] : [] // Se não houver usuário, não executa a query.
   );
-  
-  // Consulta 2: Busca os repertórios criados pelo usuário
+
+  // Consulta 2: Busca TODOS os repertórios criados pelo usuário (visíveis ou não)
   const { data: mySetlists, loading: loadingMine } = useAuthenticatedFirestoreCollection<Setlist>(
-      'setlists',
-      undefined, // Ordenação removida do servidor
-      appUser ? [['creatorId', '==', appUser.id]] : []
+    'setlists',
+    undefined,
+    appUser ? [['creatorId', '==', appUser.id]] : []
   );
 
   const { deleteDocument } = useFirestoreCollection<Setlist>('setlists');
 
   const [isClient, setIsClient] = useState(false);
-  const loading = loadingPublic || loadingMine;
-  
+  const loading = loadingOthers || loadingMine;
+
   useEffect(() => {
     setIsClient(true);
   }, []);
 
   const setlists = useMemo(() => {
-    if (!isClient || loading) return [];
+    if (!isClient || loading || !appUser) return [];
 
-    // Filtra os repertórios públicos para não incluir os que já são do usuário (evita duplicatas)
-    const filteredPublicSetlists = publicSetlists.filter(s => s.creatorId !== appUser?.id);
-    
-    // Combina e remove duplicatas
-    const all = [...mySetlists, ...filteredPublicSetlists];
+    // Combina as duas listas e remove duplicatas (embora não deva haver com a nova lógica)
+    const all = [...mySetlists, ...otherVisibleSetlists];
     const unique = Array.from(new Map(all.map(s => [s.id, s])).values());
     
     // Ordena no cliente
     return unique.sort((a,b) => a.name.localeCompare(b.name));
-  }, [publicSetlists, mySetlists, appUser, loading, isClient]);
+  }, [otherVisibleSetlists, mySetlists, appUser, loading, isClient]);
 
 
   const deleteSetlist = (id: string) => {
