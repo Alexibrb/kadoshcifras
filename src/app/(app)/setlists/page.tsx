@@ -26,7 +26,7 @@ export default function SetlistsPage() {
   // Removemos a ordenação 'name' da query para evitar a necessidade de um índice composto.
   // A ordenação será feita no lado do cliente.
   const { data: visibleSetlists, loading: loadingVisible } = useFirestoreCollection<Setlist>('setlists', undefined, [['isVisible', '==', true]]);
-  const { data: mySetlists, loading: loadingMine } = useFirestoreCollection<Setlist>('setlists', 'name', [['creatorId', '==', appUser?.id ?? '']]);
+  const { data: mySetlists, loading: loadingMine } = useFirestoreCollection<Setlist>('setlists', undefined, [['creatorId', '==', appUser?.id ?? '']]);
   const { deleteDocument } = useFirestoreCollection<Setlist>('setlists');
 
   const [isClient, setIsClient] = useState(false);
