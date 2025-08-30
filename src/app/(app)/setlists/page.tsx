@@ -23,9 +23,9 @@ import { useAuth } from '@/hooks/use-auth';
 
 export default function SetlistsPage() {
   const { appUser } = useAuth();
-  // We can't filter with OR queries easily in Firestore, so we fetch all visible setlists
-  // and then all setlists created by the user, and merge them.
-  const { data: visibleSetlists, loading: loadingVisible } = useFirestoreCollection<Setlist>('setlists', 'name', [['isVisible', '==', true]]);
+  // Removemos a ordenação 'name' da query para evitar a necessidade de um índice composto.
+  // A ordenação será feita no lado do cliente.
+  const { data: visibleSetlists, loading: loadingVisible } = useFirestoreCollection<Setlist>('setlists', undefined, [['isVisible', '==', true]]);
   const { data: mySetlists, loading: loadingMine } = useFirestoreCollection<Setlist>('setlists', 'name', [['creatorId', '==', appUser?.id ?? '']]);
   const { deleteDocument } = useFirestoreCollection<Setlist>('setlists');
 
@@ -41,6 +41,7 @@ export default function SetlistsPage() {
     // Combine and deduplicate the lists
     const all = [...visibleSetlists, ...mySetlists];
     const unique = Array.from(new Map(all.map(s => [s.id, s])).values());
+    // A ordenação por nome agora é feita aqui, no cliente.
     return unique.sort((a,b) => a.name.localeCompare(b.name));
   }, [visibleSetlists, mySetlists, loading]);
 
