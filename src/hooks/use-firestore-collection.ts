@@ -18,15 +18,20 @@ export function useFirestoreCollection<T extends { id: string }>(
 
   useEffect(() => {
     // Se um filtro estiver vazio (por exemplo, aguardando o ID do usuário), não execute a query.
-    if (initialFilters.some(f => !f[2])) {
+    // Isso previne um erro do Firestore por tentar usar um valor `undefined` em `where`.
+    if (initialFilters.some(f => f[2] === undefined || f[2] === null)) {
       setLoading(false);
+      setData([]); // Garante que dados antigos não sejam mostrados
       return;
     }
 
     let q: Query = collection(db, collectionName);
     
     initialFilters.forEach(filter => {
-      q = query(q, where(...filter));
+      // Ignora filtros com valor `false` ou vazio para evitar queries desnecessárias
+      if (filter[2]) {
+         q = query(q, where(...filter));
+      }
     });
 
     if (initialSort) {
@@ -41,7 +46,7 @@ export function useFirestoreCollection<T extends { id: string }>(
       setData(collectionData);
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching collection: ", error);
+      console.error(`Error fetching collection '${collectionName}': `, error);
       // Em caso de erro de permissão, é melhor retornar uma lista vazia do que dados antigos.
       setData([]);
       setLoading(false);

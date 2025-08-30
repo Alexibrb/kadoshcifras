@@ -26,6 +26,8 @@ export function useAuthenticatedFirestoreCollection<T extends { id: string }>(
     // Não faz nada se a autenticação ainda estiver carregando ou se o usuário não for aprovado.
     if (authLoading || !appUser?.isApproved) {
       setLoading(false);
+      // Retorna uma lista vazia se não estiver aprovado para limpar dados antigos.
+      if (!authLoading && !appUser) setData([]);
       return;
     }
 
@@ -48,11 +50,14 @@ export function useAuthenticatedFirestoreCollection<T extends { id: string }>(
       setLoading(false);
     }, (error) => {
       console.error(`Error fetching collection '${collectionName}': `, error);
+      setData([]); // Limpa os dados em caso de erro de permissão
       setLoading(false);
     });
 
     return () => unsubscribe();
   // A dependência de appUser garante que o hook reaja a mudanças no status de aprovação.
+  // Usamos JSON.stringify para evitar re-execuções desnecessárias por causa da referência do array.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collectionName, initialSort, JSON.stringify(initialFilters), authLoading, appUser]);
 
   const addDocument = useCallback(async (newData: Omit<T, 'id' | 'createdAt'>) => {
