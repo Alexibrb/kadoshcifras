@@ -5,17 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useFirestoreDocument } from '@/hooks/use-firestore-document';
 import { type Setlist, type Song } from '@/types';
-import { ArrowLeft, Music, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe } from 'lucide-react';
+import { ArrowLeft, Music, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Skeleton } from '@/components/ui/skeleton';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
 import { cn } from '@/lib/utils';
@@ -37,8 +30,16 @@ export default function SetlistPage() {
   const [isClient, setIsClient] = useState(false);
   const [orderedSongs, setOrderedSongs] = useState<Song[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
   
   useEffect(() => { setIsClient(true) }, []);
+  
+  useEffect(() => {
+    if (setlist) {
+        setEditedName(setlist.name);
+    }
+  }, [setlist]);
 
   const canEdit = useMemo(() => {
     if (!appUser || !setlist) return false;
@@ -48,7 +49,7 @@ export default function SetlistPage() {
     return appUser.role === 'admin' || appUser.id === setlist.creatorId;
   }, [appUser, setlist]);
 
-  // Permissão específica para alterar as configurações do repertório (público/privado)
+  // Permissão específica para alterar as configurações do repertório (público/privado/nome)
   const canChangeSettings = useMemo(() => {
     if (!appUser || !setlist) return false;
     return appUser.role === 'admin' || appUser.id === setlist.creatorId;
@@ -103,6 +104,21 @@ export default function SetlistPage() {
     await updateSetlistDoc({ isPublic });
   };
   
+  const handleNameSave = async () => {
+    if (!canChangeSettings || !editedName.trim()) return;
+    await updateSetlistDoc({ name: editedName.trim() });
+    setIsEditingName(false);
+  }
+
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleNameSave();
+    } else if (e.key === 'Escape') {
+      setIsEditingName(false);
+      if (setlist) setEditedName(setlist.name);
+    }
+  }
+  
   const onDragEnd = (result: DropResult) => {
     if (!result.destination || !canEdit) {
       return;
@@ -148,7 +164,28 @@ export default function SetlistPage() {
             <div className="flex items-center gap-2">
                 {setlist.isPublic ? <Globe className="h-7 w-7 text-muted-foreground" /> : <Lock className="h-7 w-7 text-muted-foreground" />}
                 <div>
-                    <h2 className="text-3xl font-bold font-headline tracking-tight">{setlist.name}</h2>
+                    {!isEditingName ? (
+                      <div className="flex items-center gap-2">
+                         <h2 className="text-3xl font-bold font-headline tracking-tight">{setlist.name}</h2>
+                         {canChangeSettings && (
+                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsEditingName(true)}>
+                              <Edit className="h-4 w-4" />
+                           </Button>
+                         )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Input 
+                            value={editedName}
+                            onChange={(e) => setEditedName(e.target.value)}
+                            onKeyDown={handleNameKeyDown}
+                            className="text-2xl font-bold font-headline h-12"
+                            autoFocus
+                        />
+                        <Button size="icon" className="h-10 w-10" onClick={handleNameSave}><Save className="h-5 w-5" /></Button>
+                        <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => { setIsEditingName(false); setEditedName(setlist.name); }}><X className="h-5 w-5" /></Button>
+                      </div>
+                    )}
                     <p className="text-muted-foreground">{orderedSongs.length} música(s)</p>
                 </div>
             </div>
@@ -168,15 +205,15 @@ export default function SetlistPage() {
       </div>
       
       <div className="flex flex-col gap-8 lg:grid lg:grid-cols-2">
-         {/* Coluna de Músicas no Repertório */}
-        <Card className="lg:order-1">
+        {/* Coluna de Músicas no Repertório */}
+        <Card className="flex flex-col order-1">
             <CardHeader>
                 <CardTitle className="font-headline">Músicas no Repertório</CardTitle>
                 <CardDescription>
                     {canEdit ? "Arraste para reordenar as músicas." : "Visualize as músicas do repertório."}
                 </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-grow">
                 {isClient && orderedSongs.length > 0 ? (
                     <DragDropContext onDragEnd={onDragEnd}>
                       <Droppable droppableId="songs" isDropDisabled={!canEdit}>
@@ -214,7 +251,7 @@ export default function SetlistPage() {
                       </Droppable>
                     </DragDropContext>
                 ) : (
-                    <div className="flex flex-col items-center gap-2 text-center py-12 border-2 border-dashed rounded-lg">
+                    <div className="flex flex-col items-center justify-center gap-2 text-center h-full py-12 border-2 border-dashed rounded-lg">
                         <Music className="h-10 w-10 text-muted-foreground" />
                         <p className="text-muted-foreground">Nenhuma música neste repertório ainda.</p>
                          {canEdit && <p className="text-xs text-muted-foreground">Use o painel ao lado para adicionar músicas.</p>}
@@ -224,7 +261,7 @@ export default function SetlistPage() {
         </Card>
 
         {/* Coluna de Adicionar Músicas */}
-        <Card className={cn(!canEdit && "bg-muted/30 border-dashed", "lg:order-2")}>
+        <Card className={cn(!canEdit && "bg-muted/30 border-dashed", "order-2")}>
           <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2">
               Adicionar Músicas

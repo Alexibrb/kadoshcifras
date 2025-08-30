@@ -32,7 +32,7 @@ export function useFirestoreDocument<T extends { id: string }>(collectionName: s
     return () => unsubscribe();
   }, [collectionName, docId]);
 
-  const updateDocument = useCallback(async (updatedData: Partial<Omit<T, 'id'>>) => {
+  const updateDocument = useCallback(async (updatedData: Partial<T>) => {
     try {
       const docRef = doc(db, collectionName, docId);
       await updateDoc(docRef, updatedData);
