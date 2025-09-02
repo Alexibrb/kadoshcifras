@@ -38,20 +38,14 @@ export default function SongPage() {
   const searchParams = useSearchParams();
   const songId = params.id as string;
   const fromSetlistId = searchParams.get('fromSetlist');
-  const setlistTranspose = parseInt(searchParams.get('transpose') || '0', 10);
+  const initialTranspose = parseInt(searchParams.get('transpose') || '0', 10);
 
-  const { data: song, loading: loadingSong } = useFirestoreDocument<Song>('songs', songId);
-  const { data: setlist, loading: loadingSetlist } = useFirestoreDocument<Setlist>('setlists', fromSetlistId || '');
-  const { updateDocument: updateSong } = useFirestoreCollection<Song>('songs');
-  const { updateDocument: updateSetlist } = useFirestoreCollection<Setlist>('setlists');
+  const { data: song, loading: loadingSong, updateDocument: updateSongDoc } = useFirestoreDocument<Song>('songs', songId);
+  const { data: setlist, loading: loadingSetlist, updateDocument: updateSetlistDoc } = useFirestoreDocument<Setlist>('setlists', fromSetlistId || '');
 
-  const { data: artists, loading: loadingArtists } = useFirestoreCollection<MetadataItem>('artists', 'name');
-  const { data: genres, loading: loadingGenres } = useFirestoreCollection<MetadataItem>('genres', 'name');
-  const { data: categories, loading: loadingCategories } = useFirestoreCollection<MetadataItem>('categories', 'name');
-  
   const [isClient, setIsClient] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [transpose, setTranspose] = useState(setlistTranspose || 0);
+  const [transpose, setTranspose] = useState(initialTranspose);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [fontSize, setFontSize] = useLocalStorage('song-font-size', 16);
   const [api, setApi] = useState<CarouselApi>()
@@ -62,6 +56,10 @@ export default function SongPage() {
   
   const [editedSong, setEditedSong] = useState<Song | null>(null);
   
+  const { data: artists, loading: loadingArtists } = useFirestoreCollection<MetadataItem>('artists', 'name');
+  const { data: genres, loading: loadingGenres } = useFirestoreCollection<MetadataItem>('genres', 'name');
+  const { data: categories, loading: loadingCategories } = useFirestoreCollection<MetadataItem>('categories', 'name');
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const draggableRef = useRef<HTMLDivElement>(null);
   
@@ -71,18 +69,20 @@ export default function SongPage() {
 
   useEffect(() => {
     setIsClient(true);
-    setTranspose(setlistTranspose || 0);
-  }, [setlistTranspose]);
+    setTranspose(initialTranspose);
+  }, [initialTranspose]);
 
   useEffect(() => {
     if (song) {
         setEditedSong(song);
+        // Se a chave da música no banco de dados mudou (outro usuário salvou),
+        // resete a transposição local para evitar o "salto" de tom.
         if (song.key !== initialKeyRef.current) {
-            setTranspose(setlistTranspose || 0);
+            setTranspose(initialTranspose || 0);
             initialKeyRef.current = song.key;
         }
     }
-  }, [song, setlistTranspose]);
+  }, [song, initialTranspose]);
 
   useEffect(() => {
     if (!api) {
@@ -157,16 +157,15 @@ export default function SongPage() {
       return;
     }
     
-    await updateSong(editedSong.id, editedSong);
+    await updateSongDoc(editedSong);
     
-    // Don't reset transpose on general save, only when key changes from another user.
     setIsEditing(false);
   };
 
   const handleCancelEditing = () => {
     setEditedSong(song || null);
     setIsEditing(false);
-    setTranspose(setlistTranspose || 0);
+    setTranspose(initialTranspose);
   }
 
   const handleSaveTransposeToSetlist = useCallback(async () => {
@@ -176,15 +175,16 @@ export default function SongPage() {
       s.songId === songId ? { ...s, transpose: transpose } : s
     );
 
-    await updateSetlist(fromSetlistId, { songs: newSongs });
+    await updateSetlistDoc({ songs: newSongs });
 
     setToneSaveSuccess(true);
-    setTimeout(() => setToneSaveSuccess(false), 2000); // Hide after 2 seconds
+    setTimeout(() => setToneSaveSuccess(false), 2000);
 
-  }, [fromSetlistId, setlist, songId, updateSetlist, transpose]);
+  }, [fromSetlistId, setlist, songId, updateSetlistDoc, transpose]);
 
   const changeTranspose = (change: number) => {
-    setTranspose(prev => Math.min(12, Math.max(-12, prev + change)));
+    const newTranspose = Math.min(12, Math.max(-12, transpose + change));
+    setTranspose(newTranspose);
   };
 
   const increaseTranspose = () => changeTranspose(1);
@@ -228,7 +228,7 @@ export default function SongPage() {
           defaultPosition={draggablePosition}
           handle=".handle"
         >
-          <div ref={draggableRef} className="fixed z-50 cursor-move handle top-15 right-4">
+          <div ref={draggableRef} className="fixed z-50 cursor-move handle">
              <Button
                 onClick={() => setIsPanelVisible(true)}
                 variant="outline"
