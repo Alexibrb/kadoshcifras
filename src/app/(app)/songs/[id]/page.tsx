@@ -388,9 +388,9 @@ export default function SongPage() {
                 {count > 1 && `Página ${current} de ${count}`}
              </div>
             <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
-                <CarouselContent className="h-full">
+                <CarouselContent>
                   {songParts.map((part, index) => (
-                    <CarouselItem key={index} className="h-full">
+                    <CarouselItem key={index}>
                       <Card className="w-full h-full">
                         <CardContent className="p-0 h-full">
                           <ScrollArea className="h-full p-4 md:p-6">
