@@ -383,7 +383,10 @@ export default function SongPage() {
             </CardContent>
           </Card>
         ) : showChords ? (
-          <div className="relative flex-1 flex flex-col h-[1500px]">
+          <div className={cn(
+              "relative flex-1 flex flex-col",
+              !isPanelVisible && 'h-[1500px]'
+          )}>
              <div className="text-center text-sm text-muted-foreground pb-2">
                 {count > 1 && `Página ${current} de ${count}`}
              </div>
