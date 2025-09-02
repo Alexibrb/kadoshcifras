@@ -392,7 +392,7 @@ export default function SongPage() {
                 <CarouselContent>
                   {songParts.map((part, index) => (
                     <CarouselItem key={index}>
-                      <Card className="w-full h-full flex flex-col bg-background">
+                      <Card className="w-full h-full flex flex-col bg-background shadow-none border-none">
                         <CardContent className="flex-1">
                           <ScrollArea className="h-full p-4 md:p-6">
                             <SongDisplay style={{ fontSize: `${fontSize}px` }} content={part} showChords={showChords} />
@@ -418,7 +418,7 @@ export default function SongPage() {
               </Carousel>
           </div>
         ) : (
-          <Card className="flex-1 bg-background">
+          <Card className="flex-1 bg-background shadow-none border-none">
               <CardContent className="h-full">
                   <ScrollArea className="h-full p-4 md:p-6">
                       <SongDisplay 
