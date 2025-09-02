@@ -155,10 +155,10 @@ export default function SongPage() {
           api?.scrollNext()
         }
 
-        if (key === pedalSettings.prevSong && prevSongId && fromSetlistId) {
+        if (fromSetlistId && pedalSettings.prevSong && key === pedalSettings.prevSong && prevSongId) {
             event.preventDefault();
             router.push(`/songs/${prevSongId}?fromSetlist=${fromSetlistId}&transpose=${prevTranspose}`);
-        } else if (key === pedalSettings.nextSong && nextSongId && fromSetlistId) {
+        } else if (fromSetlistId && pedalSettings.nextSong && key === pedalSettings.nextSong && nextSongId) {
             event.preventDefault();
             router.push(`/songs/${nextSongId}?fromSetlist=${fromSetlistId}&transpose=${nextTranspose}`);
         }
@@ -571,5 +571,3 @@ export default function SongPage() {
     </div>
   );
 }
-
-    
