@@ -388,10 +388,10 @@ export default function SongPage() {
                 {count > 1 && `Página ${current} de ${count}`}
              </div>
             <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
-                <CarouselContent>
+                <CarouselContent className="h-full">
                   {songParts.map((part, index) => (
                     <CarouselItem key={index}>
-                      <Card className="h-full">
+                      <Card className="w-full h-full">
                         <CardContent className="p-0 h-full">
                           <ScrollArea className="h-full p-4 md:p-6">
                             <SongDisplay style={{ fontSize: `${fontSize}px` }} content={part} showChords={showChords} />
