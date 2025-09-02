@@ -13,18 +13,21 @@ export const isChordLine = (line: string): boolean => {
   const trimmedLine = line.trim();
   if (!trimmedLine) return false;
 
-  // 1. Remove potenciais acordes e vê o que sobra.
-  // Regex aprimorada para capturar acordes complexos, incluindo baixo invertido e extensões.
-  const withoutChords = trimmedLine.replace(/([A-G](?:#|b)?(?:m|M|maj|min|dim|aug|sus|add|°|\+|-)?(?:\d)?(?:(?:\/[A-G](?:#|b)?))?)/g, '');
+  // 1. Remove common non-chord annotations like [Intro], (x2), etc.
+  const lineWithoutAnnotations = trimmedLine.replace(/\[.*?\]/g, '').replace(/\(.*?\)/g, '').trim();
+  if (!lineWithoutAnnotations) return true; // Line only contained annotations
 
-  // 2. Remove caracteres que são comuns em linhas de cifras (espaços, parênteses, barras, números, 'x' para repetição, etc.)
-  const cleanLine = withoutChords.replace(/[\s()|/x\d\.]/gi, '');
+  // 2. Remove potential chords and see what's left.
+  const withoutChords = lineWithoutAnnotations.replace(/([A-G](?:#|b)?(?:m|M|maj|min|dim|aug|sus|add|°|\+|-)?(?:\d)?(?:(?:\/[A-G](?:#|b)?))?)/g, '');
 
-  // 3. Se não sobrar quase nada, é muito provável que seja uma linha de cifra.
-  // Permitimos um ou dois caracteres para casos como "Am (x4)" onde o 'm' do Am pode não ser capturado perfeitamente.
+  // 3. Remove characters that are common in chord lines (spaces, slashes, numbers, 'x' for repetition, etc.)
+  const cleanLine = withoutChords.replace(/[\s/|\d.x]/gi, '');
+
+  // 4. If almost nothing is left, it's very likely a chord line.
+  // We allow a small number of remaining characters to account for typos or odd symbols.
   if (cleanLine.length <= 2) return true;
   
-  // 4. Se ainda sobrou texto, é provável que seja uma linha de letra.
+  // 5. If there's still significant text left, it's likely a lyrics line.
   return false;
 };
 
