@@ -44,4 +44,7 @@ export interface MetadataItem {
     createdAt?: Timestamp;
 }
 
-    
+export interface PedalSettings {
+    prev: string;
+    next: string;
+}

@@ -2,7 +2,7 @@
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Song, type MetadataItem, Setlist, SetlistSong } from '@/types';
+import { Song, type MetadataItem, Setlist, SetlistSong, PedalSettings } from '@/types';
 import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, HardDriveDownload, Eye, EyeOff, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useSearchParams } from 'next/navigation';
@@ -42,6 +42,7 @@ export default function SongPage() {
 
   const { data: song, loading: loadingSong, updateDocument: updateSongDoc } = useFirestoreDocument<Song>('songs', songId);
   const { data: setlist, loading: loadingSetlist, updateDocument: updateSetlistDoc } = useFirestoreDocument<Setlist>('setlists', fromSetlistId || '');
+  const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', { prev: ',', next: '.' });
 
   const [isClient, setIsClient] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -140,16 +141,17 @@ export default function SongPage() {
   const handleKeyDown = useCallback(
       (event: React.KeyboardEvent<HTMLDivElement>) => {
         if (!isEditing && showChords) {
-            if (event.key === "ArrowLeft" || event.key === 'PageUp' || event.key === ',') {
+            const key = event.key;
+            if (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prev) {
               event.preventDefault()
               api?.scrollPrev()
-            } else if (event.key === "ArrowRight" || event.key === 'PageDown' || event.key === '.') {
+            } else if (key === "ArrowRight" || key === 'PageDown' || key === pedalSettings.next) {
               event.preventDefault()
               api?.scrollNext()
             }
         }
       },
-      [api, isEditing, showChords]
+      [api, isEditing, showChords, pedalSettings]
     )
   
   const handleSave = async () => {
