@@ -385,19 +385,16 @@ export default function SongPage() {
             </CardContent>
           </Card>
         ) : showChords ? (
-          <div
-            className="relative flex-1 flex flex-col"
-            style={{ height: `${songAreaHeight}px` }}
-          >
+          <div className="relative flex-1 flex flex-col" style={{ height: `${songAreaHeight}px` }}>
              <div className="text-center text-sm text-muted-foreground pb-2">
                 {count > 1 && `Página ${current} de ${count}`}
              </div>
-            <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
-                <CarouselContent className="h-full">
+             <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
+                <CarouselContent>
                   {songParts.map((part, index) => (
-                    <CarouselItem key={index} className="h-full">
+                    <CarouselItem key={index}>
                       <Card className="w-full h-full flex flex-col">
-                        <CardContent className="p-0 h-full flex-1">
+                        <CardContent className="flex-1">
                           <ScrollArea className="h-full p-4 md:p-6">
                             <SongDisplay style={{ fontSize: `${fontSize}px` }} content={part} showChords={showChords} />
                           </ScrollArea>
@@ -423,7 +420,7 @@ export default function SongPage() {
           </div>
         ) : (
           <Card className="flex-1" style={{ height: `${songAreaHeight}px` }}>
-              <CardContent className="p-0 h-full">
+              <CardContent className="h-full">
                   <ScrollArea className="h-full p-4 md:p-6">
                       <SongDisplay 
                           style={{ fontSize: `${fontSize}px` }}
