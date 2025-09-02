@@ -233,6 +233,10 @@ export default function SongPage() {
                           <span className="sr-only">Salvar Tom Permanentemente</span>
                       </Button>
                     </div>
+                    <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 w-full max-w-xs">
+                      <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
+                      <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} className="ml-auto" />
+                    </div>
                     <div className="flex items-center gap-2 rounded-md border p-1 w-full max-w-xs bg-background">
                         <Label className="text-sm pl-1 whitespace-nowrap">Tam. da Fonte</Label>
                         <Button variant="secondary" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-8 px-2">
@@ -242,10 +246,6 @@ export default function SongPage() {
                         <Button variant="secondary" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-8 px-2">
                             <Plus className="h-4 w-4" />
                         </Button>
-                    </div>
-                     <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 w-full max-w-xs">
-                      <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
-                      <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} className="ml-auto" />
                     </div>
                 </div>
             )}
