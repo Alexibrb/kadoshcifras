@@ -385,9 +385,9 @@ export default function SongPage() {
             </CardContent>
           </Card>
         ) : showChords ? (
-          <div 
-              className="relative flex-1 flex flex-col"
-              style={{ height: `${songAreaHeight}px` }}
+          <div
+            className="relative flex-1 flex flex-col"
+            style={{ height: `${songAreaHeight}px` }}
           >
              <div className="text-center text-sm text-muted-foreground pb-2">
                 {count > 1 && `Página ${current} de ${count}`}
@@ -456,5 +456,3 @@ export default function SongPage() {
     </div>
   );
 }
-
-    
