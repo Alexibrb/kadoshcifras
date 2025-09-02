@@ -191,7 +191,7 @@ export default function SongPage() {
 
 
   return (
-    <div className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-full" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
+    <div className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
       
       {!isPanelVisible && !isEditing && (
          <Button
@@ -392,32 +392,43 @@ export default function SongPage() {
           </Card>
         ) : showChords ? (
           <div className="relative flex-1 flex flex-col">
-             <div className="flex justify-center items-center gap-8 text-center text-sm text-muted-foreground pb-2">
-                <div className="w-1/3 text-left">
-                   <div className="flex items-center gap-2 rounded-md border p-1 bg-background ml-4 max-w-fit">
-                    <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
-                    <Button variant="ghost" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-7 w-7 px-1">
-                        <Minus className="h-4 w-4" />
-                    </Button>
-                    <span className="text-sm font-medium tabular-nums">{fontSize}px</span>
-                    <Button variant="ghost" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-7 w-7 px-1">
-                        <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
+             <div className="flex justify-between items-center w-full px-4 text-center text-sm text-muted-foreground pb-2">
+                {fromSetlistId && prevSongId ? (
+                   <Button asChild variant="ghost" size="icon">
+                       <Link href={`/songs/${prevSongId}?fromSetlist=${fromSetlistId}`}>
+                           <ChevronLeft className="h-6 w-6" />
+                       </Link>
+                   </Button>
+                ) : <div className="w-10"></div>}
+
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-fit">
+                        <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
+                        <Button variant="ghost" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-7 w-7 px-1">
+                            <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm font-medium tabular-nums">{fontSize}px</span>
+                        <Button variant="ghost" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-7 w-7 px-1">
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    {count > 1 && <span>Página {current} de {count}</span>}
                 </div>
-                <div className="w-1/3">
-                  {count > 1 && `Página ${current} de ${count}`}
-                </div>
-                <div className="w-1/3 text-right">
-                  {/* Espaçador */}
-                </div>
+
+                {fromSetlistId && nextSongId ? (
+                   <Button asChild variant="ghost" size="icon">
+                       <Link href={`/songs/${nextSongId}?fromSetlist=${fromSetlistId}`}>
+                           <ChevronRight className="h-6 w-6" />
+                       </Link>
+                   </Button>
+                ) : <div className="w-10"></div>}
              </div>
              <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
                 <CarouselContent>
                   {songParts.map((part, index) => (
-                    <CarouselItem key={index}>
+                    <CarouselItem key={index} className="h-full">
                       <Card className="w-full h-full flex flex-col bg-background shadow-none border-none">
-                        <CardContent className="flex-1">
+                        <CardContent className="flex-1 h-full">
                           <ScrollArea className="h-full p-4 md:p-6">
                             <SongDisplay style={{ fontSize: `${fontSize}px` }} content={part} showChords={showChords} />
                           </ScrollArea>
@@ -439,30 +450,11 @@ export default function SongPage() {
                 <div className="absolute -right-4 top-1/2 -translate-y-1/2 hidden md:block">
                   <CarouselNext />
                 </div>
-                 {/* Botões de Navegação do Repertório */}
-                {fromSetlistId && (
-                    <>
-                       {prevSongId && (
-                           <Button asChild variant="outline" size="icon" className="absolute left-4 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full">
-                               <Link href={`/songs/${prevSongId}?fromSetlist=${fromSetlistId}`}>
-                                   <ChevronLeft className="h-6 w-6" />
-                               </Link>
-                           </Button>
-                       )}
-                       {nextSongId && (
-                           <Button asChild variant="outline" size="icon" className="absolute right-4 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full">
-                               <Link href={`/songs/${nextSongId}?fromSetlist=${fromSetlistId}`}>
-                                   <ChevronRight className="h-6 w-6" />
-                               </Link>
-                           </Button>
-                       )}
-                    </>
-                )}
               </Carousel>
           </div>
         ) : (
           <Card className="flex-1 bg-background shadow-none border-none">
-              <CardContent className="h-full">
+              <CardContent className="h-full flex flex-col">
                   <div className="flex justify-end items-center gap-8 text-center text-sm text-muted-foreground pt-2 pb-2">
                      <div className="flex items-center gap-2 rounded-md border p-1 bg-background ml-auto max-w-fit">
                         <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
@@ -475,7 +467,7 @@ export default function SongPage() {
                         </Button>
                       </div>
                   </div>
-                  <ScrollArea className="h-full p-4 md:p-6">
+                  <ScrollArea className="h-full p-4 md:p-6 flex-1">
                       <SongDisplay 
                           style={{ fontSize: `${fontSize}px` }}
                           content={contentToDisplay.replace(/\n\s*\n\s*\n/g, '\n\n')}
@@ -489,3 +481,5 @@ export default function SongPage() {
     </div>
   );
 }
+
+    
