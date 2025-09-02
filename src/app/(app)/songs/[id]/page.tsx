@@ -2,8 +2,8 @@
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Song, type MetadataItem } from '@/types';
-import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, HardDriveDownload, Eye, EyeOff, PanelTopClose, PanelTopOpen } from 'lucide-react';
+import { Song, type MetadataItem, Setlist } from '@/types';
+import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, HardDriveDownload, Eye, EyeOff, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -39,6 +39,7 @@ export default function SongPage() {
   const fromSetlistId = searchParams.get('fromSetlist');
 
   const { data: song, loading: loadingSong } = useFirestoreDocument<Song>('songs', songId);
+  const { data: setlist, loading: loadingSetlist } = useFirestoreDocument<Setlist>('setlists', fromSetlistId || '');
   const { updateDocument } = useFirestoreCollection<Song>('songs');
   
   const { data: artists, loading: loadingArtists } = useFirestoreCollection<MetadataItem>('artists', 'name');
@@ -82,6 +83,22 @@ export default function SongPage() {
     })
   }, [api])
   
+  const { prevSongId, nextSongId } = useMemo(() => {
+    if (!setlist || !setlist.songIds || setlist.songIds.length < 2) {
+      return { prevSongId: null, nextSongId: null };
+    }
+    const currentIndex = setlist.songIds.indexOf(songId);
+    if (currentIndex === -1) {
+      return { prevSongId: null, nextSongId: null };
+    }
+
+    const prev = currentIndex > 0 ? setlist.songIds[currentIndex - 1] : null;
+    const next = currentIndex < setlist.songIds.length - 1 ? setlist.songIds[currentIndex + 1] : null;
+
+    return { prevSongId: prev, nextSongId: next };
+  }, [setlist, songId]);
+
+
   const contentToDisplay = useMemo(() => {
     const currentContent = isEditing ? editedSong?.content : song?.content;
     if (!currentContent) return '';
@@ -136,7 +153,7 @@ export default function SongPage() {
     notFound();
   }
   
-  if (!isClient || loadingSong || !song || loadingArtists || loadingGenres || loadingCategories) {
+  if (!isClient || loadingSong || !song || loadingArtists || loadingGenres || loadingCategories || (fromSetlistId && loadingSetlist)) {
     return (
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
             <div className="flex items-center gap-4">
@@ -337,7 +354,7 @@ export default function SongPage() {
 
       <div className="flex-1 flex flex-col min-h-0">
         {isEditing && editedSong ? (
-          <Card className="flex-1 flex flex-col">
+          <Card className="flex-1 flex flex-col bg-background border-none shadow-none">
             <CardContent className="p-4 md:p-6 space-y-4 flex-1 flex flex-col">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="content-editor">Letra & Cifras</Label>
@@ -422,6 +439,25 @@ export default function SongPage() {
                 <div className="absolute -right-4 top-1/2 -translate-y-1/2 hidden md:block">
                   <CarouselNext />
                 </div>
+                 {/* Botões de Navegação do Repertório */}
+                {fromSetlistId && (
+                    <>
+                       {prevSongId && (
+                           <Button asChild variant="outline" size="icon" className="absolute left-4 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full">
+                               <Link href={`/songs/${prevSongId}?fromSetlist=${fromSetlistId}`}>
+                                   <ChevronLeft className="h-6 w-6" />
+                               </Link>
+                           </Button>
+                       )}
+                       {nextSongId && (
+                           <Button asChild variant="outline" size="icon" className="absolute right-4 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full">
+                               <Link href={`/songs/${nextSongId}?fromSetlist=${fromSetlistId}`}>
+                                   <ChevronRight className="h-6 w-6" />
+                               </Link>
+                           </Button>
+                       )}
+                    </>
+                )}
               </Carousel>
           </div>
         ) : (

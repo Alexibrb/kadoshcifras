@@ -21,6 +21,7 @@ export interface Setlist {
   creatorName?: string;
   isPublic?: boolean;
   isVisible?: boolean;
+  createdAt?: Timestamp;
 }
 
 export interface User {
