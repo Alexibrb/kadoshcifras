@@ -60,6 +60,7 @@ export default function SongPage() {
   const [editedSong, setEditedSong] = useState<Song | null>(null);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const draggableRef = useRef<HTMLDivElement>(null);
   
   const [draggablePosition, setDraggablePosition] = useLocalStorage('song-draggable-position', { x: 0, y: 0 });
 
@@ -199,11 +200,12 @@ export default function SongPage() {
       
       {!isPanelVisible && !isEditing && (
         <Draggable
+          nodeRef={draggableRef}
           onStop={(_e, data) => setDraggablePosition({ x: data.x, y: data.y })}
           defaultPosition={draggablePosition}
           handle=".handle"
         >
-          <div className="fixed z-50 cursor-move handle">
+          <div ref={draggableRef} className="fixed z-50 cursor-move handle">
              <Button
                 onClick={() => setIsPanelVisible(true)}
                 variant="outline"
