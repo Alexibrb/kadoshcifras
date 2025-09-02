@@ -17,21 +17,24 @@ export const isChordLine = (line: string): boolean => {
     const trimmedLine = line.trim();
     if (!trimmedLine) return false;
 
-    // Se a linha contiver números sozinhos (ex: "1", "2"), é provável que seja um indicador de ordem, não cifra.
-    if (/^\d+\s*$/.test(trimmedLine)) {
+    // Se a linha contiver apenas números e pontuação, provavelmente não é cifra.
+    if (/^[\d\s.,!?;:"'()-]+$/.test(trimmedLine)) {
         return false;
     }
     
-    // Remove notações comuns de acordes para não classificar a linha erroneamente como letra.
-    const sanitizedLine = trimmedLine
-      .replace(/sus|add|aug|dim|maj/gi, '') // Remove palavras-chave de acordes
-      .replace(/[0-9]/g, ''); // Remove números (extensões, etc.)
+    // Remove tudo que se parece com um acorde para ver o que sobra.
+    const nonChordChars = trimmedLine
+      .replace(/[A-G](?:#|b)?(?:m|M|maj|min|dim|aug|sus|add|°|\+|-)?(?:\d)?(?:(?:\/[A-G](?:#|b)?))?/g, '')
+      .replace(/[()]/g, '') // Remove parênteses
+      .trim();
 
-    // Verifica se a linha higienizada contém letras minúsculas (exceto 'm' para menor e 'b' para bemol).
-    // A presença de outras letras minúsculas é um forte indicador de que é uma linha de letra.
-    const hasLyrics = /[a-ce-ln-z]/.test(sanitizedLine);
-    
-    return !hasLyrics;
+    // Se sobrar muito texto (mais de 4 caracteres), provavelmente é uma linha de letra.
+    if (nonChordChars.length > 4) return true;
+
+    // Verifica a presença de letras que são raras em cifras (exceto as que compõem nomes de acordes).
+    const hasLyricsChars = /[hij-lknop-rt-vx-z]/i.test(nonChordChars);
+
+    return !hasLyricsChars;
 };
 
 
@@ -83,14 +86,28 @@ export const transposeChord = (chord: string, semitones: number): string => {
 
 export const transposeContent = (content: string, semitones: number): string => {
     if (semitones === 0) return content;
+    if (!content) return '';
 
     const lines = content.split('\n');
+    
+    // Regex melhorada para capturar acordes, incluindo com baixo invertido e notações complexas.
+    // Ex: C, Gm, F/A, Gsus4, D(add9)
+    const chordRegex = /([A-G](?:#|b)?(?:(?:maj|m|min|dim|aug|sus|add|M|°|\+|-)?(?:\d+)?(?:\([#b]?\d+\))?)*(?:\/[A-G](?:#|b)?)?)/g;
+
     const transposedLines = lines.map(line => {
+        // Verifica se a linha é uma linha de cifra antes de tentar transpor
         if (isChordLine(line)) {
-            // Usa uma regex para encontrar qualquer coisa que pareça um acorde na linha
-            // e aplica a transposição a cada correspondência.
-            return line.replace(/([A-G](?:#|b)?(?:maj|m|min|dim|aug|sus|M|°|4|6|7|9|11|13)?(?:(?:b|#)\d{1,2})*(?:\/[A-G](?:#|b)?)?)/g, (match) => {
-                return transposeChord(match, semitones);
+            return line.replace(chordRegex, (match) => {
+                // Não transpõe se o "acorde" for apenas uma letra sozinha
+                // Isso evita transpor letras em títulos como "Intro (A)"
+                if (match.trim().length <= 1 && line.includes('(')) {
+                    return match;
+                }
+                 // Garante que o que foi encontrado é um acorde válido antes de transpor
+                if (getNoteIndex(match.charAt(0)) !== -1) {
+                    return transposeChord(match, semitones);
+                }
+                return match;
             });
         }
         return line;
