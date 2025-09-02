@@ -376,14 +376,8 @@ export default function SongPage() {
         ) : showChords ? (
           <div className="relative flex-1 flex flex-col">
              <div className="flex justify-center items-center gap-8 text-center text-sm text-muted-foreground pb-2">
-                <div className="w-1/3 text-right">
-                  {/* Espaçador */}
-                </div>
-                <div className="w-1/3">
-                  {count > 1 && `Página ${current} de ${count}`}
-                </div>
-                <div className="w-1/3 text-right">
-                  <div className="flex items-center gap-2 rounded-md border p-1 bg-background ml-auto mr-4 max-w-fit">
+                <div className="w-1/3 text-left">
+                   <div className="flex items-center gap-2 rounded-md border p-1 bg-background ml-4 max-w-fit">
                     <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
                     <Button variant="ghost" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-7 w-7 px-1">
                         <Minus className="h-4 w-4" />
@@ -393,6 +387,12 @@ export default function SongPage() {
                         <Plus className="h-4 w-4" />
                     </Button>
                   </div>
+                </div>
+                <div className="w-1/3">
+                  {count > 1 && `Página ${current} de ${count}`}
+                </div>
+                <div className="w-1/3 text-right">
+                  {/* Espaçador */}
                 </div>
              </div>
              <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
