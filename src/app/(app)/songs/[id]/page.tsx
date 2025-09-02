@@ -51,7 +51,7 @@ export default function SongPage() {
   });
 
   const [isClient, setIsClient] = useState(false);
-  const [isEditing, setIsEditing] = useState(isEditing);
+  const [isEditing, setIsEditing] = useState(false);
   const [transpose, setTranspose] = useState(initialTranspose);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [fontSize, setFontSize] = useLocalStorage('song-font-size', 16);
@@ -257,12 +257,12 @@ export default function SongPage() {
           defaultPosition={draggablePosition}
           handle=".handle"
         >
-          <div ref={draggableRef} className="fixed z-50 cursor-pointer handle">
+          <div ref={draggableRef} className="fixed z-50">
              <Button
                 onClick={() => setIsPanelVisible(true)}
                 variant="outline"
                 size="icon"
-                className="bg-background/80 backdrop-blur-sm w-full h-full"
+                className="bg-background/80 backdrop-blur-sm w-full h-full handle"
               >
                 <PanelTopOpen className="h-5 w-5" />
                 <span className="sr-only">Mostrar Controles</span>
@@ -572,7 +572,3 @@ export default function SongPage() {
     </div>
   );
 }
-
-    
-
-    
