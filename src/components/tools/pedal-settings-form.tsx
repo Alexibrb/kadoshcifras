@@ -77,7 +77,7 @@ export function PedalSettingsForm() {
                 <Label htmlFor="prevPageKey">Página Anterior</Label>
                 <Input
                 id="prevPageKey"
-                value={prevPageKey}
+                value={prevPageKey || ''}
                 onKeyDown={(e) => handleKeyPress(e, 'prevPage')}
                 readOnly
                 placeholder="Pressione uma tecla"
@@ -87,7 +87,7 @@ export function PedalSettingsForm() {
                 <Label htmlFor="nextPageKey">Próxima Página</Label>
                 <Input
                 id="nextPageKey"
-                value={nextPageKey}
+                value={nextPageKey || ''}
                 onKeyDown={(e) => handleKeyPress(e, 'nextPage')}
                 readOnly
                 placeholder="Pressione uma tecla"
@@ -99,7 +99,7 @@ export function PedalSettingsForm() {
                 <Label htmlFor="prevSongKey">Música Anterior</Label>
                 <Input
                 id="prevSongKey"
-                value={prevSongKey}
+                value={prevSongKey || ''}
                 onKeyDown={(e) => handleKeyPress(e, 'prevSong')}
                 readOnly
                 placeholder="Pressione uma tecla"
@@ -109,7 +109,7 @@ export function PedalSettingsForm() {
                 <Label htmlFor="nextSongKey">Próxima Música</Label>
                 <Input
                 id="nextSongKey"
-                value={nextSongKey}
+                value={nextSongKey || ''}
                 onKeyDown={(e) => handleKeyPress(e, 'nextSong')}
                 readOnly
                 placeholder="Pressione uma tecla"
