@@ -249,7 +249,7 @@ export default function NewSongPage() {
                 placeholder="Digite ou cole sua cifra aqui"
                 className="font-code"
                 required
-                style={{ whiteSpace: 'pre', overflowX: 'auto', minHeight: '1000px' }}
+                style={{ whiteSpace: 'pre', overflowX: 'auto', height: '1500px' }}
               />
             </div>
             <div className="flex justify-end">
