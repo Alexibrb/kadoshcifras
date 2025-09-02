@@ -257,12 +257,12 @@ export default function SongPage() {
           defaultPosition={draggablePosition}
           handle=".handle"
         >
-          <div ref={draggableRef} className="fixed z-50 cursor-move handle">
+          <div ref={draggableRef} className="fixed z-50">
              <Button
                 onClick={() => setIsPanelVisible(true)}
                 variant="outline"
                 size="icon"
-                className="bg-background/80 backdrop-blur-sm"
+                className="bg-background/80 backdrop-blur-sm handle cursor-move"
               >
                 <PanelTopOpen className="h-5 w-5" />
                 <span className="sr-only">Mostrar Controles</span>
