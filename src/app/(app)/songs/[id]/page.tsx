@@ -63,6 +63,8 @@ export default function SongPage() {
   const draggableRef = useRef<HTMLDivElement>(null);
   
   const [draggablePosition, setDraggablePosition] = useLocalStorage('song-draggable-position', { x: 0, y: 0 });
+  
+  const initialKeyRef = useRef(song?.key);
 
   useEffect(() => {
     setIsClient(true);
@@ -71,6 +73,12 @@ export default function SongPage() {
   useEffect(() => {
     if (song) {
         setEditedSong(song);
+        // Se a chave original da música mudar (porque outro usuário salvou),
+        // redefinimos a transposição local para evitar conflitos de estado.
+        if (song.key !== initialKeyRef.current) {
+            setTranspose(0);
+            initialKeyRef.current = song.key;
+        }
     }
   }, [song]);
 
@@ -205,7 +213,7 @@ export default function SongPage() {
           defaultPosition={draggablePosition}
           handle=".handle"
         >
-          <div ref={draggableRef} className="fixed z-50 cursor-move handle">
+          <div ref={draggableRef} className="fixed z-50 cursor-move handle top-20 right-4">
              <Button
                 onClick={() => setIsPanelVisible(true)}
                 variant="outline"
