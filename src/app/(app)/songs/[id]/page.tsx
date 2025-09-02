@@ -83,13 +83,6 @@ export default function SongPage() {
     })
   }, [api])
   
-   // Ajusta a altura da textarea dinamicamente
-  useEffect(() => {
-    if (isEditing && textareaRef.current) {
-      textareaRef.current.style.height = 'auto'; // Reseta a altura
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; // Define a altura com base no conteúdo
-    }
-  }, [isEditing, editedSong?.content]);
 
   const { prevSongId, nextSongId } = useMemo(() => {
     if (!setlist || !setlist.songIds || setlist.songIds.length < 2) {
@@ -362,7 +355,7 @@ export default function SongPage() {
 
       <div className="flex-1 flex flex-col min-h-0">
         {isEditing && editedSong ? (
-          <Card className="flex-1 flex flex-col bg-background shadow-none border-none">
+          <Card className="flex-1 flex flex-col bg-transparent shadow-none border-none">
             <CardContent className="p-4 md:p-6 space-y-4 flex-1 flex flex-col">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="content-editor">Letra & Cifras</Label>
@@ -389,7 +382,8 @@ export default function SongPage() {
                   style={{ 
                       whiteSpace: 'pre', 
                       overflowX: 'auto', 
-                      fontSize: `${fontSize}px` 
+                      fontSize: `${fontSize}px`,
+                      height: '1500px'
                   }}
                   required
                 />
@@ -511,5 +505,3 @@ export default function SongPage() {
     </div>
   );
 }
-
-    
