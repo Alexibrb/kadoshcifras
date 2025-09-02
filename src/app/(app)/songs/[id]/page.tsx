@@ -393,13 +393,15 @@ export default function SongPage() {
         ) : showChords ? (
           <div className="relative flex-1 flex flex-col">
              <div className="flex justify-between items-center w-full px-4 text-center text-sm text-muted-foreground pb-2">
-                {fromSetlistId && prevSongId ? (
-                   <Button asChild variant="ghost" size="icon">
-                       <Link href={`/songs/${prevSongId}?fromSetlist=${fromSetlistId}`}>
-                           <ChevronLeft className="h-6 w-6" />
-                       </Link>
-                   </Button>
-                ) : <div className="w-10"></div>}
+                <div className="flex items-center gap-2">
+                    {fromSetlistId && prevSongId ? (
+                       <Button asChild variant="ghost" size="icon">
+                           <Link href={`/songs/${prevSongId}?fromSetlist=${fromSetlistId}`}>
+                               <ChevronLeft className="h-6 w-6" />
+                           </Link>
+                       </Button>
+                    ) : <div className="w-10"></div>}
+                </div>
 
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-fit">
@@ -415,20 +417,22 @@ export default function SongPage() {
                     {count > 1 && <span>Página {current} de {count}</span>}
                 </div>
 
-                {fromSetlistId && nextSongId ? (
-                   <Button asChild variant="ghost" size="icon">
-                       <Link href={`/songs/${nextSongId}?fromSetlist=${fromSetlistId}`}>
-                           <ChevronRight className="h-6 w-6" />
-                       </Link>
-                   </Button>
-                ) : <div className="w-10"></div>}
+                 <div className="flex items-center gap-2">
+                    {fromSetlistId && nextSongId ? (
+                       <Button asChild variant="ghost" size="icon">
+                           <Link href={`/songs/${nextSongId}?fromSetlist=${fromSetlistId}`}>
+                               <ChevronRight className="h-6 w-6" />
+                           </Link>
+                       </Button>
+                    ) : <div className="w-10"></div>}
+                </div>
              </div>
              <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
                 <CarouselContent>
                   {songParts.map((part, index) => (
                     <CarouselItem key={index} className="h-full">
                       <Card className="w-full h-full flex flex-col bg-background shadow-none border-none">
-                        <CardContent className="flex-1 h-full">
+                        <CardContent className="flex-1 h-full p-0">
                           <ScrollArea className="h-full p-4 md:p-6">
                             <SongDisplay style={{ fontSize: `${fontSize}px` }} content={part} showChords={showChords} />
                           </ScrollArea>
@@ -453,10 +457,19 @@ export default function SongPage() {
               </Carousel>
           </div>
         ) : (
-          <Card className="flex-1 bg-background shadow-none border-none">
-              <CardContent className="h-full flex flex-col">
-                  <div className="flex justify-end items-center gap-8 text-center text-sm text-muted-foreground pt-2 pb-2">
-                     <div className="flex items-center gap-2 rounded-md border p-1 bg-background ml-auto max-w-fit">
+          <Card className="flex-1 flex flex-col bg-background shadow-none border-none">
+              <CardContent className="h-full flex flex-col p-0">
+                  <div className="flex justify-between items-center w-full px-4 text-center text-sm text-muted-foreground pt-2 pb-2">
+                     <div className="flex items-center gap-2">
+                         {fromSetlistId && prevSongId ? (
+                           <Button asChild variant="ghost" size="icon">
+                               <Link href={`/songs/${prevSongId}?fromSetlist=${fromSetlistId}`}>
+                                   <ChevronLeft className="h-6 w-6" />
+                               </Link>
+                           </Button>
+                         ) : <div className="w-10"></div>}
+                     </div>
+                     <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-fit">
                         <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
                         <Button variant="ghost" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-7 w-7 px-1">
                             <Minus className="h-4 w-4" />
@@ -465,6 +478,15 @@ export default function SongPage() {
                         <Button variant="ghost" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-7 w-7 px-1">
                             <Plus className="h-4 w-4" />
                         </Button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {fromSetlistId && nextSongId ? (
+                           <Button asChild variant="ghost" size="icon">
+                               <Link href={`/songs/${nextSongId}?fromSetlist=${fromSetlistId}`}>
+                                   <ChevronRight className="h-6 w-6" />
+                               </Link>
+                           </Button>
+                        ) : <div className="w-10"></div>}
                       </div>
                   </div>
                   <ScrollArea className="h-full p-4 md:p-6 flex-1">
