@@ -25,6 +25,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
+import Draggable from 'react-draggable';
 
 
 const ALL_KEYS = [
@@ -59,6 +60,8 @@ export default function SongPage() {
   const [editedSong, setEditedSong] = useState<Song | null>(null);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  const [draggablePosition, setDraggablePosition] = useLocalStorage('song-draggable-position', { x: 0, y: 0 });
 
   useEffect(() => {
     setIsClient(true);
@@ -195,15 +198,23 @@ export default function SongPage() {
     <div className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
       
       {!isPanelVisible && !isEditing && (
-         <Button
-            onClick={() => setIsPanelVisible(true)}
-            variant="outline"
-            size="icon"
-            className="fixed top-20 right-4 z-50 bg-background/80 backdrop-blur-sm"
-          >
-            <PanelTopOpen className="h-5 w-5" />
-            <span className="sr-only">Mostrar Controles</span>
-          </Button>
+        <Draggable
+          onStop={(_e, data) => setDraggablePosition({ x: data.x, y: data.y })}
+          defaultPosition={draggablePosition}
+          handle=".handle"
+        >
+          <div className="fixed z-50 cursor-move handle">
+             <Button
+                onClick={() => setIsPanelVisible(true)}
+                variant="outline"
+                size="icon"
+                className="bg-background/80 backdrop-blur-sm"
+              >
+                <PanelTopOpen className="h-5 w-5" />
+                <span className="sr-only">Mostrar Controles</span>
+              </Button>
+          </div>
+        </Draggable>
       )}
 
 
