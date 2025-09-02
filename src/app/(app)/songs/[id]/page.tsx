@@ -51,7 +51,7 @@ export default function SongPage() {
   });
 
   const [isClient, setIsClient] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(isEditing);
   const [transpose, setTranspose] = useState(initialTranspose);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [fontSize, setFontSize] = useLocalStorage('song-font-size', 16);
@@ -179,7 +179,7 @@ export default function SongPage() {
     if (isEditing || !showChords || isPanelVisible) {
       return;
     }
-    // Não interfere com os botões de navegação do carrossel
+    // Não interfere com os botões de navegação do carrossel ou o botão flutuante
     if ((event.target as HTMLElement).closest('button')) {
       return;
     }
@@ -282,12 +282,12 @@ export default function SongPage() {
           defaultPosition={draggablePosition}
           handle=".handle"
         >
-          <div ref={draggableRef} className="fixed z-50">
+          <div ref={draggableRef} className="fixed z-50 handle cursor-pointer">
              <Button
                 onClick={() => setIsPanelVisible(true)}
                 variant="outline"
                 size="icon"
-                className="bg-background/80 backdrop-blur-sm handle cursor-pointer"
+                className="bg-background/80 backdrop-blur-sm"
               >
                 <PanelTopOpen className="h-5 w-5" />
                 <span className="sr-only">Mostrar Controles</span>
@@ -580,7 +580,7 @@ export default function SongPage() {
                                    <ChevronRight className="h-6 w-6" />
                                </Link>
                            </Button>
-                        ) : <div className="w-10"></div>}
+                         ) : <div className="w-10"></div>}
                       </div>
                   </div>
                   <ScrollArea className="h-full p-4 md:p-6 flex-1">
@@ -597,3 +597,5 @@ export default function SongPage() {
     </div>
   );
 }
+
+    
