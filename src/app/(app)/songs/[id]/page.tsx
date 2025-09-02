@@ -25,7 +25,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
-import Draggable from 'react-draggable';
 
 
 const ALL_KEYS = [
@@ -69,16 +68,12 @@ export default function SongPage() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const draggableRef = useRef<HTMLDivElement>(null);
-  
-  const [draggablePosition, setDraggablePosition] = useLocalStorage('song-draggable-position', { x: 0, y: 0 });
   
   const initialKeyRef = useRef(song?.key);
 
   useEffect(() => {
     setIsClient(true);
     setTranspose(initialTranspose);
-    // Foca o container principal para capturar eventos do teclado imediatamente
     if (containerRef.current) {
         containerRef.current.focus();
     }
@@ -87,8 +82,6 @@ export default function SongPage() {
   useEffect(() => {
     if (song) {
         setEditedSong(song);
-        // Se a chave da música no banco de dados mudou (outro usuário salvou),
-        // resete a transposição local para evitar o "salto" de tom.
         if (initialKeyRef.current !== undefined && song.key !== initialKeyRef.current) {
             const currentTranspose = fromSetlistId && setlist ? (setlist.songs.find(s => s.songId === songId)?.transpose ?? 0) : 0;
             setTranspose(currentTranspose);
@@ -151,25 +144,23 @@ export default function SongPage() {
 
   const handleKeyDown = useCallback(
       (event: React.KeyboardEvent<HTMLDivElement>) => {
-        if (!isEditing) {
-            const key = event.key;
-            // Page navigation
-            if (showChords && (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prevPage)) {
-              event.preventDefault()
-              api?.scrollPrev()
-            } else if (showChords && (key === "ArrowRight" || key === 'PageDown' || key === pedalSettings.nextPage)) {
-              event.preventDefault()
-              api?.scrollNext()
-            }
+        if (isEditing) return;
 
-            // Song navigation
-            if (key === pedalSettings.prevSong && prevSongId && fromSetlistId) {
-                event.preventDefault();
-                router.push(`/songs/${prevSongId}?fromSetlist=${fromSetlistId}&transpose=${prevTranspose}`);
-            } else if (key === pedalSettings.nextSong && nextSongId && fromSetlistId) {
-                event.preventDefault();
-                router.push(`/songs/${nextSongId}?fromSetlist=${fromSetlistId}&transpose=${nextTranspose}`);
-            }
+        const key = event.key;
+        if (showChords && (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prevPage)) {
+          event.preventDefault()
+          api?.scrollPrev()
+        } else if (showChords && (key === "ArrowRight" || key === 'PageDown' || key === pedalSettings.nextPage)) {
+          event.preventDefault()
+          api?.scrollNext()
+        }
+
+        if (key === pedalSettings.prevSong && prevSongId && fromSetlistId) {
+            event.preventDefault();
+            router.push(`/songs/${prevSongId}?fromSetlist=${fromSetlistId}&transpose=${prevTranspose}`);
+        } else if (key === pedalSettings.nextSong && nextSongId && fromSetlistId) {
+            event.preventDefault();
+            router.push(`/songs/${nextSongId}?fromSetlist=${fromSetlistId}&transpose=${nextTranspose}`);
         }
       },
       [api, isEditing, showChords, pedalSettings, prevSongId, nextSongId, fromSetlistId, router, prevTranspose, nextTranspose]
@@ -241,7 +232,6 @@ export default function SongPage() {
 
   const backUrl = fromSetlistId ? `/setlists/${fromSetlistId}` : '/songs';
 
-
   return (
     <div 
       ref={containerRef}
@@ -250,100 +240,99 @@ export default function SongPage() {
       tabIndex={-1}
     >
       
-      {!isPanelVisible && !isEditing && (
-        <Draggable
-          nodeRef={draggableRef}
-          onStop={(_e, data) => setDraggablePosition({ x: data.x, y: data.y })}
-          defaultPosition={draggablePosition}
-          handle=".handle"
-        >
-          <div ref={draggableRef} className="fixed z-50">
-             <div className="handle w-full h-full">
-                <Button
-                    onClick={() => setIsPanelVisible(true)}
-                    variant="outline"
-                    size="icon"
-                    className="bg-background/80 backdrop-blur-sm"
-                >
-                    <PanelTopOpen className="h-5 w-5" />
-                    <span className="sr-only">Mostrar Controles</span>
-                </Button>
-            </div>
-          </div>
-        </Draggable>
-      )}
-
-
-      {isPanelVisible && !isEditing && (
+      {!isEditing && (
         <Card className="mb-4 bg-accent/10 transition-all duration-300">
           <CardContent className="p-4 space-y-4">
-              <div className="flex items-start justify-between gap-4">
-                  <Button asChild variant="outline" size="icon" className="shrink-0">
-                      <Link href={backUrl}>
-                          <ArrowLeft className="h-4 w-4" />
-                          <span className="sr-only">Voltar</span>
-                      </Link>
-                  </Button>
-
-                  <div className="flex-1 space-y-1">
-                      <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{song.title}</h1>
-                      <div className="flex items-center gap-3 flex-wrap">
-                          <p className="text-muted-foreground text-sm">{song.artist}</p>
-                          {song.key && <Badge variant="outline" className="whitespace-nowrap text-sm">Tom: {transposeChord(song.key, transpose)}</Badge>}
-                      </div>
-                      <div className="flex flex-row items-start gap-2 pt-1">
-                          <Button variant="outline" onClick={handleStartEditing} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-8 text-xs">
-                              <Edit className="mr-1.5 h-3 w-3" /> Editar
-                          </Button>
-                          {song.url && (
-                              <Button asChild variant="destructive" size="sm" className="h-8 text-xs">
-                                  <a href={song.url} target="_blank" rel="noopener noreferrer">
-                                      <PlayCircle className="mr-1.5 h-3 w-3" /> Ouvir
-                                  </a>
-                              </Button>
-                          )}
-                      </div>
-                  </div>
-                  
-                  <Button
-                    onClick={() => setIsPanelVisible(false)}
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0"
-                  >
-                    <PanelTopClose className="h-5 w-5" />
-                    <span className="sr-only">Ocultar Controles</span>
-                  </Button>
-              </div>
-            
-              <div className="flex flex-col sm:flex-row justify-center items-center gap-2 pt-2 flex-wrap">
-                  <div className="flex items-center gap-1 rounded-md border p-1 w-full max-w-sm bg-background">
-                    <Button variant="ghost" size="icon" onClick={decreaseTranspose} className="h-8 w-8">
-                        <Minus className="h-4 w-4" />
-                    </Button>
-                    <Badge variant="secondary" className="px-3 py-1 text-xs whitespace-nowrap flex-grow text-center justify-center">
-                        Tom: {transpose > 0 ? '+' : ''}{transpose}
-                    </Badge>
-                    <Button variant="ghost" size="icon" onClick={increaseTranspose} className="h-8 w-8">
-                        <Plus className="h-4 w-4" />
-                    </Button>
-                    {fromSetlistId && (
-                      <Button 
-                        variant={toneSaveSuccess ? "default" : "outline"} 
-                        size="sm" 
-                        onClick={handleSaveTransposeToSetlist}
-                        className={cn("h-8 ml-2", toneSaveSuccess && "bg-green-500 hover:bg-green-600")}
-                      >
-                         {toneSaveSuccess ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-                         <span className="ml-2 hidden sm:inline">{toneSaveSuccess ? "Salvo!" : "Salvar Tom"}</span>
+             {isPanelVisible ? (
+                <>
+                  <div className="flex items-start justify-between gap-4">
+                      <Button asChild variant="outline" size="icon" className="shrink-0">
+                          <Link href={backUrl}>
+                              <ArrowLeft className="h-4 w-4" />
+                              <span className="sr-only">Voltar</span>
+                          </Link>
                       </Button>
-                    )}
+
+                      <div className="flex-1 space-y-1">
+                          <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{song.title}</h1>
+                          <div className="flex items-center gap-3 flex-wrap">
+                              <p className="text-muted-foreground text-sm">{song.artist}</p>
+                              {song.key && <Badge variant="outline" className="whitespace-nowrap text-sm">Tom: {transposeChord(song.key, transpose)}</Badge>}
+                          </div>
+                          <div className="flex flex-row items-start gap-2 pt-1">
+                              <Button variant="outline" onClick={handleStartEditing} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-8 text-xs">
+                                  <Edit className="mr-1.5 h-3 w-3" /> Editar
+                              </Button>
+                              {song.url && (
+                                  <Button asChild variant="destructive" size="sm" className="h-8 text-xs">
+                                      <a href={song.url} target="_blank" rel="noopener noreferrer">
+                                          <PlayCircle className="mr-1.5 h-3 w-3" /> Ouvir
+                                      </a>
+                                  </Button>
+                              )}
+                          </div>
+                      </div>
+                      
+                      <Button
+                        onClick={() => setIsPanelVisible(false)}
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0"
+                      >
+                        <PanelTopClose className="h-5 w-5" />
+                        <span className="sr-only">Ocultar Controles</span>
+                      </Button>
                   </div>
-                   <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 w-full max-w-xs">
-                    <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
-                    <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} className="ml-auto" />
+                
+                  <div className="flex flex-col sm:flex-row justify-center items-center gap-2 pt-2 flex-wrap">
+                      <div className="flex items-center gap-1 rounded-md border p-1 w-full max-w-sm bg-background">
+                        <Button variant="ghost" size="icon" onClick={decreaseTranspose} className="h-8 w-8">
+                            <Minus className="h-4 w-4" />
+                        </Button>
+                        <Badge variant="secondary" className="px-3 py-1 text-xs whitespace-nowrap flex-grow text-center justify-center">
+                            Tom: {transpose > 0 ? '+' : ''}{transpose}
+                        </Badge>
+                        <Button variant="ghost" size="icon" onClick={increaseTranspose} className="h-8 w-8">
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                        {fromSetlistId && (
+                          <Button 
+                            variant={toneSaveSuccess ? "default" : "outline"} 
+                            size="sm" 
+                            onClick={handleSaveTransposeToSetlist}
+                            className={cn("h-8 ml-2", toneSaveSuccess && "bg-green-500 hover:bg-green-600")}
+                          >
+                             {toneSaveSuccess ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+                             <span className="ml-2 hidden sm:inline">{toneSaveSuccess ? "Salvo!" : "Salvar Tom"}</span>
+                          </Button>
+                        )}
+                      </div>
+                       <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 w-full max-w-xs">
+                        <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
+                        <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} className="ml-auto" />
+                      </div>
                   </div>
-              </div>
+                </>
+             ) : (
+                <div className="flex items-center justify-between gap-4">
+                     <Button asChild variant="outline" size="icon" className="shrink-0">
+                          <Link href={backUrl}>
+                              <ArrowLeft className="h-4 w-4" />
+                              <span className="sr-only">Voltar</span>
+                          </Link>
+                      </Button>
+                       <h1 className="text-lg font-bold font-headline tracking-tight truncate">{song.title}</h1>
+                      <Button
+                        onClick={() => setIsPanelVisible(true)}
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0"
+                      >
+                        <PanelTopOpen className="h-5 w-5" />
+                        <span className="sr-only">Mostrar Controles</span>
+                      </Button>
+                </div>
+             )}
           </CardContent>
         </Card>
       )}
@@ -516,7 +505,6 @@ export default function SongPage() {
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                {/* Botões de desktop */}
                 <div className="absolute -left-4 top-1/2 -translate-y-1/2 hidden md:block">
                   <CarouselPrevious />
                 </div>
@@ -524,7 +512,6 @@ export default function SongPage() {
                   <CarouselNext />
                 </div>
                 
-                {/* Zonas de Toque para Mobile */}
                 <div 
                     className="absolute left-0 top-0 h-full w-1/3 z-30" 
                     onClick={() => api?.scrollPrev()} 
@@ -584,3 +571,5 @@ export default function SongPage() {
     </div>
   );
 }
+
+    
