@@ -77,12 +77,13 @@ export default function SongPage() {
         setEditedSong(song);
         // Se a chave da música no banco de dados mudou (outro usuário salvou),
         // resete a transposição local para evitar o "salto" de tom.
-        if (song.key !== initialKeyRef.current) {
-            setTranspose(initialTranspose || 0);
+        if (song.key !== initialKeyRef.current && song.key !== undefined) {
+            const currentTranspose = fromSetlistId && setlist ? (setlist.songs.find(s => s.songId === songId)?.transpose ?? 0) : 0;
+            setTranspose(currentTranspose);
             initialKeyRef.current = song.key;
         }
     }
-  }, [song, initialTranspose]);
+  }, [song, initialTranspose, fromSetlistId, setlist, songId]);
 
   useEffect(() => {
     if (!api) {
@@ -139,10 +140,10 @@ export default function SongPage() {
   const handleKeyDown = useCallback(
       (event: React.KeyboardEvent<HTMLDivElement>) => {
         if (!isEditing && showChords) {
-            if (event.key === "ArrowLeft" || event.key === 'PageUp') {
+            if (event.key === "ArrowLeft" || event.key === 'PageUp' || event.key === ',') {
               event.preventDefault()
               api?.scrollPrev()
-            } else if (event.key === "ArrowRight" || event.key === 'PageDown') {
+            } else if (event.key === "ArrowRight" || event.key === 'PageDown' || event.key === '.') {
               event.preventDefault()
               api?.scrollNext()
             }
