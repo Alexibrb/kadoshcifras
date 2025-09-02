@@ -456,7 +456,7 @@ export default function SongPage() {
           </Card>
         ) : showChords ? (
           <div className="relative flex-1 flex flex-col">
-             <div className="flex justify-between items-center w-full px-4 text-center text-sm text-muted-foreground pb-2 pt-2 absolute top-18 z-20">
+             <div className="absolute top-0 left-0 right-0 z-20 flex justify-between items-center w-full px-4 text-center text-sm text-muted-foreground pb-2 pt-2">
                  <div className="flex items-center gap-2">
                     {fromSetlistId && prevSongId ? (
                        <Button asChild variant="ghost" size="icon">
@@ -491,7 +491,7 @@ export default function SongPage() {
                     ) : <div className="w-10"></div>}
                 </div>
              </div>
-             <Carousel className="w-full flex-1 pt-24" setApi={setApi} opts={{ watchDrag: true }}>
+             <Carousel className="w-full flex-1 pt-12" setApi={setApi} opts={{ watchDrag: true }}>
                 <CarouselContent>
                   {songParts.map((part, index) => (
                     <CarouselItem key={index} className="h-full">
@@ -513,11 +513,11 @@ export default function SongPage() {
                 </div>
                 
                 <div 
-                    className="absolute left-0 top-0 h-full w-1/3 z-30" 
+                    className="absolute left-0 top-0 h-full w-1/3 z-10" 
                     onClick={() => api?.scrollPrev()} 
                 />
                 <div 
-                    className="absolute right-0 top-0 h-full w-1/3 z-30" 
+                    className="absolute right-0 top-0 h-full w-1/3 z-10" 
                     onClick={() => api?.scrollNext()} 
                 />
               </Carousel>
