@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Song, type MetadataItem, Setlist, SetlistSong } from '@/types';
-import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, HardDriveDownload, Eye, EyeOff, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, HardDriveDownload, Eye, EyeOff, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -58,6 +58,7 @@ export default function SongPage() {
   const [current, setCurrent] = useState(0)
   const [count, setCount] = useState(0)
   const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', true);
+  const [toneSaveSuccess, setToneSaveSuccess] = useState(false);
   
   const [editedSong, setEditedSong] = useState<Song | null>(null);
   
@@ -76,13 +77,12 @@ export default function SongPage() {
   useEffect(() => {
     if (song) {
         setEditedSong(song);
-        // Se a chave da música no DB mudar (outro usuário salvou), resetamos a transposição local
         if (song.key !== initialKeyRef.current) {
-            setTranspose(0);
+            setTranspose(setlistTranspose || 0);
             initialKeyRef.current = song.key;
         }
     }
-  }, [song]);
+  }, [song, setlistTranspose]);
 
   useEffect(() => {
     if (!api) {
@@ -159,7 +159,7 @@ export default function SongPage() {
     
     await updateSong(editedSong.id, editedSong);
     
-    setTranspose(0);
+    // Don't reset transpose on general save, only when key changes from another user.
     setIsEditing(false);
   };
 
@@ -169,23 +169,22 @@ export default function SongPage() {
     setTranspose(setlistTranspose || 0);
   }
 
-  const updateTransposeInSetlist = useCallback(async (newTranspose: number) => {
+  const handleSaveTransposeToSetlist = useCallback(async () => {
     if (!fromSetlistId || !setlist || !setlist.songs) return;
     
     const newSongs = setlist.songs.map(s => 
-      s.songId === songId ? { ...s, transpose: newTranspose } : s
+      s.songId === songId ? { ...s, transpose: transpose } : s
     );
 
     await updateSetlist(fromSetlistId, { songs: newSongs });
 
-  }, [fromSetlistId, setlist, songId, updateSetlist]);
+    setToneSaveSuccess(true);
+    setTimeout(() => setToneSaveSuccess(false), 2000); // Hide after 2 seconds
+
+  }, [fromSetlistId, setlist, songId, updateSetlist, transpose]);
 
   const changeTranspose = (change: number) => {
-    const newTranspose = Math.min(12, Math.max(-12, transpose + change));
-    setTranspose(newTranspose);
-    if (fromSetlistId) {
-      updateTransposeInSetlist(newTranspose);
-    }
+    setTranspose(prev => Math.min(12, Math.max(-12, prev + change)));
   };
 
   const increaseTranspose = () => changeTranspose(1);
@@ -287,16 +286,27 @@ export default function SongPage() {
               </div>
             
               <div className="flex flex-col sm:flex-row justify-center items-center gap-2 pt-2 flex-wrap">
-                  <div className="flex items-center gap-2 rounded-md border p-1 w-full max-w-xs bg-background">
+                  <div className="flex items-center gap-1 rounded-md border p-1 w-full max-w-sm bg-background">
                     <Button variant="ghost" size="icon" onClick={decreaseTranspose} className="h-8 w-8">
                         <Minus className="h-4 w-4" />
                     </Button>
-                    <Badge variant="secondary" className="px-3 py-1 text-xs whitespace-nowrap">
+                    <Badge variant="secondary" className="px-3 py-1 text-xs whitespace-nowrap flex-grow text-center justify-center">
                         Tom: {transpose > 0 ? '+' : ''}{transpose}
                     </Badge>
                     <Button variant="ghost" size="icon" onClick={increaseTranspose} className="h-8 w-8">
                         <Plus className="h-4 w-4" />
                     </Button>
+                    {fromSetlistId && (
+                      <Button 
+                        variant={toneSaveSuccess ? "default" : "outline"} 
+                        size="sm" 
+                        onClick={handleSaveTransposeToSetlist}
+                        className={cn("h-8 ml-2", toneSaveSuccess && "bg-green-500 hover:bg-green-600")}
+                      >
+                         {toneSaveSuccess ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+                         <span className="ml-2 hidden sm:inline">{toneSaveSuccess ? "Salvo!" : "Salvar Tom"}</span>
+                      </Button>
+                    )}
                   </div>
                    <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 w-full max-w-xs">
                     <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
@@ -539,5 +549,3 @@ export default function SongPage() {
     </div>
   );
 }
-
-    
