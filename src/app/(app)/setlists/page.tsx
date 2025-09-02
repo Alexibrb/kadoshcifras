@@ -118,7 +118,7 @@ export default function SetlistsPage() {
                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                         {setlist.isPublic ? <Globe className="h-4 w-4 shrink-0" /> : <Lock className="h-4 w-4 shrink-0" />}
                         {setlist.isVisible === false ? <EyeOff className="h-4 w-4 shrink-0" /> : <Eye className="h-4 w-4 shrink-0" />}
-                        <span>{setlist.songIds?.length || 0} música(s)</span>
+                        <span>{setlist.songs?.length || 0} música(s)</span>
                      </div>
                      {setlist.creatorName && (
                         <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">

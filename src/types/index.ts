@@ -13,10 +13,15 @@ export interface Song {
   createdAt?: Timestamp;
 }
 
+export interface SetlistSong {
+  songId: string;
+  transpose: number;
+}
+
 export interface Setlist {
   id: string;
   name: string;
-  songIds: string[];
+  songs: SetlistSong[];
   creatorId?: string;
   creatorName?: string;
   isPublic?: boolean;

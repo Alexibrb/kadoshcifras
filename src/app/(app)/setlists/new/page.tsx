@@ -31,7 +31,7 @@ export default function NewSetlistPage() {
     setLoading(true);
     const newSetlist: Omit<Setlist, 'id'> = {
       name,
-      songIds: [],
+      songs: [],
       creatorId: appUser.id,
       creatorName: appUser.displayName,
       isPublic: isPublic,

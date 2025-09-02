@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useFirestoreDocument } from '@/hooks/use-firestore-document';
-import { type Setlist, type Song } from '@/types';
-import { ArrowLeft, Music, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff } from 'lucide-react';
+import { type Setlist, type Song, type SetlistSong } from '@/types';
+import { ArrowLeft, Music, Plus, Minus, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
@@ -17,6 +17,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/use-auth';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { transposeChord } from '@/lib/music';
 
 export default function SetlistPage() {
   const params = useParams();
@@ -25,10 +26,9 @@ export default function SetlistPage() {
   const { appUser } = useAuth();
   const { data: setlist, loading: loadingSetlist, updateDocument: updateSetlistDoc } = useFirestoreDocument<Setlist>('setlists', setlistId);
   const { data: allSongs, loading: loadingSongs } = useFirestoreCollection<Song>('songs', 'title');
-  const { updateDocument } = useFirestoreCollection('setlists');
 
   const [isClient, setIsClient] = useState(false);
-  const [orderedSongs, setOrderedSongs] = useState<Song[]>([]);
+  const [orderedSongs, setOrderedSongs] = useState<SetlistSong[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
@@ -38,66 +38,61 @@ export default function SetlistPage() {
   useEffect(() => {
     if (setlist) {
         setEditedName(setlist.name);
+        setOrderedSongs(setlist.songs || []);
     }
   }, [setlist]);
 
   const canEdit = useMemo(() => {
     if (!appUser || !setlist) return false;
-    // Se for público, todos podem editar.
     if (setlist.isPublic) return true;
-    // Se for privado, apenas o criador ou admin podem editar.
     return appUser.role === 'admin' || appUser.id === setlist.creatorId;
   }, [appUser, setlist]);
 
-  // Permissão específica para alterar as configurações do repertório (público/privado/nome)
   const canChangeSettings = useMemo(() => {
     if (!appUser || !setlist) return false;
     return appUser.role === 'admin' || appUser.id === setlist.creatorId;
   }, [appUser, setlist]);
 
-  const songsInSetlist = useMemo(() => {
-    if (!setlist || !setlist.songIds) return [];
-    const songMap = new Map(allSongs.map(s => [s.id, s]));
-    return setlist.songIds.map(id => songMap.get(id)).filter(Boolean) as Song[];
-  }, [setlist, allSongs]);
-
-  useEffect(() => {
-    if (songsInSetlist.length > 0) {
-      setOrderedSongs(songsInSetlist);
-    } else {
-      setOrderedSongs([]);
-    }
-  }, [songsInSetlist]);
-
+  const songMap = useMemo(() => new Map(allSongs.map(s => [s.id, s])), [allSongs]);
 
   const availableSongs = useMemo(() => {
     if (!setlist) return [];
     
-    // Filtra músicas que já estão no repertório
-    const songsNotInSetlist = allSongs.filter(song => !(setlist.songIds || []).includes(song.id));
+    const songIdsInSetlist = setlist.songs.map(s => s.songId);
+    const songsNotInSetlist = allSongs.filter(song => !songIdsInSetlist.includes(song.id));
 
-    // Filtra com base na busca
     const filtered = songsNotInSetlist.filter(song =>
         song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         song.artist.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // Ordena por título
     return filtered.sort((a, b) => a.title.localeCompare(b.title));
   }, [setlist, allSongs, searchQuery]);
 
 
   const handleAddSong = async (songId: string) => {
     if (!songId || !setlist || !canEdit) return;
-    const newSongIds = [...(setlist.songIds || []), songId];
-    await updateDocument(setlistId, { songIds: newSongIds });
+    const newSongs = [...(setlist.songs || []), { songId, transpose: 0 }];
+    await updateSetlistDoc({ songs: newSongs });
   };
 
   const handleRemoveSong = async (songId: string) => {
     if (!setlist || !canEdit) return;
-    const newSongIds = (setlist.songIds || []).filter(id => id !== songId);
-    await updateDocument(setlistId, { songIds: newSongIds });
+    const newSongs = (setlist.songs || []).filter(s => s.songId !== songId);
+    await updateSetlistDoc({ songs: newSongs });
   };
+  
+  const handleTransposeChange = async (songId: string, change: number) => {
+      if (!setlist || !canEdit) return;
+      const newSongs = setlist.songs.map(s => {
+          if (s.songId === songId) {
+              const newTranspose = s.transpose + change;
+              return { ...s, transpose: Math.max(-12, Math.min(12, newTranspose)) };
+          }
+          return s;
+      });
+      await updateSetlistDoc({ songs: newSongs });
+  }
 
   const handlePublicToggle = async (isPublic: boolean) => {
     if (!canChangeSettings) return;
@@ -133,21 +128,18 @@ export default function SetlistPage() {
     items.splice(result.destination.index, 0, reorderedItem);
 
     setOrderedSongs(items);
-    const newSongIds = items.map(song => song.id);
-    updateDocument(setlistId, { songIds: newSongIds });
+    updateSetlistDoc({ songs: items });
   };
   
   if (isClient && !loadingSetlist && !setlist) {
     notFound();
   }
 
-  // Novo: se não for o criador, nem admin, e o repertório não for visível, não mostrar.
   if (isClient && setlist && appUser && setlist.isVisible === false && setlist.creatorId !== appUser.id && appUser.role !== 'admin') {
       notFound();
   }
 
-
-  if (!isClient || loadingSetlist || !setlist || !appUser) {
+  if (!isClient || loadingSetlist || !setlist || !appUser || loadingSongs) {
     return (
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
             <div className="flex items-center gap-4">
@@ -160,7 +152,6 @@ export default function SetlistPage() {
         </div>
     );
   }
-
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -231,13 +222,12 @@ export default function SetlistPage() {
       </div>
       
       <div className="flex flex-col gap-8 lg:grid lg:grid-cols-2">
-        {/* Coluna de Músicas no Repertório */}
         <div className="flex flex-col order-1 lg:order-1">
           <Card className="flex flex-col h-full">
               <CardHeader>
                   <CardTitle className="font-headline">Músicas no Repertório</CardTitle>
                   <CardDescription>
-                      {canEdit ? "Arraste para reordenar as músicas." : "Visualize as músicas do repertório."}
+                      {canEdit ? "Arraste para reordenar. Ajuste o tom de cada música para este repertório." : "Visualize as músicas do repertório."}
                   </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
@@ -246,7 +236,13 @@ export default function SetlistPage() {
                         <Droppable droppableId="songs" isDropDisabled={!canEdit}>
                           {(provided) => (
                             <ul {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
-                              {orderedSongs.map((song, index) => (
+                              {orderedSongs.map((setlistSong, index) => {
+                                 const song = songMap.get(setlistSong.songId);
+                                 if (!song) return null;
+                                 
+                                 const displayedKey = song.key ? transposeChord(song.key, setlistSong.transpose) : 'N/A';
+
+                                 return (
                                  <Draggable key={song.id} draggableId={song.id} index={index} isDragDisabled={!canEdit}>
                                   {(provided, snapshot) => (
                                       <li
@@ -256,22 +252,31 @@ export default function SetlistPage() {
                                         className={`flex items-center justify-between p-2 rounded-md border bg-background ${canEdit && "hover:bg-accent/50"} ${snapshot.isDragging ? 'shadow-lg bg-accent/20' : ''}`}
                                         style={{...provided.draggableProps.style}}
                                       >
-                                          <div className="flex items-center gap-2">
+                                          <div className="flex items-center gap-2 flex-grow">
                                               {canEdit && <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />}
-                                              <div>
-                                                  <Link href={`/songs/${song.id}?fromSetlist=${setlistId}`} className="font-medium hover:underline">{song.title}</Link>
+                                              <div className="flex-grow">
+                                                  <Link href={`/songs/${song.id}?fromSetlist=${setlistId}&transpose=${setlistSong.transpose}`} className="font-medium hover:underline">{song.title}</Link>
                                                   <p className="text-sm text-muted-foreground">{song.artist}</p>
                                               </div>
                                           </div>
-                                          {canEdit && (
-                                              <Button variant="ghost" size="icon" onClick={() => handleRemoveSong(song.id)} className="h-8 w-8">
-                                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                              </Button>
-                                          )}
+                                          <div className="flex items-center gap-2">
+                                            {canEdit && (
+                                              <div className="flex items-center gap-1 rounded-md border p-0.5 bg-background">
+                                                  <Button variant="ghost" size="icon" onClick={() => handleTransposeChange(song.id, -1)} className="h-7 w-7"><Minus className="h-4 w-4" /></Button>
+                                                  <span className="font-mono text-sm font-semibold w-12 text-center">{displayedKey} ({setlistSong.transpose > 0 ? '+' : ''}{setlistSong.transpose})</span>
+                                                  <Button variant="ghost" size="icon" onClick={() => handleTransposeChange(song.id, 1)} className="h-7 w-7"><Plus className="h-4 w-4" /></Button>
+                                              </div>
+                                            )}
+                                            {canEdit && (
+                                                <Button variant="ghost" size="icon" onClick={() => handleRemoveSong(song.id)} className="h-8 w-8">
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                </Button>
+                                            )}
+                                          </div>
                                       </li>
                                   )}
                                   </Draggable>
-                              ))}
+                              )})}
                               {provided.placeholder}
                             </ul>
                           )}
@@ -288,7 +293,6 @@ export default function SetlistPage() {
           </Card>
         </div>
 
-        {/* Coluna de Adicionar Músicas */}
         <div className="flex flex-col order-2 lg:order-2">
           <Card className={cn(!canEdit && "bg-muted/30 border-dashed", "h-full")}>
             <CardHeader>

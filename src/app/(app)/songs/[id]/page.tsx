@@ -38,6 +38,7 @@ export default function SongPage() {
   const searchParams = useSearchParams();
   const songId = params.id as string;
   const fromSetlistId = searchParams.get('fromSetlist');
+  const setlistTranspose = parseInt(searchParams.get('transpose') || '0', 10);
 
   const { data: song, loading: loadingSong } = useFirestoreDocument<Song>('songs', songId);
   const { data: setlist, loading: loadingSetlist } = useFirestoreDocument<Setlist>('setlists', fromSetlistId || '');
@@ -49,7 +50,7 @@ export default function SongPage() {
   
   const [isClient, setIsClient] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [transpose, setTranspose] = useState(0);
+  const [transpose, setTranspose] = useState(setlistTranspose || 0);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [fontSize, setFontSize] = useLocalStorage('song-font-size', 16);
   const [api, setApi] = useState<CarouselApi>()
@@ -68,13 +69,12 @@ export default function SongPage() {
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    setTranspose(setlistTranspose || 0);
+  }, [setlistTranspose]);
 
   useEffect(() => {
     if (song) {
         setEditedSong(song);
-        // Se a chave original da música mudar (porque outro usuário salvou),
-        // redefinimos a transposição local para evitar conflitos de estado.
         if (song.key !== initialKeyRef.current) {
             setTranspose(0);
             initialKeyRef.current = song.key;
@@ -96,19 +96,24 @@ export default function SongPage() {
   }, [api])
   
 
-  const { prevSongId, nextSongId } = useMemo(() => {
-    if (!setlist || !setlist.songIds || setlist.songIds.length < 2) {
-      return { prevSongId: null, nextSongId: null };
+  const { prevSongId, nextSongId, prevTranspose, nextTranspose } = useMemo(() => {
+    if (!setlist || !setlist.songs || setlist.songs.length < 2) {
+      return { prevSongId: null, nextSongId: null, prevTranspose: 0, nextTranspose: 0 };
     }
-    const currentIndex = setlist.songIds.indexOf(songId);
+    const currentIndex = setlist.songs.findIndex(s => s.songId === songId);
     if (currentIndex === -1) {
-      return { prevSongId: null, nextSongId: null };
+      return { prevSongId: null, nextSongId: null, prevTranspose: 0, nextTranspose: 0 };
     }
 
-    const prev = currentIndex > 0 ? setlist.songIds[currentIndex - 1] : null;
-    const next = currentIndex < setlist.songIds.length - 1 ? setlist.songIds[currentIndex + 1] : null;
+    const prev = currentIndex > 0 ? setlist.songs[currentIndex - 1] : null;
+    const next = currentIndex < setlist.songs.length - 1 ? setlist.songs[currentIndex + 1] : null;
 
-    return { prevSongId: prev, nextSongId: next };
+    return { 
+        prevSongId: prev?.songId || null, 
+        nextSongId: next?.songId || null,
+        prevTranspose: prev?.transpose || 0,
+        nextTranspose: next?.transpose || 0,
+    };
   }, [setlist, songId]);
 
 
@@ -126,7 +131,7 @@ export default function SongPage() {
     if (!song) return;
     setEditedSong({ ...song });
     setIsEditing(true);
-    setIsPanelVisible(true); // Garante que o painel de edição esteja visível
+    setIsPanelVisible(true);
   }
 
   const handleKeyDown = useCallback(
@@ -159,7 +164,7 @@ export default function SongPage() {
   const handleCancelEditing = () => {
     setEditedSong(song || null);
     setIsEditing(false);
-    setTranspose(0);
+    setTranspose(setlistTranspose || 0);
   }
 
   if (isClient && !loadingSong && !song) {
@@ -187,16 +192,6 @@ export default function SongPage() {
     }
   };
 
-  const handleSaveKey = async () => {
-    if (!song || transpose === 0) return;
-    
-    const newKey = song.key ? transposeChord(song.key, transpose) : '';
-    const newContent = transposeContent(song.content, transpose);
-
-    await updateDocument(song.id, { key: newKey, content: newContent });
-    setTranspose(0);
-  };
-
   const increaseTranspose = () => setTranspose(t => Math.min(12, t + 1));
   const decreaseTranspose = () => setTranspose(t => Math.max(-12, t - 1));
   
@@ -213,7 +208,7 @@ export default function SongPage() {
           defaultPosition={draggablePosition}
           handle=".handle"
         >
-          <div ref={draggableRef} className="fixed z-50 cursor-move handle top-20 right-4">
+          <div ref={draggableRef} className="fixed z-50 cursor-move handle top-18 right-4">
              <Button
                 onClick={() => setIsPanelVisible(true)}
                 variant="outline"
@@ -243,7 +238,7 @@ export default function SongPage() {
                       <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{song.title}</h1>
                       <div className="flex items-center gap-3 flex-wrap">
                           <p className="text-muted-foreground text-sm">{song.artist}</p>
-                          {song.key && <Badge variant="outline" className="whitespace-nowrap text-sm">Tom: {transposeContent(song.key, transpose)}</Badge>}
+                          {song.key && <Badge variant="outline" className="whitespace-nowrap text-sm">Tom: {transposeChord(song.key, transpose)}</Badge>}
                       </div>
                       <div className="flex flex-row items-start gap-2 pt-1">
                           <Button variant="outline" onClick={handleStartEditing} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-8 text-xs">
@@ -280,10 +275,6 @@ export default function SongPage() {
                     </Badge>
                     <Button variant="ghost" size="icon" onClick={increaseTranspose} className="h-8 w-8">
                         <Plus className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={handleSaveKey} disabled={transpose === 0} className="ml-auto h-8 w-8">
-                        <HardDriveDownload className="h-4 w-4" />
-                        <span className="sr-only">Salvar Tom Permanentemente</span>
                     </Button>
                   </div>
                    <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 w-full max-w-xs">
@@ -414,11 +405,11 @@ export default function SongPage() {
           </Card>
         ) : showChords ? (
           <div className="relative flex-1 flex flex-col">
-             <div className="flex justify-between items-center w-full px-4 text-center text-sm text-muted-foreground pb-2 pt-2">
+             <div className="flex justify-between items-center w-full px-4 text-center text-sm text-muted-foreground pb-2 pt-2 absolute top-18 z-20">
                  <div className="flex items-center gap-2">
                     {fromSetlistId && prevSongId ? (
                        <Button asChild variant="ghost" size="icon">
-                           <Link href={`/songs/${prevSongId}?fromSetlist=${fromSetlistId}`}>
+                           <Link href={`/songs/${prevSongId}?fromSetlist=${fromSetlistId}&transpose=${prevTranspose}`}>
                                <ChevronLeft className="h-6 w-6" />
                            </Link>
                        </Button>
@@ -442,14 +433,14 @@ export default function SongPage() {
                  <div className="flex items-center gap-2">
                     {fromSetlistId && nextSongId ? (
                        <Button asChild variant="ghost" size="icon">
-                           <Link href={`/songs/${nextSongId}?fromSetlist=${fromSetlistId}`}>
+                           <Link href={`/songs/${nextSongId}?fromSetlist=${fromSetlistId}&transpose=${nextTranspose}`}>
                                <ChevronRight className="h-6 w-6" />
                            </Link>
                        </Button>
                     ) : <div className="w-10"></div>}
                 </div>
              </div>
-             <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
+             <Carousel className="w-full flex-1 pt-24" setApi={setApi} opts={{ watchDrag: true }}>
                 <CarouselContent>
                   {songParts.map((part, index) => (
                     <CarouselItem key={index} className="h-full">
@@ -485,7 +476,7 @@ export default function SongPage() {
                      <div className="flex items-center gap-2">
                          {fromSetlistId && prevSongId ? (
                            <Button asChild variant="ghost" size="icon">
-                               <Link href={`/songs/${prevSongId}?fromSetlist=${fromSetlistId}`}>
+                               <Link href={`/songs/${prevSongId}?fromSetlist=${fromSetlistId}&transpose=${prevTranspose}`}>
                                    <ChevronLeft className="h-6 w-6" />
                                </Link>
                            </Button>
@@ -506,7 +497,7 @@ export default function SongPage() {
                       <div className="flex items-center gap-2">
                         {fromSetlistId && nextSongId ? (
                            <Button asChild variant="ghost" size="icon">
-                               <Link href={`/songs/${nextSongId}?fromSetlist=${fromSetlistId}`}>
+                               <Link href={`/songs/${nextSongId}?fromSetlist=${fromSetlistId}&transpose=${nextTranspose}`}>
                                    <ChevronRight className="h-6 w-6" />
                                </Link>
                            </Button>
