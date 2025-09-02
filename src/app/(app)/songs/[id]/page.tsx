@@ -48,8 +48,8 @@ export default function SongPage() {
   const [isClient, setIsClient] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [transpose, setTranspose] = useState(0);
-  const [showChords, setShowChords] = useState(true);
-  const [fontSize, setFontSize] = useLocalStorage('song-font-size', 12);
+  const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
+  const [fontSize, setFontSize] = useLocalStorage('song-font-size', 16);
   const [api, setApi] = useState<CarouselApi>()
   const [current, setCurrent] = useState(0)
   const [count, setCount] = useState(0)
@@ -175,7 +175,7 @@ export default function SongPage() {
 
 
   return (
-    <div className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
+    <div className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-full" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
       
       {!isPanelVisible && !isEditing && (
          <Button
@@ -396,8 +396,8 @@ export default function SongPage() {
                 <CarouselContent className="h-full">
                   {songParts.map((part, index) => (
                     <CarouselItem key={index} className="h-full">
-                      <Card className="w-full h-full">
-                        <CardContent className="p-0 h-full">
+                      <Card className="w-full h-full flex flex-col">
+                        <CardContent className="p-0 h-full flex-1">
                           <ScrollArea className="h-full p-4 md:p-6">
                             <SongDisplay style={{ fontSize: `${fontSize}px` }} content={part} showChords={showChords} />
                           </ScrollArea>
