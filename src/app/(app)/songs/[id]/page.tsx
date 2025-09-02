@@ -174,29 +174,6 @@ export default function SongPage() {
       },
       [api, isEditing, showChords, pedalSettings, prevSongId, nextSongId, fromSetlistId, router, prevTranspose, nextTranspose]
     )
-
-  const handleMouseDown = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    if (isEditing || !showChords || isPanelVisible) {
-      return;
-    }
-    // Não interfere com os botões de navegação do carrossel ou o botão flutuante
-    if ((event.target as HTMLElement).closest('button')) {
-      return;
-    }
-
-    if (event.button === 0) { // Botão esquerdo
-      api?.scrollNext();
-    }
-  }, [api, isEditing, showChords, isPanelVisible]);
-
-  const handleContextMenu = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    if (isEditing || !showChords || isPanelVisible) {
-      return;
-    }
-    // Previne o menu de contexto e rola para a página anterior
-    event.preventDefault();
-    api?.scrollPrev();
-  }, [api, isEditing, showChords, isPanelVisible]);
   
   const handleSave = async () => {
     if (!editedSong || !editedSong.title || !editedSong.artist || !editedSong.category || !editedSong.genre) {
@@ -270,8 +247,6 @@ export default function SongPage() {
       ref={containerRef}
       className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen outline-none" 
       onKeyDownCapture={handleKeyDown} 
-      onMouseDownCapture={handleMouseDown}
-      onContextMenuCapture={handleContextMenu}
       tabIndex={-1}
     >
       
@@ -282,12 +257,12 @@ export default function SongPage() {
           defaultPosition={draggablePosition}
           handle=".handle"
         >
-          <div ref={draggableRef} className="fixed z-50 handle cursor-pointer">
+          <div ref={draggableRef} className="fixed z-50 cursor-pointer handle">
              <Button
                 onClick={() => setIsPanelVisible(true)}
                 variant="outline"
                 size="icon"
-                className="bg-background/80 backdrop-blur-sm"
+                className="bg-background/80 backdrop-blur-sm w-full h-full"
               >
                 <PanelTopOpen className="h-5 w-5" />
                 <span className="sr-only">Mostrar Controles</span>
@@ -597,5 +572,7 @@ export default function SongPage() {
     </div>
   );
 }
+
+    
 
     
