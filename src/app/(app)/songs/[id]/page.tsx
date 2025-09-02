@@ -422,7 +422,7 @@ export default function SongPage() {
               </Carousel>
           </div>
         ) : (
-          <Card className="flex-1">
+          <Card className="flex-1" style={{ height: `${songAreaHeight}px` }}>
               <CardContent className="p-0 h-full">
                   <ScrollArea className="h-full p-4 md:p-6">
                       <SongDisplay 
