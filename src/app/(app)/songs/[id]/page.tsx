@@ -262,7 +262,7 @@ export default function SongPage() {
                 onClick={() => setIsPanelVisible(true)}
                 variant="outline"
                 size="icon"
-                className="bg-background/80 backdrop-blur-sm handle cursor-move"
+                className="bg-background/80 backdrop-blur-sm handle cursor-pointer"
               >
                 <PanelTopOpen className="h-5 w-5" />
                 <span className="sr-only">Mostrar Controles</span>
