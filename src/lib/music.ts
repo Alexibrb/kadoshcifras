@@ -1,4 +1,5 @@
 
+
 'use client';
 
 /**
@@ -13,32 +14,17 @@ export const isChordLine = (line: string): boolean => {
   if (!trimmedLine) return false;
 
   // 1. Remove potenciais acordes e vê o que sobra.
-  // Regex aprimorada para capturar acordes complexos, incluindo baixo invertido.
+  // Regex aprimorada para capturar acordes complexos, incluindo baixo invertido e extensões.
   const withoutChords = trimmedLine.replace(/([A-G](?:#|b)?(?:m|M|maj|min|dim|aug|sus|add|°|\+|-)?(?:\d)?(?:(?:\/[A-G](?:#|b)?))?)/g, '');
 
-  // 2. Remove caracteres que podem aparecer em linhas de cifra (parênteses, barras, etc).
-  const cleanLine = withoutChords.replace(/[\s()|]/g, '');
+  // 2. Remove caracteres que são comuns em linhas de cifras (espaços, parênteses, barras, números, 'x' para repetição, etc.)
+  const cleanLine = withoutChords.replace(/[\s()|/x\d\.]/gi, '');
 
-  // 3. Se não sobrar nada, é definitivamente uma linha de cifra.
-  if (cleanLine.length === 0) return true;
-
-  // 4. Verifica se os caracteres restantes são incomuns em letras.
-  // Linhas de letra raramente contêm apenas caracteres como 'm', 'j', 'd', 's', etc.
-  const lyricCharsRegex = /[hijklnopqrstuvwxyzHIJKLNPQRSTUVWXYZ]/;
-  if (lyricCharsRegex.test(cleanLine)) {
-    return false;
-  }
+  // 3. Se não sobrar quase nada, é muito provável que seja uma linha de cifra.
+  // Permitimos um ou dois caracteres para casos como "Am (x4)" onde o 'm' do Am pode não ser capturado perfeitamente.
+  if (cleanLine.length <= 2) return true;
   
-  // 5. Conta as "palavras" vs. o total de caracteres. Linhas de cifra têm baixa densidade de caracteres.
-  const words = trimmedLine.split(/\s+/).filter(Boolean);
-  const totalChars = trimmedLine.replace(/\s+/g, '').length;
-  if (words.length > 0 && totalChars / words.length < 3) {
-     // Palavras curtas (como C, G, Am) são típicas de cifras.
-     return true;
-  }
-  
-  // 6. Se sobrou algo mas as outras regras não se aplicaram, assume que não é uma linha de cifra.
-  // Esta é uma salvaguarda contra falsos positivos.
+  // 4. Se ainda sobrou texto, é provável que seja uma linha de letra.
   return false;
 };
 
