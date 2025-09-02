@@ -246,7 +246,7 @@ export default function SongPage() {
                         <span className="sr-only">Salvar Tom Permanentemente</span>
                     </Button>
                   </div>
-                  <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 w-full max-w-xs">
+                   <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 w-full max-w-xs">
                     <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
                     <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} className="ml-auto" />
                   </div>
@@ -383,14 +383,14 @@ export default function SongPage() {
             </CardContent>
           </Card>
         ) : showChords ? (
-          <div className="relative flex-1 flex flex-col min-h-[100vh]">
+          <div className="relative flex-1 flex flex-col">
              <div className="text-center text-sm text-muted-foreground pb-2">
                 {count > 1 && `Página ${current} de ${count}`}
              </div>
             <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
                 <CarouselContent className="h-full">
                   {songParts.map((part, index) => (
-                    <CarouselItem key={index}>
+                    <CarouselItem key={index} className="h-full">
                       <Card className="w-full h-full">
                         <CardContent className="p-0 h-full">
                           <ScrollArea className="h-full p-4 md:p-6">
@@ -433,3 +433,5 @@ export default function SongPage() {
     </div>
   );
 }
+
+    
