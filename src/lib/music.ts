@@ -1,40 +1,45 @@
 
 'use client';
 
-// Regex para encontrar todas as notas que podem ser transpostas dentro de uma linha.
-// Captura a nota (C, C#, Db, etc.) e o resto do acorde (m7, maj9, /G) separadamente.
-const CHORD_REGEX = /([A-G](?:#|b)?)([^A-G\s/]*)/g;
-
 /**
  * Verifica se uma linha de texto consiste principalmente de acordes.
- * A nova abordagem é mais simples e robusta: se não parece ser letra de música,
- * provavelmente é uma linha de cifras.
+ * Esta função é crucial para evitar a transposição de texto de letra normal.
  *
  * @param line A linha de texto a ser verificada.
  * @returns `true` se for uma linha de cifras, `false` caso contrário.
  */
 export const isChordLine = (line: string): boolean => {
-    const trimmedLine = line.trim();
-    if (!trimmedLine) return false;
+  const trimmedLine = line.trim();
+  if (!trimmedLine) return false;
 
-    // Se a linha contiver apenas números e pontuação, provavelmente não é cifra.
-    if (/^[\d\s.,!?;:"'()-]+$/.test(trimmedLine)) {
-        return false;
-    }
-    
-    // Remove tudo que se parece com um acorde para ver o que sobra.
-    const nonChordChars = trimmedLine
-      .replace(/[A-G](?:#|b)?(?:m|M|maj|min|dim|aug|sus|add|°|\+|-)?(?:\d)?(?:(?:\/[A-G](?:#|b)?))?/g, '')
-      .replace(/[()]/g, '') // Remove parênteses
-      .trim();
+  // 1. Remove potenciais acordes e vê o que sobra.
+  // Regex aprimorada para capturar acordes complexos, incluindo baixo invertido.
+  const withoutChords = trimmedLine.replace(/([A-G](?:#|b)?(?:m|M|maj|min|dim|aug|sus|add|°|\+|-)?(?:\d)?(?:(?:\/[A-G](?:#|b)?))?)/g, '');
 
-    // Se sobrar muito texto (mais de 4 caracteres), provavelmente é uma linha de letra.
-    if (nonChordChars.length > 4) return true;
+  // 2. Remove caracteres que podem aparecer em linhas de cifra (parênteses, barras, etc).
+  const cleanLine = withoutChords.replace(/[\s()|]/g, '');
 
-    // Verifica a presença de letras que são raras em cifras (exceto as que compõem nomes de acordes).
-    const hasLyricsChars = /[hij-lknop-rt-vx-z]/i.test(nonChordChars);
+  // 3. Se não sobrar nada, é definitivamente uma linha de cifra.
+  if (cleanLine.length === 0) return true;
 
-    return !hasLyricsChars;
+  // 4. Verifica se os caracteres restantes são incomuns em letras.
+  // Linhas de letra raramente contêm apenas caracteres como 'm', 'j', 'd', 's', etc.
+  const lyricCharsRegex = /[hijklnopqrstuvwxyzHIJKLNPQRSTUVWXYZ]/;
+  if (lyricCharsRegex.test(cleanLine)) {
+    return false;
+  }
+  
+  // 5. Conta as "palavras" vs. o total de caracteres. Linhas de cifra têm baixa densidade de caracteres.
+  const words = trimmedLine.split(/\s+/).filter(Boolean);
+  const totalChars = trimmedLine.replace(/\s+/g, '').length;
+  if (words.length > 0 && totalChars / words.length < 3) {
+     // Palavras curtas (como C, G, Am) são típicas de cifras.
+     return true;
+  }
+  
+  // 6. Se sobrou algo mas as outras regras não se aplicaram, assume que não é uma linha de cifra.
+  // Esta é uma salvaguarda contra falsos positivos.
+  return false;
 };
 
 
@@ -90,24 +95,17 @@ export const transposeContent = (content: string, semitones: number): string => 
 
     const lines = content.split('\n');
     
-    // Regex melhorada para capturar acordes, incluindo com baixo invertido e notações complexas.
-    // Ex: C, Gm, F/A, Gsus4, D(add9)
     const chordRegex = /([A-G](?:#|b)?(?:(?:maj|m|min|dim|aug|sus|add|M|°|\+|-)?(?:\d+)?(?:\([#b]?\d+\))?)*(?:\/[A-G](?:#|b)?)?)/g;
 
     const transposedLines = lines.map(line => {
-        // Verifica se a linha é uma linha de cifra antes de tentar transpor
         if (isChordLine(line)) {
             return line.replace(chordRegex, (match) => {
-                // Não transpõe se o "acorde" for apenas uma letra sozinha
-                // Isso evita transpor letras em títulos como "Intro (A)"
-                if (match.trim().length <= 1 && line.includes('(')) {
-                    return match;
+                if (!match.trim()) return match; // Ignora espaços em branco
+                // Adiciona uma verificação para não transpor coisas dentro de parênteses que não são acordes.
+                if (line.includes('(') && !/^[A-G]/.test(match)) {
+                  return match;
                 }
-                 // Garante que o que foi encontrado é um acorde válido antes de transpor
-                if (getNoteIndex(match.charAt(0)) !== -1) {
-                    return transposeChord(match, semitones);
-                }
-                return match;
+                return transposeChord(match, semitones);
             });
         }
         return line;
@@ -116,12 +114,19 @@ export const transposeContent = (content: string, semitones: number): string => 
     return transposedLines.join('\n');
 };
 
+const CHORD_REGEX = /([A-G](?:#|b)?)([^A-G\s/]*)/g;
 
 export const parseChordsFromContent = (content: string): string[] => {
   const chords = new Set<string>();
-  const matches = content.matchAll(CHORD_REGEX);
-  for (const match of matches) {
-    chords.add(match[0]);
-  }
+  const lines = content.split('\n');
+  lines.forEach(line => {
+    if (isChordLine(line)) {
+        const matches = line.match(/([A-G](?:#|b)?(?:(?:maj|m|min|dim|aug|sus|add|M|°|\+|-)?(?:\d+)?(?:\([#b]?\d+\))?)*(?:\/[A-G](?:#|b)?)?)/g);
+        if (matches) {
+            matches.forEach(chord => chords.add(chord));
+        }
+    }
+  });
+
   return Array.from(chords);
 }
