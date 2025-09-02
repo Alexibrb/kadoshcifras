@@ -24,6 +24,7 @@ import { useFirestoreDocument } from '@/hooks/use-firestore-document';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Slider } from '@/components/ui/slider';
 
 
 const ALL_KEYS = [
@@ -53,6 +54,7 @@ export default function SongPage() {
   const [current, setCurrent] = useState(0)
   const [count, setCount] = useState(0)
   const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', true);
+  const [songAreaHeight, setSongAreaHeight] = useLocalStorage('song-area-height', 600);
   
   const [editedSong, setEditedSong] = useState<Song | null>(null);
   
@@ -383,17 +385,17 @@ export default function SongPage() {
             </CardContent>
           </Card>
         ) : showChords ? (
-          <div className={cn(
-              "relative flex-1 flex flex-col",
-              !isPanelVisible && 'h-[1500px]'
-          )}>
+          <div 
+              className="relative flex-1 flex flex-col"
+              style={{ height: `${songAreaHeight}px` }}
+          >
              <div className="text-center text-sm text-muted-foreground pb-2">
                 {count > 1 && `Página ${current} de ${count}`}
              </div>
             <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
-                <CarouselContent>
+                <CarouselContent className="h-full">
                   {songParts.map((part, index) => (
-                    <CarouselItem key={index}>
+                    <CarouselItem key={index} className="h-full">
                       <Card className="w-full h-full">
                         <CardContent className="p-0 h-full">
                           <ScrollArea className="h-full p-4 md:p-6">
@@ -433,8 +435,24 @@ export default function SongPage() {
           </Card>
         )}
       </div>
+
+       {!isEditing && (
+            <Card className="mt-4">
+                <CardContent className="p-4 flex items-center gap-4">
+                    <Label className="whitespace-nowrap">Altura da Cifra:</Label>
+                    <Slider
+                        value={[songAreaHeight]}
+                        onValueChange={(value) => setSongAreaHeight(value[0])}
+                        min={300}
+                        max={1800}
+                        step={50}
+                    />
+                    <span className="font-mono text-sm p-2 rounded-md bg-muted w-24 text-center">
+                        {songAreaHeight}px
+                    </span>
+                </CardContent>
+            </Card>
+        )}
     </div>
   );
 }
-
-    
