@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Song, type MetadataItem } from '@/types';
-import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle } from 'lucide-react';
+import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, HardDriveDownload } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -170,9 +170,9 @@ export default function SongPage() {
 
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 pb-32" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 pb-8" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
       <Card className="mb-4 bg-accent/10">
-        <CardContent className="p-4 space-y-2">
+        <CardContent className="p-4 space-y-4">
             <div className="flex items-start justify-between gap-4">
                  <Button asChild variant="outline" size="icon" className="shrink-0">
                     <Link href={backUrl}>
@@ -217,16 +217,35 @@ export default function SongPage() {
             </div>
           
             {!isEditing && (
-                 <div className="flex justify-center pt-2">
+                 <div className="flex flex-col sm:flex-row justify-center items-center gap-2 pt-2 flex-wrap">
+                    <div className="flex items-center gap-2 rounded-md border p-1 w-full max-w-xs bg-background">
+                      <Button variant="ghost" size="icon" onClick={decreaseTranspose} className="h-8 w-8">
+                          <Minus className="h-4 w-4" />
+                      </Button>
+                      <Badge variant="secondary" className="px-3 py-1 text-xs whitespace-nowrap">
+                          Tom: {transpose > 0 ? '+' : ''}{transpose}
+                      </Badge>
+                      <Button variant="ghost" size="icon" onClick={increaseTranspose} className="h-8 w-8">
+                          <Plus className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="icon" onClick={handleSaveKey} disabled={transpose === 0} className="ml-auto h-8 w-8">
+                          <HardDriveDownload className="h-4 w-4" />
+                          <span className="sr-only">Salvar Tom Permanentemente</span>
+                      </Button>
+                    </div>
                     <div className="flex items-center gap-2 rounded-md border p-1 w-full max-w-xs bg-background">
                         <Label className="text-sm pl-1 whitespace-nowrap">Tam. da Fonte</Label>
-                        <Button variant="secondary" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-6 px-2">
+                        <Button variant="secondary" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-8 px-2">
                             <Minus className="h-4 w-4" />
                         </Button>
                         <span className="text-sm font-medium w-full text-center">{fontSize}px</span>
-                        <Button variant="secondary" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-6 px-2">
+                        <Button variant="secondary" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-8 px-2">
                             <Plus className="h-4 w-4" />
                         </Button>
+                    </div>
+                     <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 w-full max-w-xs">
+                      <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
+                      <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} className="ml-auto" />
                     </div>
                 </div>
             )}
@@ -355,6 +374,9 @@ export default function SongPage() {
                 <CarouselNext />
               </div>
             </Carousel>
+             <div className="text-center text-sm text-muted-foreground pt-2">
+                {count > 1 && `Página ${current} de ${count}`}
+              </div>
         </div>
       ) : (
          <Card>
@@ -368,37 +390,6 @@ export default function SongPage() {
                 </ScrollArea>
             </CardContent>
          </Card>
-      )}
-      
-      {!isEditing && (
-        <Card className="fixed bottom-0 left-0 right-0 z-50 rounded-none border-t border-x-0 bg-accent">
-          <CardContent className="p-2 flex flex-col justify-center items-center gap-2">
-             <div className="text-center text-sm text-foreground font-bold">
-                {count > 1 && `Página ${current} de ${count}`}
-              </div>
-              <div className="flex flex-row justify-center items-center gap-2">
-                <div className="flex items-center gap-2 rounded-md border p-1 bg-background">
-                    <Button variant="ghost" size="icon" onClick={decreaseTranspose} className="h-8 w-8">
-                        <Minus className="h-4 w-4" />
-                    </Button>
-                    <Badge variant="secondary" className="px-3 py-1 text-xs whitespace-nowrap">
-                        Tom: {transpose > 0 ? '+' : ''}{transpose}
-                    </Badge>
-                    <Button variant="ghost" size="icon" onClick={increaseTranspose} className="h-8 w-8">
-                        <Plus className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={handleSaveKey} disabled={transpose === 0} className="ml-2 h-8 w-8">
-                        <Save className="h-4 w-4" />
-                        <span className="sr-only">Salvar Tom</span>
-                    </Button>
-                </div>
-                <div className="flex items-center space-x-2 rounded-md border p-1 px-2 bg-background h-10">
-                  <Label htmlFor="show-chords" className="text-xs whitespace-nowrap">Mostrar Cifras</Label>
-                  <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
-                </div>
-              </div>
-          </CardContent>
-        </Card>
       )}
     </div>
   );
