@@ -58,7 +58,7 @@ export default function SetlistPage() {
   const availableSongs = useMemo(() => {
     if (!setlist) return [];
     
-    const songIdsInSetlist = setlist.songs.map(s => s.songId);
+    const songIdsInSetlist = (setlist.songs || []).map(s => s.songId);
     const songsNotInSetlist = allSongs.filter(song => !songIdsInSetlist.includes(song.id));
 
     const filtered = songsNotInSetlist.filter(song =>
@@ -84,7 +84,7 @@ export default function SetlistPage() {
   
   const handleTransposeChange = async (songId: string, change: number) => {
       if (!setlist || !canEdit) return;
-      const newSongs = setlist.songs.map(s => {
+      const newSongs = (setlist.songs || []).map(s => {
           if (s.songId === songId) {
               const newTranspose = s.transpose + change;
               return { ...s, transpose: Math.max(-12, Math.min(12, newTranspose)) };
