@@ -258,15 +258,17 @@ export default function SongPage() {
           handle=".handle"
         >
           <div ref={draggableRef} className="fixed z-50">
-             <Button
-                onClick={() => setIsPanelVisible(true)}
-                variant="outline"
-                size="icon"
-                className="bg-background/80 backdrop-blur-sm w-full h-full handle"
-              >
-                <PanelTopOpen className="h-5 w-5" />
-                <span className="sr-only">Mostrar Controles</span>
-              </Button>
+             <div className="handle w-full h-full">
+                <Button
+                    onClick={() => setIsPanelVisible(true)}
+                    variant="outline"
+                    size="icon"
+                    className="bg-background/80 backdrop-blur-sm"
+                >
+                    <PanelTopOpen className="h-5 w-5" />
+                    <span className="sr-only">Mostrar Controles</span>
+                </Button>
+            </div>
           </div>
         </Draggable>
       )}
@@ -521,6 +523,16 @@ export default function SongPage() {
                 <div className="absolute -right-4 top-1/2 -translate-y-1/2 hidden md:block">
                   <CarouselNext />
                 </div>
+                
+                {/* Zonas de Toque para Mobile */}
+                <div 
+                    className="absolute left-0 top-0 h-full w-1/3 z-30" 
+                    onClick={() => api?.scrollPrev()} 
+                />
+                <div 
+                    className="absolute right-0 top-0 h-full w-1/3 z-30" 
+                    onClick={() => api?.scrollNext()} 
+                />
               </Carousel>
           </div>
         ) : (
