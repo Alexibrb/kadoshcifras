@@ -344,7 +344,7 @@ export default function SongPage() {
         </div>
       )}
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         {isEditing && editedSong ? (
           <Card className="flex-1 flex flex-col">
             <CardContent className="p-4 md:p-6 space-y-4 flex-1 flex flex-col">
@@ -384,6 +384,9 @@ export default function SongPage() {
           </Card>
         ) : showChords ? (
           <div className="relative flex-1 flex flex-col">
+             <div className="text-center text-sm text-muted-foreground pb-2">
+                {count > 1 && `Página ${current} de ${count}`}
+             </div>
             <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
                 <CarouselContent className="h-full">
                   {songParts.map((part, index) => (
@@ -412,9 +415,6 @@ export default function SongPage() {
                   <CarouselNext />
                 </div>
               </Carousel>
-              <div className="text-center text-sm text-muted-foreground pt-2">
-                  {count > 1 && `Página ${current} de ${count}`}
-                </div>
           </div>
         ) : (
           <Card className="flex-1">
