@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Song, type MetadataItem, Setlist, SetlistSong, PedalSettings } from '@/types';
 import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, HardDriveDownload, Eye, EyeOff, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import Link from 'next/link';
-import { notFound, useParams, useSearchParams } from 'next/navigation';
+import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { transposeContent, transposeChord } from '@/lib/music';
 import { Textarea } from '@/components/ui/textarea';
@@ -36,13 +36,19 @@ const ALL_KEYS = [
 export default function SongPage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const songId = params.id as string;
   const fromSetlistId = searchParams.get('fromSetlist');
   const initialTranspose = parseInt(searchParams.get('transpose') || '0', 10);
 
   const { data: song, loading: loadingSong, updateDocument: updateSongDoc } = useFirestoreDocument<Song>('songs', songId);
   const { data: setlist, loading: loadingSetlist, updateDocument: updateSetlistDoc } = useFirestoreDocument<Setlist>('setlists', fromSetlistId || '');
-  const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', { prev: ',', next: '.' });
+  const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', { 
+    prevPage: ',', 
+    nextPage: '.',
+    prevSong: '[',
+    nextSong: ']',
+  });
 
   const [isClient, setIsClient] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -140,18 +146,28 @@ export default function SongPage() {
 
   const handleKeyDown = useCallback(
       (event: React.KeyboardEvent<HTMLDivElement>) => {
-        if (!isEditing && showChords) {
+        if (!isEditing) {
             const key = event.key;
-            if (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prev) {
+            // Page navigation
+            if (showChords && (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prevPage)) {
               event.preventDefault()
               api?.scrollPrev()
-            } else if (key === "ArrowRight" || key === 'PageDown' || key === pedalSettings.next) {
+            } else if (showChords && (key === "ArrowRight" || key === 'PageDown' || key === pedalSettings.nextPage)) {
               event.preventDefault()
               api?.scrollNext()
             }
+
+            // Song navigation
+            if (key === pedalSettings.prevSong && prevSongId && fromSetlistId) {
+                event.preventDefault();
+                router.push(`/songs/${prevSongId}?fromSetlist=${fromSetlistId}&transpose=${prevTranspose}`);
+            } else if (key === pedalSettings.nextSong && nextSongId && fromSetlistId) {
+                event.preventDefault();
+                router.push(`/songs/${nextSongId}?fromSetlist=${fromSetlistId}&transpose=${nextTranspose}`);
+            }
         }
       },
-      [api, isEditing, showChords, pedalSettings]
+      [api, isEditing, showChords, pedalSettings, prevSongId, nextSongId, fromSetlistId, router, prevTranspose, nextTranspose]
     )
   
   const handleSave = async () => {

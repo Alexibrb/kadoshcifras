@@ -12,30 +12,45 @@ import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
 export function PedalSettingsForm() {
   const [settings, setSettings] = useLocalStorage<PedalSettings>('pedal-settings', {
-    prev: ',',
-    next: '.',
+    prevPage: ',',
+    nextPage: '.',
+    prevSong: '[',
+    nextSong: ']',
   });
-  const [prevKey, setPrevKey] = useState(settings.prev);
-  const [nextKey, setNextKey] = useState(settings.next);
+  
+  const [prevPageKey, setPrevPageKey] = useState(settings.prevPage);
+  const [nextPageKey, setNextPageKey] = useState(settings.nextPage);
+  const [prevSongKey, setPrevSongKey] = useState(settings.prevSong);
+  const [nextSongKey, setNextSongKey] = useState(settings.nextSong);
+
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    setPrevKey(settings.prev);
-    setNextKey(settings.next);
+    setPrevPageKey(settings.prevPage);
+    setNextPageKey(settings.nextPage);
+    setPrevSongKey(settings.prevSong);
+    setNextSongKey(settings.nextSong);
   }, [settings]);
 
   const handleSave = () => {
-    setSettings({ prev: prevKey, next: nextKey });
+    setSettings({ 
+      prevPage: prevPageKey, 
+      nextPage: nextPageKey,
+      prevSong: prevSongKey,
+      nextSong: nextSongKey,
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
   
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>, field: 'prev' | 'next') => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>, field: 'prevPage' | 'nextPage' | 'prevSong' | 'nextSong') => {
     e.preventDefault();
-    if (field === 'prev') {
-        setPrevKey(e.key);
-    } else {
-        setNextKey(e.key);
+    const key = e.key;
+    switch(field) {
+        case 'prevPage': setPrevPageKey(key); break;
+        case 'nextPage': setNextPageKey(key); break;
+        case 'prevSong': setPrevSongKey(key); break;
+        case 'nextSong': setNextSongKey(key); break;
     }
   }
 
@@ -47,7 +62,7 @@ export function PedalSettingsForm() {
             <CardTitle className="font-headline text-xl">Controles do Pedal</CardTitle>
           </div>
           <CardDescription>
-            Configure as teclas para avançar e retroceder nas músicas.
+            Configure as teclas para avançar/retroceder páginas e músicas.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -57,25 +72,49 @@ export function PedalSettingsForm() {
                 Clique no campo e pressione a tecla desejada no seu teclado ou pedal para configurar.
              </AlertDescription>
            </Alert>
-          <div className="space-y-2">
-            <Label htmlFor="prevKey">Tecla para Voltar</Label>
-            <Input
-              id="prevKey"
-              value={prevKey}
-              onKeyDown={(e) => handleKeyPress(e, 'prev')}
-              readOnly
-              placeholder="Pressione uma tecla"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+                <Label htmlFor="prevPageKey">Página Anterior</Label>
+                <Input
+                id="prevPageKey"
+                value={prevPageKey}
+                onKeyDown={(e) => handleKeyPress(e, 'prevPage')}
+                readOnly
+                placeholder="Pressione uma tecla"
+                />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="nextPageKey">Próxima Página</Label>
+                <Input
+                id="nextPageKey"
+                value={nextPageKey}
+                onKeyDown={(e) => handleKeyPress(e, 'nextPage')}
+                readOnly
+                placeholder="Pressione uma tecla"
+                />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="nextKey">Tecla para Avançar</Label>
-            <Input
-              id="nextKey"
-              value={nextKey}
-              onKeyDown={(e) => handleKeyPress(e, 'next')}
-              readOnly
-              placeholder="Pressione uma tecla"
-            />
+           <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+                <Label htmlFor="prevSongKey">Música Anterior</Label>
+                <Input
+                id="prevSongKey"
+                value={prevSongKey}
+                onKeyDown={(e) => handleKeyPress(e, 'prevSong')}
+                readOnly
+                placeholder="Pressione uma tecla"
+                />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="nextSongKey">Próxima Música</Label>
+                <Input
+                id="nextSongKey"
+                value={nextSongKey}
+                onKeyDown={(e) => handleKeyPress(e, 'nextSong')}
+                readOnly
+                placeholder="Pressione uma tecla"
+                />
+            </div>
           </div>
         </CardContent>
         <CardFooter>

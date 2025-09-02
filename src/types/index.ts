@@ -45,6 +45,8 @@ export interface MetadataItem {
 }
 
 export interface PedalSettings {
-    prev: string;
-    next: string;
+    prevPage: string;
+    nextPage: string;
+    prevSong: string;
+    nextSong: string;
 }
