@@ -67,6 +67,7 @@ export default function SongPage() {
   const { data: genres, loading: loadingGenres } = useFirestoreCollection<MetadataItem>('genres', 'name');
   const { data: categories, loading: loadingCategories } = useFirestoreCollection<MetadataItem>('categories', 'name');
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const draggableRef = useRef<HTMLDivElement>(null);
   
@@ -77,6 +78,10 @@ export default function SongPage() {
   useEffect(() => {
     setIsClient(true);
     setTranspose(initialTranspose);
+    // Foca o container principal para capturar eventos do teclado imediatamente
+    if (containerRef.current) {
+        containerRef.current.focus();
+    }
   }, [initialTranspose]);
 
   useEffect(() => {
@@ -84,11 +89,11 @@ export default function SongPage() {
         setEditedSong(song);
         // Se a chave da música no banco de dados mudou (outro usuário salvou),
         // resete a transposição local para evitar o "salto" de tom.
-        if (song.key !== initialKeyRef.current && song.key !== undefined) {
+        if (initialKeyRef.current !== undefined && song.key !== initialKeyRef.current) {
             const currentTranspose = fromSetlistId && setlist ? (setlist.songs.find(s => s.songId === songId)?.transpose ?? 0) : 0;
             setTranspose(currentTranspose);
-            initialKeyRef.current = song.key;
         }
+        initialKeyRef.current = song.key;
     }
   }, [song, initialTranspose, fromSetlistId, setlist, songId]);
 
@@ -238,7 +243,12 @@ export default function SongPage() {
 
 
   return (
-    <div className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
+    <div 
+      ref={containerRef}
+      className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen outline-none" 
+      onKeyDownCapture={handleKeyDown} 
+      tabIndex={-1}
+    >
       
       {!isPanelVisible && !isEditing && (
         <Draggable
