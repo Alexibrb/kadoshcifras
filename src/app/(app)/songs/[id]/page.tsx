@@ -2,7 +2,7 @@
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Song, type MetadataItem, Setlist } from '@/types';
+import { Song, type MetadataItem, Setlist, SetlistSong } from '@/types';
 import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, HardDriveDownload, Eye, EyeOff, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useSearchParams } from 'next/navigation';
@@ -42,8 +42,9 @@ export default function SongPage() {
 
   const { data: song, loading: loadingSong } = useFirestoreDocument<Song>('songs', songId);
   const { data: setlist, loading: loadingSetlist } = useFirestoreDocument<Setlist>('setlists', fromSetlistId || '');
-  const { updateDocument } = useFirestoreCollection<Song>('songs');
-  
+  const { updateDocument: updateSong } = useFirestoreCollection<Song>('songs');
+  const { updateDocument: updateSetlist } = useFirestoreCollection<Setlist>('setlists');
+
   const { data: artists, loading: loadingArtists } = useFirestoreCollection<MetadataItem>('artists', 'name');
   const { data: genres, loading: loadingGenres } = useFirestoreCollection<MetadataItem>('genres', 'name');
   const { data: categories, loading: loadingCategories } = useFirestoreCollection<MetadataItem>('categories', 'name');
@@ -75,6 +76,7 @@ export default function SongPage() {
   useEffect(() => {
     if (song) {
         setEditedSong(song);
+        // Se a chave da música no DB mudar (outro usuário salvou), resetamos a transposição local
         if (song.key !== initialKeyRef.current) {
             setTranspose(0);
             initialKeyRef.current = song.key;
@@ -97,7 +99,7 @@ export default function SongPage() {
   
 
   const { prevSongId, nextSongId, prevTranspose, nextTranspose } = useMemo(() => {
-    if (!setlist || !setlist.songs || setlist.songs.length < 2) {
+    if (!fromSetlistId || !setlist || !setlist.songs || setlist.songs.length < 2) {
       return { prevSongId: null, nextSongId: null, prevTranspose: 0, nextTranspose: 0 };
     }
     const currentIndex = setlist.songs.findIndex(s => s.songId === songId);
@@ -114,7 +116,7 @@ export default function SongPage() {
         prevTranspose: prev?.transpose || 0,
         nextTranspose: next?.transpose || 0,
     };
-  }, [setlist, songId]);
+  }, [setlist, songId, fromSetlistId]);
 
 
   const contentToDisplay = useMemo(() => {
@@ -155,7 +157,7 @@ export default function SongPage() {
       return;
     }
     
-    await updateDocument(editedSong.id, editedSong);
+    await updateSong(editedSong.id, editedSong);
     
     setTranspose(0);
     setIsEditing(false);
@@ -166,6 +168,28 @@ export default function SongPage() {
     setIsEditing(false);
     setTranspose(setlistTranspose || 0);
   }
+
+  const updateTransposeInSetlist = useCallback(async (newTranspose: number) => {
+    if (!fromSetlistId || !setlist || !setlist.songs) return;
+    
+    const newSongs = setlist.songs.map(s => 
+      s.songId === songId ? { ...s, transpose: newTranspose } : s
+    );
+
+    await updateSetlist(fromSetlistId, { songs: newSongs });
+
+  }, [fromSetlistId, setlist, songId, updateSetlist]);
+
+  const changeTranspose = (change: number) => {
+    const newTranspose = Math.min(12, Math.max(-12, transpose + change));
+    setTranspose(newTranspose);
+    if (fromSetlistId) {
+      updateTransposeInSetlist(newTranspose);
+    }
+  };
+
+  const increaseTranspose = () => changeTranspose(1);
+  const decreaseTranspose = () => changeTranspose(-1);
 
   if (isClient && !loadingSong && !song) {
     notFound();
@@ -192,9 +216,6 @@ export default function SongPage() {
     }
   };
 
-  const increaseTranspose = () => setTranspose(t => Math.min(12, t + 1));
-  const decreaseTranspose = () => setTranspose(t => Math.max(-12, t - 1));
-  
   const backUrl = fromSetlistId ? `/setlists/${fromSetlistId}` : '/songs';
 
 
@@ -208,7 +229,7 @@ export default function SongPage() {
           defaultPosition={draggablePosition}
           handle=".handle"
         >
-          <div ref={draggableRef} className="fixed z-50 cursor-move handle top-18 right-4">
+          <div ref={draggableRef} className="fixed z-50 cursor-move handle top-15 right-4">
              <Button
                 onClick={() => setIsPanelVisible(true)}
                 variant="outline"
@@ -518,3 +539,5 @@ export default function SongPage() {
     </div>
   );
 }
+
+    
