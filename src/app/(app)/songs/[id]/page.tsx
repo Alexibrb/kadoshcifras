@@ -251,16 +251,6 @@ export default function SongPage() {
                     <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
                     <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} className="ml-auto" />
                   </div>
-                  <div className="flex items-center gap-2 rounded-md border p-1 w-full max-w-xs bg-background">
-                      <Label className="text-sm pl-1 whitespace-nowrap">Tam. da Fonte</Label>
-                      <Button variant="secondary" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-8 px-2">
-                          <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="text-sm font-medium w-full text-center">{fontSize}px</span>
-                      <Button variant="secondary" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-8 px-2">
-                          <Plus className="h-4 w-4" />
-                      </Button>
-                  </div>
               </div>
           </CardContent>
         </Card>
@@ -385,8 +375,25 @@ export default function SongPage() {
           </Card>
         ) : showChords ? (
           <div className="relative flex-1 flex flex-col">
-             <div className="text-center text-sm text-muted-foreground pb-2">
-                {count > 1 && `Página ${current} de ${count}`}
+             <div className="flex justify-center items-center gap-8 text-center text-sm text-muted-foreground pb-2">
+                <div className="w-1/3 text-right">
+                  {/* Espaçador */}
+                </div>
+                <div className="w-1/3">
+                  {count > 1 && `Página ${current} de ${count}`}
+                </div>
+                <div className="w-1/3 text-right">
+                  <div className="flex items-center gap-2 rounded-md border p-1 bg-background ml-auto mr-4 max-w-fit">
+                    <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
+                    <Button variant="ghost" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-7 w-7 px-1">
+                        <Minus className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm font-medium tabular-nums">{fontSize}px</span>
+                    <Button variant="ghost" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-7 w-7 px-1">
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
              </div>
              <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
                 <CarouselContent>
@@ -420,6 +427,18 @@ export default function SongPage() {
         ) : (
           <Card className="flex-1 bg-background shadow-none border-none">
               <CardContent className="h-full">
+                  <div className="flex justify-end items-center gap-8 text-center text-sm text-muted-foreground pt-2 pb-2">
+                     <div className="flex items-center gap-2 rounded-md border p-1 bg-background ml-auto max-w-fit">
+                        <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
+                        <Button variant="ghost" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-7 w-7 px-1">
+                            <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm font-medium tabular-nums">{fontSize}px</span>
+                        <Button variant="ghost" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-7 w-7 px-1">
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                  </div>
                   <ScrollArea className="h-full p-4 md:p-6">
                       <SongDisplay 
                           style={{ fontSize: `${fontSize}px` }}
