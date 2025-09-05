@@ -1,16 +1,16 @@
+
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  "projectId": "music-pal-63rrp",
-  "appId": "1:682160842216:web:091590d1b4b7c96bc4705d",
-  "storageBucket": "music-pal-63rrp.firebasestorage.app",
-  "apiKey": "AIzaSyDKVX_Et75ezt-GlIl7uSMPNftGe3pAQe0",
-  "authDomain": "music-pal-63rrp.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "682160842216"
+  apiKey: "AIzaSyDKVX_Et75ezt-GlIl7uSMPNftGe3pAQe0",
+  authDomain: "music-pal-63rrp.firebaseapp.com",
+  projectId: "music-pal-63rrp",
+  storageBucket: "music-pal-63rrp.firebasestorage.app",
+  messagingSenderId: "682160842216",
+  appId: "1:682160842216:web:f5329c818ff76a7ac4705d"
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
