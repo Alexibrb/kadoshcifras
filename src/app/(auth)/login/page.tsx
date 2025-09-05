@@ -34,7 +34,6 @@ export default function LoginPage() {
       } else {
         setError("Ocorreu um erro ao fazer login. Por favor, tente novamente mais tarde.");
       }
-      console.error(error);
     } finally {
         setLoading(false);
     }
