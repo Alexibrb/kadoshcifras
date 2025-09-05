@@ -1,80 +1,91 @@
 
+// This is a basic service worker that allows the app to work offline.
+// It uses a cache-first strategy for most assets.
+
 const CACHE_NAME = 'cifrafacil-cache-v1';
 const urlsToCache = [
   '/',
-  '/login',
-  '/signup',
   '/dashboard',
   '/songs',
   '/setlists',
+  '/tools',
+  '/login',
+  '/signup',
+  '/pending-approval',
   '/manifest.json',
   '/favicon.ico',
   '/apple-touch-icon.png',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
   '/logocifrafacil.png',
 ];
 
+// Install the service worker and cache all the static assets
 self.addEventListener('install', event => {
-  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('Opened cache');
-        // Cachear recursos essenciais.
-        // Omitir requisições com 'chrome-extension'
-        const cachePromises = urlsToCache.map(urlToCache => {
-            const request = new Request(urlToCache, {mode: 'no-cors'});
-            return fetch(request).then(response => cache.put(urlToCache, response));
-        });
-
-        return Promise.all(cachePromises);
+        return cache.addAll(urlsToCache);
       })
   );
 });
 
+// Fetch event: serve from cache if available, otherwise fetch from network
+self.addEventListener('fetch', event => {
+  // We only want to cache GET requests.
+  if (event.request.method !== 'GET') {
+    return;
+  }
+  
+  // For navigation requests, use a network-first strategy to get the latest pages,
+  // but fall back to cache if offline.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // For other requests (CSS, JS, images), use a cache-first strategy.
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        // Cache hit - return response
+        if (response) {
+          return response;
+        }
+
+        // Clone the request because it's a stream and can only be consumed once.
+        const fetchRequest = event.request.clone();
+
+        return fetch(fetchRequest).then(
+          response => {
+            // Check if we received a valid response
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+
+            // Clone the response because it's also a stream.
+            const responseToCache = response.clone();
+
+            caches.open(CACHE_NAME)
+              .then(cache => {
+                cache.put(event.request, responseToCache);
+              });
+
+            return response;
+          }
+        );
+      })
+    );
+});
+
+// Activate event: clean up old caches
 self.addEventListener('activate', event => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-  );
-  return self.clients.claim();
-});
-
-
-self.addEventListener('fetch', event => {
-    // Apenas lida com requisições de navegação
-    if (event.request.mode !== 'navigate') {
-        return;
-    }
-
-    event.respondWith(
-        fetch(event.request)
-            .then(response => {
-                // Resposta da rede bem-sucedida, clona e armazena no cache
-                const responseToCache = response.clone();
-                caches.open(CACHE_NAME)
-                    .then(cache => {
-                        cache.put(event.request, responseToCache);
-                    });
-                return response;
-            })
-            .catch(() => {
-                // Falha na rede, tenta buscar do cache
-                return caches.match(event.request)
-                    .then(response => {
-                        if (response) {
-                            return response;
-                        }
-                        // Se não estiver no cache, retorna a página principal como fallback para SPA
-                        return caches.match('/');
-                    });
-            })
-    );
-});
+          if (cacheWhitelist.indexOf(cacheName)
