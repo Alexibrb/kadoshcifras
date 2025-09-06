@@ -14,7 +14,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Card } from '@/components/ui/card';
+import { syncOfflineData } from '@/services/offline-service';
+import { getLastSyncTime } from '@/lib/dexie';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -22,25 +25,33 @@ export default function DashboardPage() {
   const { data: songs, loading: loadingSongs } = useFirestoreCollection<Song>('songs');
   const { data: setlists, loading: loadingSetlists } = useFirestoreCollection<Setlist>('setlists');
   const [isOnline, setIsOnline] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const { toast } = useToast();
 
+  const fetchLastSync = async () => {
+    const time = await getLastSyncTime();
+    setLastSyncTime(time);
+  }
+
   useEffect(() => {
-    const updateOnlineStatus = () => {
+    if (typeof window !== 'undefined') {
       setIsOnline(navigator.onLine);
-      const message = navigator.onLine ? "Você está online. Os dados são em tempo real." : "Você está offline. Exibindo dados salvos.";
+      fetchLastSync();
+    }
+    
+    const updateOnlineStatus = () => {
+      const online = navigator.onLine;
+      setIsOnline(online);
       toast({
-          title: navigator.onLine ? "Conectado" : "Modo Offline",
-          description: message,
-          action: navigator.onLine ? <Wifi /> : <WifiOff />,
+          title: online ? "Conectado" : "Modo Offline",
+          description: online ? "Você está online. Os dados são em tempo real." : "Você está offline. Exibindo dados salvos localmente.",
+          action: online ? <Wifi /> : <WifiOff />,
       });
     };
 
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
-    // Initial check
-    if (typeof navigator !== 'undefined') {
-        setIsOnline(navigator.onLine);
-    }
 
     return () => {
       window.removeEventListener('online', updateOnlineStatus);
@@ -53,6 +64,40 @@ export default function DashboardPage() {
     await signOut(auth);
     router.push('/login');
   };
+  
+  const handleSync = async () => {
+    if (!isOnline) {
+       toast({
+        variant: "destructive",
+        title: "Offline",
+        description: "Você precisa estar online para sincronizar os dados.",
+      })
+      return;
+    }
+    setIsSyncing(true);
+     toast({
+        title: "Sincronização iniciada",
+        description: "Baixando todas as músicas e repertórios para uso offline...",
+      })
+    try {
+      await syncOfflineData();
+      await fetchLastSync();
+       toast({
+        title: "Sincronização Concluída",
+        description: "Seus dados estão prontos para uso offline.",
+        action: <Check />,
+      })
+    } catch (error) {
+       toast({
+        variant: "destructive",
+        title: "Erro na Sincronização",
+        description: "Não foi possível baixar os dados. Tente novamente.",
+      })
+      console.error("Sync failed", error);
+    } finally {
+      setIsSyncing(false);
+    }
+  }
   
   const loading = loadingSongs || loadingSetlists;
 
@@ -73,6 +118,24 @@ export default function DashboardPage() {
                 }
             </AlertDescription>
         </Alert>
+        
+        <div className="p-4 border rounded-lg space-y-3">
+            <div className="flex flex-col items-center gap-2">
+                <Button onClick={handleSync} disabled={isSyncing || !isOnline} size="lg" className="w-full h-16 text-lg">
+                  <RefreshCw className={`mr-2 h-5 w-5 ${isSyncing ? 'animate-spin' : ''}`} />
+                  {isSyncing ? 'Sincronizando...' : 'Sincronizar para Uso Offline'}
+                </Button>
+                {lastSyncTime && (
+                   <p className="text-xs text-muted-foreground text-center mt-2">
+                     Última sincronização: {formatDistanceToNow(lastSyncTime, { addSuffix: true, locale: ptBR })}
+                   </p>
+                )}
+            </div>
+             <p className="text-xs text-muted-foreground text-center">
+               Clique para baixar todas as músicas e repertórios para acessar quando estiver sem internet.
+            </p>
+        </div>
+
 
         <Button asChild size="lg" className="h-20 text-lg justify-between">
           <Link href="/songs">
