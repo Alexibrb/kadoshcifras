@@ -11,7 +11,6 @@ export const syncOfflineData = async () => {
 
     let response;
     try {
-        // A URL da API pode ser absoluta se o frontend e o backend estiverem em domínios diferentes
         response = await fetch('/api/offline-data');
     } catch (networkError) {
         console.error("Erro de rede ao buscar dados offline:", networkError);
@@ -36,15 +35,34 @@ export const syncOfflineData = async () => {
                 // @ts-ignore
                 const table = dexieDB[collectionName];
                 if (table) {
+                    const collectionData = data.collections[collectionName];
+                    
+                    // Validação e mapeamento para garantir que cada item tem um 'id'
+                    const validatedData = collectionData.map((item: any, index: number) => {
+                        if (!item.id) {
+                            console.warn(`Item na coleção '${collectionName}' sem ID, usando índice como fallback:`, item);
+                            // Cria um ID de fallback, embora o ideal é que sempre venha da API
+                            return { ...item, id: `fallback_${Date.now()}_${index}` };
+                        }
+                        return item;
+                    });
+                    
+                    // Limpa a tabela antes de adicionar novos dados
                     await table.clear();
                     console.log(`Tabela local '${collectionName}' limpa.`);
-                    await table.bulkAdd(data.collections[collectionName]);
-                    console.log(`${data.collections[collectionName].length} registros adicionados à tabela '${collectionName}'.`);
+
+                    // Adiciona os dados validados em massa
+                    await table.bulkAdd(validatedData);
+                    console.log(`${validatedData.length} registros adicionados à tabela '${collectionName}'.`);
                 }
             }
         });
     } catch (dbError) {
         console.error("Erro ao salvar dados no IndexedDB:", dbError);
+        // Dexie fornece erros detalhados. Se for um 'ConstraintError', é provável que seja uma chave duplicada.
+        if (dbError instanceof Error && dbError.name === 'ConstraintError') {
+             throw new Error("Erro de dados duplicados. Não foi possível salvar os dados no dispositivo.");
+        }
         throw new Error("Não foi possível salvar os dados no dispositivo.");
     }
 
