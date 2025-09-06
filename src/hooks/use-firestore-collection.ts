@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { db as firestoreDB } from '@/lib/firebase';
 import { db as dexieDB } from '@/lib/dexie';
-import { collection, onSnapshot, query, where, QueryConstraint, WhereFilterOp } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, QueryConstraint, WhereFilterOp, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { useLiveQuery } from 'dexie-react-hooks';
 
 export type FirestoreQueryFilter = [string, WhereFilterOp, any];
@@ -73,18 +73,17 @@ export function useFirestoreCollection<T extends { id: string }>(
     
     setLoading(true);
 
-    let q: any = collection(firestoreDB, collectionName);
+    const collectionRef = collection(firestoreDB, collectionName);
     const constraints: QueryConstraint[] = [];
     
     initialFilters.forEach(filter => {
+      // Garante que o filtro só seja aplicado se o valor for válido
       if (filter[2] !== undefined && filter[2] !== null && filter[2] !== '') {
         constraints.push(where(filter[0], filter[1], filter[2]));
       }
     });
 
-    if (constraints.length > 0) {
-      q = query(q, ...constraints);
-    }
+    const q = constraints.length > 0 ? query(collectionRef, ...constraints) : collectionRef;
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const dataFromFirestore = querySnapshot.docs.map(doc => ({
@@ -112,20 +111,44 @@ export function useFirestoreCollection<T extends { id: string }>(
     return () => unsubscribe();
   }, [collectionName, initialSort, JSON.stringify(initialFilters)]);
   
+  const addDocument = async (newData: Omit<T, 'id' | 'createdAt'>) => {
+      try {
+        const docRef = await addDoc(collection(firestoreDB, collectionName), {
+            ...newData,
+            createdAt: serverTimestamp(),
+        });
+        return docRef.id;
+      } catch (error) {
+        console.error(`Error adding document to '${collectionName}': `, error);
+        return null;
+      }
+  };
+
+  const updateDocument = async (id: string, updatedData: Partial<T>) => {
+      try {
+          const docRef = doc(firestoreDB, collectionName, id);
+          await updateDoc(docRef, updatedData);
+      } catch (error) {
+          console.error(`Error updating document in '${collectionName}': `, error);
+      }
+  };
+
+  const deleteDocument = async (id: string) => {
+      try {
+          const docRef = doc(firestoreDB, collectionName, id);
+          await deleteDoc(docRef);
+      } catch (error) {
+          console.error(`Error deleting document from '${collectionName}': `, error);
+      }
+  };
+  
   // A UI sempre usa os dados do Dexie (localData).
   // O estado de loading é uma combinação do carregamento inicial do Firestore e da disponibilidade do localData.
   return { 
     data: localData || [], 
     loading: loading && localData?.length === 0, 
-    addDocument: async (newData: Omit<T, 'id' | 'createdAt'>) => {
-      const docRef = await (collectionName, newData);
-      return docRef;
-    },
-    updateDocument: async (id: string, updatedData: Partial<T>) => {
-      await (collectionName, id, updatedData);
-    },
-    deleteDocument: async (id: string) => {
-      await (collectionName, id);
-    }
+    addDocument,
+    updateDocument,
+    deleteDocument
   };
 }
