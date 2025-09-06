@@ -1,10 +1,10 @@
+
 // src/lib/dexie.ts
 import Dexie, { type Table } from 'dexie';
 import type { Song, Setlist, User, MetadataItem } from '@/types';
 
-// O tipo para o nosso metadata, que pode ser usado por mais de uma tabela.
 interface SyncMetadata {
-    id: number; // Apenas 1 registro com id=0
+    id: number;
     lastSync: Date;
 }
 
@@ -26,33 +26,39 @@ export class CifrasDexie extends Dexie {
             artists: 'id, name',
             genres: 'id, name',
             categories: 'id, name',
-            syncMetadata: 'id' // Tabela simples para armazenar o timestamp
+            syncMetadata: 'id'
         });
     }
 }
 
-// Guarda para garantir que o Dexie só seja instanciado no cliente
-// e que seja uma instância única (singleton)
 let dbInstance: CifrasDexie | null = null;
 
 if (typeof window !== 'undefined') {
+    // Garante uma instância única para evitar problemas com HMR
     if (!(window as any).__CIFRAS_DB__) {
         (window as any).__CIFRAS_DB__ = new CifrasDexie();
     }
     dbInstance = (window as any).__CIFRAS_DB__;
 }
 
-
 export const db = dbInstance as CifrasDexie;
-
 
 export async function setLastSyncTime(time: Date) {
     if (!db) return;
-    await db.syncMetadata.put({ id: 0, lastSync: time });
+    try {
+        await db.syncMetadata.put({ id: 0, lastSync: time });
+    } catch (error) {
+        console.error("Falha ao definir o tempo de sincronização:", error);
+    }
 }
 
 export async function getLastSyncTime(): Promise<Date | null> {
     if (!db) return null;
-    const metadata = await db.syncMetadata.get(0);
-    return metadata ? metadata.lastSync : null;
+    try {
+        const metadata = await db.syncMetadata.get(0);
+        return metadata ? metadata.lastSync : null;
+    } catch (error) {
+        console.error("Falha ao obter o tempo de sincronização:", error);
+        return null;
+    }
 }
