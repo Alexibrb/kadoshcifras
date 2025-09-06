@@ -1,10 +1,10 @@
+
 // src/hooks/use-firestore-collection.ts
 'use client';
 import { useState, useEffect } from 'react';
 import { db as firestoreDB } from '@/lib/firebase';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, where, QueryConstraint, WhereFilterOp } from 'firebase/firestore';
-import { db as dexieDB } from '@/lib/dexie';
-import { useLiveQuery } from 'dexie-react-hooks';
+
 
 export type FirestoreQueryFilter = [string, WhereFilterOp, any];
 
@@ -15,85 +15,8 @@ export function useFirestoreCollection<T extends { id: string }>(
 ) {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isOnline, setIsOnline] = useState(true);
-
-  // Monitora o status da conexão
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-
-    // Garante que o código só execute no cliente
-    if (typeof window !== 'undefined') {
-        window.addEventListener('online', handleOnline);
-        window.addEventListener('offline', handleOffline);
-        setIsOnline(navigator.onLine);
-    }
-    
-    return () => {
-        if (typeof window !== 'undefined') {
-            window.removeEventListener('online', handleOnline);
-            window.removeEventListener('offline', handleOffline);
-        }
-    };
-  }, []);
-
-  // Hook para buscar dados do Dexie (funciona sempre, offline ou online)
-  // Esta será a nossa fonte de verdade para a UI quando offline.
-  const dexieData = useLiveQuery(async () => {
-    // @ts-ignore
-    const table = dexieDB[collectionName];
-    if (!table) return [];
-
-    let collection = table;
-    const allItems = await collection.toArray();
-
-    let filtered = allItems;
-    // Aplica filtros no lado do cliente para os dados do Dexie
-    if (initialFilters.length > 0) {
-      initialFilters.forEach(filter => {
-        const [field, op, value] = filter;
-        // Ignora filtros com valores indefinidos ou vazios
-        if (value === undefined || value === '' || value === null) return;
-        
-        filtered = filtered.filter((item: any) => {
-            if (item[field] === undefined) return false;
-            if (op === '==') return item[field] === value;
-            if (op === 'array-contains') return item[field].includes(value);
-            // Adicione outros operadores de filtro conforme necessário
-            return true;
-        });
-      });
-    }
-
-
-    // Aplica ordenação no lado do cliente
-    if (initialSort) {
-      filtered.sort((a: any, b: any) => {
-        const valA = a[initialSort] ?? '';
-        const valB = b[initialSort] ?? '';
-        if (typeof valA === 'string' && typeof valB === 'string') {
-          return valA.localeCompare(valB);
-        }
-        return valA < valB ? -1 : (valA > valB ? 1 : 0);
-      });
-    }
-    
-    return filtered;
-
-  }, [collectionName, initialSort, JSON.stringify(initialFilters)]);
-
 
   useEffect(() => {
-    // Se estivermos offline, usamos os dados do Dexie e paramos.
-    if (!isOnline) {
-      if (dexieData !== undefined) {
-        setData(dexieData as T[]);
-        setLoading(false);
-      }
-      return; // Não tenta conectar ao Firestore
-    }
-
-    // Se estiver online, usamos o Firestore como fonte da verdade
     let q: any = collection(firestoreDB, collectionName);
     const constraints: QueryConstraint[] = [];
 
@@ -112,34 +35,30 @@ export function useFirestoreCollection<T extends { id: string }>(
     if (constraints.length > 0) {
         q = query(q, ...constraints);
     }
-
+    
+    // onSnapshot lida com o cache offline automaticamente.
+    // Se o usuário estiver offline, ele retornará os dados do cache.
+    // Se estiver online, retornará os dados do servidor e atualizará o cache.
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const firestoreData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
       } as T));
 
-      setData(firestoreData); // Atualiza o estado com os dados frescos do Firestore
+      setData(firestoreData);
       setLoading(false);
 
     }, (error) => {
       console.error(`Error fetching collection '${collectionName}' from Firestore: `, error);
-      // Em caso de erro no Firestore (ex: permissão), usa o Dexie como fallback
-      if (dexieData !== undefined) {
-          setData(dexieData as T[]);
-      }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [collectionName, initialSort, JSON.stringify(initialFilters), isOnline, dexieData]);
+  // JSON.stringify é usado para evitar re-execuções desnecessárias do efeito se a referência do array de filtros mudar, mas o conteúdo não.
+  }, [collectionName, initialSort, JSON.stringify(initialFilters)]);
 
 
   const addDocument = async (newData: Omit<T, 'id' | 'createdAt'>) => {
-    if (!isOnline) {
-      alert("Você está offline. A criação de novos itens não está disponível.");
-      return null;
-    }
     try {
       const cleanedData = Object.fromEntries(
         Object.entries(newData).filter(([_, v]) => v != null && v !== '')
@@ -156,10 +75,6 @@ export function useFirestoreCollection<T extends { id: string }>(
   };
 
   const updateDocument = async (id: string, updatedData: Partial<T>) => {
-     if (!isOnline) {
-      alert("Você está offline. A atualização de itens não está disponível.");
-      return;
-    }
     try {
       const docRef = doc(firestoreDB, collectionName, id);
       await updateDoc(docRef, updatedData as any);
@@ -169,10 +84,6 @@ export function useFirestoreCollection<T extends { id: string }>(
   };
 
   const deleteDocument = async (id: string) => {
-    if (!isOnline) {
-      alert("Você está offline. A exclusão de itens não está disponível.");
-      return;
-    }
     try {
       const docRef = doc(firestoreDB, collectionName, id);
       await deleteDoc(docRef);

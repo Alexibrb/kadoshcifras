@@ -11,9 +11,9 @@ import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import type { Song, Setlist } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useState } from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { syncOfflineData } from '@/services/offline-service';
+import { useEffect } from 'react';
+
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -21,8 +21,13 @@ export default function DashboardPage() {
   const { data: songs, loading: loadingSongs } = useFirestoreCollection<Song>('songs');
   const { data: setlists, loading: loadingSetlists } = useFirestoreCollection<Setlist>('setlists');
   
-  const [syncState, setSyncState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [syncError, setSyncError] = useState<string | null>(null);
+  // Efeito para "aquecer" o cache offline. Isso incentiva o Firestore
+  // a buscar esses dados e mantê-los disponíveis para uso offline.
+  useEffect(() => {
+    // A simples existência dos hooks `useFirestoreCollection` acima já 
+    // inicia o processo de cache, então nenhuma ação extra é necessária aqui.
+    console.log('Dashboard montado, iniciando cache de músicas e repertórios.');
+  }, []);
 
 
   const handleLogout = async () => {
@@ -30,21 +35,6 @@ export default function DashboardPage() {
     router.push('/login');
   };
   
-  const handleSync = async () => {
-    setSyncState('loading');
-    setSyncError(null);
-    try {
-      await syncOfflineData();
-      setSyncState('success');
-      // Esconde a mensagem de sucesso após alguns segundos
-      setTimeout(() => setSyncState('idle'), 3000);
-    } catch (error: any) {
-      console.error("Failed to sync data for offline use:", error);
-      setSyncError(error.message || "Ocorreu um erro ao tentar baixar os dados. Verifique sua conexão e tente novamente.");
-      setSyncState('error');
-    }
-  };
-
   const loading = loadingSongs || loadingSetlists;
 
   return (
@@ -53,6 +43,14 @@ export default function DashboardPage() {
         <h2 className="text-3xl font-bold font-headline tracking-tight text-center mb-4">
           Bem-vindo, {user?.displayName ?? 'Músico'}!
         </h2>
+
+        <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Modo Offline Automático</AlertTitle>
+            <AlertDescription>
+                As músicas e repertórios que você acessar ficarão disponíveis automaticamente para uso offline. Não é necessário baixar manualmente.
+            </AlertDescription>
+        </Alert>
         
         <Button asChild size="lg" className="h-20 text-lg justify-between">
           <Link href="/songs">
@@ -81,38 +79,6 @@ export default function DashboardPage() {
             )}
           </Link>
         </Button>
-
-        <Button onClick={handleSync} size="lg" variant="outline" className="h-20 text-lg justify-start" disabled={syncState === 'loading'}>
-            {syncState === 'loading' ? (
-                <>
-                    <RefreshCw className="mr-4 h-6 w-6 animate-spin" /> Sincronizando dados...
-                </>
-            ) : (
-                 <>
-                    <HardDriveDownload className="mr-4 h-6 w-6" /> Baixar para Uso Offline
-                </>
-            )}
-        </Button>
-
-        {syncState === 'success' && (
-            <Alert variant="default" className="bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-600">
-                <Check className="h-4 w-4 text-green-700 dark:text-green-300" />
-                <AlertTitle className="text-green-800 dark:text-green-200">Sucesso!</AlertTitle>
-                <AlertDescription className="text-green-700 dark:text-green-300">
-                    Todos os dados foram baixados. O aplicativo está pronto para ser usado offline.
-                </AlertDescription>
-            </Alert>
-        )}
-        {syncState === 'error' && (
-            <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Erro na Sincronização</AlertTitle>
-                <AlertDescription>
-                    {syncError}
-                </AlertDescription>
-            </Alert>
-        )}
-
 
         <Button onClick={handleLogout} size="lg" variant="destructive" className="h-16 text-lg justify-start mt-8">
             <LogOut className="mr-4 h-6 w-6" /> Sair
