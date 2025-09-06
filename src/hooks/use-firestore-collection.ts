@@ -1,4 +1,3 @@
-
 // src/hooks/use-firestore-collection.ts
 'use client';
 import { useState, useEffect, useMemo } from 'react';
