@@ -3,42 +3,64 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { db as firestoreDB } from '@/lib/firebase';
+import { db as dexieDB } from '@/lib/dexie';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 
 
 export function useFirestoreDocument<T extends { id: string }>(collectionName: string, docId: string) {
-  const [data, setData] = useState<T | null>(null);
+  const [isOnline, setIsOnline] = useState(true);
+  const [firestoreData, setFirestoreData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Determina a tabela Dexie com base no nome da coleção
+  const dexieTable = (dexieDB as any)[collectionName];
+
+  // Observa o documento específico do Dexie
+  const dexieData = useLiveQuery(() => {
+    if (!dexieTable || isOnline || !docId) return null;
+    return dexieTable.get(docId);
+  }, [collectionName, docId, isOnline], null);
+  
   useEffect(() => {
-    setLoading(true);
-    if (!docId) {
-        setData(null);
-        setLoading(false);
-        return;
-    }
-    
-    const docRef = doc(firestoreDB, collectionName, docId);
+    const updateOnlineStatus = () => setIsOnline(navigator.onLine);
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
 
-    // onSnapshot lida com o cache offline automaticamente.
-    // Se estiver offline, retornará dados do cache.
-    // Se online, buscará do servidor e atualizará o cache.
-    const unsubscribe = onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const firestoreData = { id: docSnap.id, ...docSnap.data() } as T;
-            setData(firestoreData);
-        } else {
-            console.log(`Documento não encontrado: ${collectionName}/${docId}`);
-            setData(null);
+    if (isOnline) {
+        setLoading(true);
+        if (!docId) {
+            setFirestoreData(null);
+            setLoading(false);
+            return;
         }
-        setLoading(false);
-    }, (error) => {
-        console.error(`Error fetching document '${docId}' from Firestore: `, error);
-        setLoading(false);
-    });
+        
+        const docRef = doc(firestoreDB, collectionName, docId);
 
-    return () => unsubscribe();
-  }, [collectionName, docId]);
+        const unsubscribe = onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const dataFromFirestore = { id: docSnap.id, ...docSnap.data() } as T;
+                setFirestoreData(dataFromFirestore);
+            } else {
+                console.log(`Documento não encontrado no Firestore: ${collectionName}/${docId}`);
+                setFirestoreData(null);
+            }
+            setLoading(false);
+        }, (error) => {
+            console.error(`Error fetching document '${docId}' from Firestore: `, error);
+            setLoading(false);
+        });
+
+        return () => {
+            unsubscribe();
+            window.removeEventListener('online', updateOnlineStatus);
+            window.removeEventListener('offline', updateOnlineStatus);
+        }
+    } else {
+        setLoading(false);
+    }
+  }, [collectionName, docId, isOnline]);
   
   const updateDocument = useCallback(async (updatedData: Partial<T>) => {
     if (!docId) {
@@ -52,6 +74,8 @@ export function useFirestoreDocument<T extends { id: string }>(collectionName: s
       console.error(`Error updating document in '${collectionName}': `, error);
     }
   }, [collectionName, docId]);
+  
+  const data = isOnline ? firestoreData : (dexieData as T | null | undefined) ?? null;
 
-  return { data, loading, updateDocument };
+  return { data, loading: loading && isOnline, updateDocument };
 }

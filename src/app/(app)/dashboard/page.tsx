@@ -1,7 +1,7 @@
 
 'use client';
 import { Button } from '@/components/ui/button';
-import { LogOut, Music, ListMusic, HardDriveDownload, Check, AlertCircle, RefreshCw } from 'lucide-react';
+import { LogOut, Music, ListMusic, HardDriveDownload, Check, AlertCircle, RefreshCw, WifiOff, Wifi } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
@@ -12,23 +12,65 @@ import type { Song, Setlist } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { useEffect } from 'react';
-
+import { useEffect, useState } from 'react';
+import { syncOfflineData } from '@/services/offline-service';
+import { useToast } from '@/hooks/use-toast';
+import { getLastSyncTime, db } from '@/lib/dexie';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
   const { data: songs, loading: loadingSongs } = useFirestoreCollection<Song>('songs');
   const { data: setlists, loading: loadingSetlists } = useFirestoreCollection<Setlist>('setlists');
-  
-  // Efeito para "aquecer" o cache offline. Isso incentiva o Firestore
-  // a buscar esses dados e mantê-los disponíveis para uso offline.
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState<Date | null>(null);
+  const [isOnline, setIsOnline] = useState(true);
+  const { toast } = useToast();
+
   useEffect(() => {
-    // A simples existência dos hooks `useFirestoreCollection` acima já 
-    // inicia o processo de cache, então nenhuma ação extra é necessária aqui.
-    console.log('Dashboard montado, iniciando cache de músicas e repertórios.');
+    const updateOnlineStatus = () => setIsOnline(navigator.onLine);
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+
+    const fetchLastSync = async () => {
+      const time = await getLastSyncTime();
+      setLastSync(time);
+    };
+    fetchLastSync();
+    
+    const syncSubscription = db.on('changes', () => {
+        fetchLastSync();
+    });
+
+    return () => {
+      window.removeEventListener('online', updateOnlineStatus);
+      window.removeEventListener('offline', updateOnlineStatus);
+      syncSubscription.unsubscribe();
+    };
   }, []);
 
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      await syncOfflineData();
+      toast({
+        title: "Sincronização Concluída",
+        description: "Todos os dados foram salvos para uso offline.",
+      });
+    } catch (error) {
+      console.error("Erro na sincronização:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro na Sincronização",
+        description: "Não foi possível baixar os dados. Verifique sua conexão e tente novamente.",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -44,13 +86,30 @@ export default function DashboardPage() {
           Bem-vindo, {user?.displayName ?? 'Músico'}!
         </h2>
 
-        <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Modo Offline Automático</AlertTitle>
+        <Alert variant={isOnline ? 'default' : 'destructive'}>
+            {isOnline ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
+            <AlertTitle>{isOnline ? 'Você está Online' : 'Você está Offline'}</AlertTitle>
             <AlertDescription>
-                As músicas e repertórios que você acessar ficarão disponíveis automaticamente para uso offline. Não é necessário baixar manualmente.
+                {isOnline 
+                    ? 'Sincronize os dados para garantir o acesso offline.'
+                    : 'Os dados estão sendo carregados do cache local.'
+                }
             </AlertDescription>
         </Alert>
+
+        <Card className="p-4">
+          <div className="flex flex-col items-center gap-2">
+              <Button onClick={handleSync} disabled={isSyncing || !isOnline} size="lg" className="w-full h-16 text-lg">
+                <RefreshCw className={`mr-2 h-5 w-5 ${isSyncing ? 'animate-spin' : ''}`} />
+                {isSyncing ? 'Sincronizando...' : 'Sincronizar para Uso Offline'}
+              </Button>
+               {lastSync && (
+                <p className="text-xs text-muted-foreground mt-2">
+                    Última sincronização: {formatDistanceToNow(lastSync, { addSuffix: true, locale: ptBR })}
+                </p>
+            )}
+          </div>
+        </Card>
         
         <Button asChild size="lg" className="h-20 text-lg justify-between">
           <Link href="/songs">
