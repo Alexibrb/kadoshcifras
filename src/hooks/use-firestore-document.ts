@@ -5,31 +5,20 @@ import { db as firestoreDB } from '@/lib/firebase';
 import { doc, onSnapshot, updateDoc, DocumentData } from 'firebase/firestore';
 
 function getDataFromLocalStorage<T>(collectionName: string, docId: string): T | null {
-    if (typeof window === 'undefined') return null;
-    const key = `${collectionName}_${docId}`;
+    if (typeof window === 'undefined' || !docId) return null;
+    const key = `${collectionName}_doc_${docId}`; // Nova convenção de chave
     try {
         const item = window.localStorage.getItem(key);
         return item ? JSON.parse(item) : null;
     } catch (error) {
         console.error(`Error reading ${key} from localStorage`, error);
-        // Try to read the whole collection as a fallback
-        try {
-            const collectionItem = window.localStorage.getItem(collectionName);
-            if (collectionItem) {
-                const collectionData = JSON.parse(collectionItem);
-                const doc = collectionData.find((d: any) => d.id === docId);
-                return doc || null;
-            }
-        } catch (collectionError) {
-             console.error(`Error reading collection ${collectionName} from localStorage`, collectionError);
-        }
         return null;
     }
 }
 
 function setDataToLocalStorage<T>(collectionName: string, docId: string, data: T) {
-    if (typeof window === 'undefined') return;
-    const key = `${collectionName}_${docId}`;
+    if (typeof window === 'undefined' || !docId) return;
+    const key = `${collectionName}_doc_${docId}`; // Nova convenção de chave
     try {
         window.localStorage.setItem(key, JSON.stringify(data));
     } catch (error) {

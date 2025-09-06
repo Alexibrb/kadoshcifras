@@ -36,11 +36,27 @@ export async function syncOfflineData() {
       const allCollectionsData = await Promise.all(fetchPromises);
 
       console.log("[Sync] Limpando localStorage e inserindo novos dados...");
+
+      // Limpa dados antigos da sincronização anterior
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes('_doc_') || COLLECTIONS_TO_SYNC.includes(key)) {
+            localStorage.removeItem(key);
+        }
+      });
       
+      // Salva cada documento individualmente para evitar o limite do localStorage
       allCollectionsData.forEach(collectionInfo => {
         try {
-          localStorage.setItem(collectionInfo.name, JSON.stringify(collectionInfo.data));
-          console.log(`[Sync] ${collectionInfo.data.length} documentos sincronizados para a coleção '${collectionInfo.name}'.`);
+            // Salva a lista de IDs da coleção para referência
+            const ids = collectionInfo.data.map(doc => doc.id);
+            localStorage.setItem(collectionInfo.name, JSON.stringify(ids));
+
+            // Salva cada documento
+            collectionInfo.data.forEach(doc => {
+                const docKey = `${collectionInfo.name}_doc_${doc.id}`;
+                localStorage.setItem(docKey, JSON.stringify(doc));
+            });
+            console.log(`[Sync] ${collectionInfo.data.length} documentos sincronizados para a coleção '${collectionInfo.name}'.`);
         } catch (error) {
           console.error(`[Sync] Erro ao salvar a coleção '${collectionInfo.name}' no localStorage.`, error);
           alert(`Não foi possível salvar a coleção '${collectionInfo.name}'. O armazenamento pode estar cheio.`);
