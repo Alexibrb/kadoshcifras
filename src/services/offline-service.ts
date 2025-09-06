@@ -1,29 +1,31 @@
+
 // src/services/offline-service.ts
 import { db as firestoreDB } from '@/lib/firebase';
 import { db as dexieDB, setLastSyncTime } from '@/lib/dexie';
 import { collection, getDocs, Timestamp } from 'firebase/firestore';
 
-// Função para converter Timestamps aninhados em ISO strings
-// Garante que os dados sejam serializáveis para o IndexedDB.
+// Função para converter Timestamps aninhados em ISO strings de forma segura
 const convertTimestamps = (data: any): any => {
     if (data === null || typeof data !== 'object') {
         return data;
     }
 
-    // Verifica se o objeto se parece com um timestamp serializado pelo Firestore antes do envio
-    if (data && typeof data.seconds === 'number' && typeof data.nanoseconds === 'number') {
-        return new Timestamp(data.seconds, data.nanoseconds).toDate().toISOString();
-    }
-    
-    // Verifica se já é um Timestamp do SDK do Firebase
+    // Verifica se é um Timestamp do Firestore SDK
     if (data instanceof Timestamp) {
-        return data.toDate().toISOString();
+        return data.toDate(); // Dexie pode lidar com objetos Date
     }
 
+    // Verifica se é um objeto que se parece com um timestamp serializado
+    if (typeof data.seconds === 'number' && typeof data.nanoseconds === 'number') {
+        return new Timestamp(data.seconds, data.nanoseconds).toDate();
+    }
+    
+    // Se for um array, processa cada item recursivamente
     if (Array.isArray(data)) {
         return data.map(item => convertTimestamps(item));
     }
     
+    // Se for um objeto, processa cada valor recursivamente
     const newData: { [key: string]: any } = {};
     for (const key in data) {
         if (Object.prototype.hasOwnProperty.call(data, key)) {
@@ -42,7 +44,7 @@ export const syncOfflineData = async () => {
 
     for (const collectionName of collectionsToSync) {
         try {
-            console.log(`Buscando coleção: ${collectionName}`);
+            console.log(`Buscando coleção: ${collectionName}...`);
             const querySnapshot = await getDocs(collection(firestoreDB, collectionName));
             
             const collectionData = querySnapshot.docs.map(doc => {
@@ -60,8 +62,6 @@ export const syncOfflineData = async () => {
                     console.log(`Limpando e salvando dados na tabela Dexie: ${collectionName}`);
                     await table.clear();
                     await table.bulkPut(collectionData);
-
-                    // Debug: Verifica se os dados foram salvos
                     const count = await table.count();
                     console.log(`${count} documentos salvos em '${collectionName}'.`);
                 });
@@ -71,7 +71,7 @@ export const syncOfflineData = async () => {
 
         } catch (error) {
             console.error(`Erro ao sincronizar a coleção '${collectionName}':`, error);
-            // Se uma coleção falhar, continuamos para a próxima.
+            // Continua para a próxima coleção mesmo que uma falhe.
         }
     }
     
