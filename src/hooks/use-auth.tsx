@@ -80,6 +80,7 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
     const pathname = usePathname();
 
     useEffect(() => {
+        // Não faz nada enquanto os dados de autenticação estão carregando
         if (loading) {
             return;
         }
@@ -88,36 +89,42 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
         const isPendingApprovalPage = pathname === '/pending-approval';
         const isAdminPage = pathname.startsWith('/users');
 
+        // Se não há usuário logado (user), redireciona para a página de login
         if (!user) {
             if (!isAuthPage) {
                 router.push(redirectUrl);
             }
             return;
         }
-        
-        if (!appUser && !loading) {
-             if (!isPendingApprovalPage) {
-                 // Aguarda um momento para o appUser ser criado após o signup antes de redirecionar
-                 setTimeout(() => router.push('/pending-approval'), 500);
-             }
-             return;
+
+        // Se há um usuário logado (user) mas não há um documento de usuário no Firestore (appUser)
+        if (!appUser) {
+            // Se ele não estiver na página de pendente, redireciona para lá.
+            // Isso acontece logo após o cadastro, antes do documento ser criado.
+            if (!isPendingApprovalPage) {
+                router.push('/pending-approval');
+            }
+            return;
         }
-        
+
+        // Se há um usuário logado (user) E um documento de usuário (appUser)
         if (appUser) {
+            // Se o usuário não está aprovado
             if (!appUser.isApproved) {
                 if (!isPendingApprovalPage) {
                     router.push('/pending-approval');
                 }
-            } else { // Usuário está aprovado
-                if (isPendingApprovalPage || isAuthPage) {
+            } else { // Se o usuário ESTÁ APROVADO
+                // Se ele está na página de login ou pendente, vai para o dashboard
+                if (isAuthPage || isPendingApprovalPage) {
                     router.push('/dashboard');
                 }
+                // Se não é admin e tenta acessar a página de usuários, vai para o dashboard
                 if (appUser.role !== 'admin' && isAdminPage) {
                     router.push('/dashboard');
                 }
             }
         }
-
     }, [user, appUser, loading, router, redirectUrl, pathname]);
 
     return { loading, isAdmin: appUser?.role === 'admin' };
