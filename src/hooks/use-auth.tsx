@@ -66,21 +66,20 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
     const [isOnline, setIsOnline] = useState(true);
 
     useEffect(() => {
-      // Monitora o status da conexão
       const handleOnline = () => setIsOnline(true);
       const handleOffline = () => setIsOnline(false);
 
-      window.addEventListener('online', handleOnline);
-      window.addEventListener('offline', handleOffline);
-      
-      // Define o status inicial
-      if (typeof navigator !== 'undefined') {
+      if (typeof window !== 'undefined') {
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
         setIsOnline(navigator.onLine);
       }
 
       return () => {
-        window.removeEventListener('online', handleOnline);
-        window.removeEventListener('offline', handleOffline);
+        if (typeof window !== 'undefined') {
+          window.removeEventListener('online', handleOnline);
+          window.removeEventListener('offline', handleOffline);
+        }
       };
     }, []);
 
@@ -89,9 +88,9 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
             return;
         }
 
-        // Se estivermos offline e o usuário já estiver logado (no cache do Firebase),
-        // evitamos qualquer redirecionamento para não causar loops.
-        // O service worker deve cuidar de exibir a página correta do cache.
+        // Se estiver offline, o Firebase Auth mantém o estado de login do usuário.
+        // Se `user` existir, confiamos que ele está logado e evitamos redirecionamentos.
+        // Isso permite o acesso ao app mesmo offline se o usuário já fez login antes.
         if (!isOnline && user) {
             return;
         }
@@ -108,6 +107,9 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
         }
         
         if (!appUser) {
+           // Isso pode acontecer momentaneamente enquanto o documento do Firestore carrega.
+           // Se o usuário existir mas o appUser não, e não estivermos offline,
+           // é provável que seja um novo usuário que precisa ser redirecionado.
            if (!isPendingApprovalPage) {
              router.push('/pending-approval');
            }

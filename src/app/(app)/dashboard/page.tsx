@@ -31,16 +31,21 @@ export default function DashboardPage() {
   };
   
   const handleDownload = async () => {
+    if (!appUser) {
+        setDownloadError("Perfil de usuário não carregado. Tente novamente em alguns segundos.");
+        return;
+    }
     setIsDownloading(true);
     setDownloadSuccess(false);
     setDownloadError(null);
     try {
-      // Passa o appUser para a função de cache
+      // Passa o appUser para a função de cache para que ela possa
+      // decidir quais coleções baixar com base na função do usuário.
       await cacheAllDataForOffline(appUser);
       setDownloadSuccess(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to cache data for offline use:", error);
-      setDownloadError("Ocorreu um erro ao tentar baixar os dados. Tente novamente.");
+      setDownloadError(error.message || "Ocorreu um erro ao tentar baixar os dados. Verifique sua conexão e tente novamente.");
     } finally {
       setIsDownloading(false);
     }
