@@ -1,3 +1,4 @@
+
 // src/hooks/use-firestore-document.ts
 'use client';
 import { useState, useEffect, useCallback } from 'react';
