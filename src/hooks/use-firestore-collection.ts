@@ -6,23 +6,42 @@ import { collection, onSnapshot, query, where, QueryConstraint, WhereFilterOp, a
 
 export type FirestoreQueryFilter = [string, WhereFilterOp, any];
 
-function getDataFromLocalStorage<T>(key: string): T[] {
+// Função para ler documentos individuais do localStorage com base em uma lista de IDs
+function getDocsFromLocalStorage<T>(collectionName: string): T[] {
   if (typeof window === 'undefined') return [];
+  const items: T[] = [];
   try {
-    const item = window.localStorage.getItem(key);
-    return item ? JSON.parse(item) : [];
+    // A chave principal da coleção agora guarda os IDs dos documentos
+    const idListString = window.localStorage.getItem(collectionName);
+    const ids = idListString ? JSON.parse(idListString) : [];
+    
+    for (const id of ids) {
+        const itemString = window.localStorage.getItem(`${collectionName}_doc_${id}`);
+        if (itemString) {
+            items.push(JSON.parse(itemString));
+        }
+    }
   } catch (error) {
-    console.error(`Error reading ${key} from localStorage`, error);
-    return [];
+    console.error(`Error reading collection ${collectionName} from localStorage`, error);
   }
+  return items;
 }
 
-function setDataToLocalStorage<T>(key: string, data: T[]) {
+// Função para salvar uma coleção inteira, dividindo em documentos individuais
+function setCollectionToLocalStorage<T extends { id: string }>(collectionName: string, data: T[]) {
     if (typeof window === 'undefined') return;
     try {
-        window.localStorage.setItem(key, JSON.stringify(data));
+        const ids = data.map(item => item.id);
+        // Salva a lista de IDs na chave principal
+        window.localStorage.setItem(collectionName, JSON.stringify(ids));
+        
+        // Salva cada documento individualmente
+        for (const item of data) {
+            window.localStorage.setItem(`${collectionName}_doc_${item.id}`, JSON.stringify(item));
+        }
     } catch (error) {
-        console.error(`Error writing ${key} to localStorage`, error);
+        console.error(`Error writing collection ${collectionName} to localStorage. It may be full.`, error);
+        // Não lançamos o erro para não quebrar a aplicação, apenas logamos.
     }
 }
 
@@ -32,7 +51,7 @@ export function useFirestoreCollection<T extends { id: string }>(
   initialSort?: string, 
   initialFilters: FirestoreQueryFilter[] = []
 ) {
-  const [data, setData] = useState<T[]>(() => getDataFromLocalStorage<T>(collectionName));
+  const [data, setData] = useState<T[]>(() => getDocsFromLocalStorage<T>(collectionName));
   const [loading, setLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(true);
 
@@ -54,18 +73,19 @@ export function useFirestoreCollection<T extends { id: string }>(
   }, []);
   
   useEffect(() => {
-    // If offline, we rely on the data already loaded from localStorage in useState initial value.
+    // Se estiver offline, confiamos nos dados já carregados do localStorage.
     if (!isOnline) {
+      setData(getDocsFromLocalStorage<T>(collectionName));
       setLoading(false);
       return;
     }
     
-    // Check if filters are valid before querying
+    // Verifica se os filtros são válidos antes de consultar o Firestore
     const areFiltersValid = initialFilters.every(f => f[2] !== undefined && f[2] !== null);
     if (!areFiltersValid) {
         setLoading(false);
-        setData([]); // Clear data if filters are not ready
-        return; // Don't query firestore
+        setData([]); // Limpa os dados se os filtros não estiverem prontos
+        return; // Não consulta o Firestore
     }
 
     setLoading(true);
@@ -74,7 +94,6 @@ export function useFirestoreCollection<T extends { id: string }>(
     const constraints: QueryConstraint[] = [];
     
     initialFilters.forEach(filter => {
-      // Also check for empty string as it can be an invalid filter value sometimes
       if (filter[2] !== undefined && filter[2] !== null && filter[2] !== '') {
         constraints.push(where(filter[0], filter[1], filter[2]));
       }
@@ -88,7 +107,7 @@ export function useFirestoreCollection<T extends { id: string }>(
         ...doc.data(),
       } as T));
 
-      // Client-side sort if needed
+      // Ordenação no lado do cliente, se necessário
       if (initialSort) {
           dataFromFirestore = dataFromFirestore.sort((a: any, b: any) => {
               if (a[initialSort] < b[initialSort]) return -1;
@@ -98,13 +117,14 @@ export function useFirestoreCollection<T extends { id: string }>(
       }
 
       setData(dataFromFirestore);
-      setDataToLocalStorage<T>(collectionName, dataFromFirestore);
+      // Salva a coleção inteira no localStorage de forma otimizada
+      setCollectionToLocalStorage<T>(collectionName, dataFromFirestore);
 
       setLoading(false);
     }, (error) => {
       console.error(`Error fetching collection '${collectionName}' from Firestore: `, error);
-      // On error, fall back to local data
-      setData(getDataFromLocalStorage<T>(collectionName));
+      // Em caso de erro, recorre aos dados locais
+      setData(getDocsFromLocalStorage<T>(collectionName));
       setLoading(false);
     });
 
