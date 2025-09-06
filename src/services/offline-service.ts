@@ -1,5 +1,4 @@
 
-import { db as dexieDB, setLastSyncTime } from "@/lib/dexie";
 import { db as firestoreDB } from "@/lib/firebase";
 import { collection, getDocs, DocumentData } from "firebase/firestore";
 
@@ -21,50 +20,40 @@ async function fetchAllFromFirestore(collectionName: string): Promise<DocumentDa
 
 
 /**
- * Sincroniza todos os dados do Firestore para o Dexie (IndexedDB) para uso offline.
- * Limpa as tabelas locais e as repopula com os dados mais recentes do servidor.
+ * Sincroniza todos os dados do Firestore para o localStorage para uso offline.
+ * Limpa as chaves locais e as repopula com os dados mais recentes do servidor.
  */
 export async function syncOfflineData() {
-  if (!dexieDB) return;
+  if (typeof window === 'undefined') return;
 
   try {
     if (navigator.onLine) {
       console.log("[Sync] Buscando todos os dados do Firestore...");
       
-      // Cria um array de promises para buscar todas as coleções em paralelo
-      const fetchPromises = COLLECTIONS_TO_SYNC.map(name => fetchAllFromFirestore(name));
+      const fetchPromises = COLLECTIONS_TO_SYNC.map(name => 
+        fetchAllFromFirestore(name).then(data => ({ name, data }))
+      );
       const allCollectionsData = await Promise.all(fetchPromises);
 
-      console.log("[Sync] Limpando tabelas locais e inserindo novos dados...");
+      console.log("[Sync] Limpando localStorage e inserindo novos dados...");
       
-      // Abre uma transação de escrita para todas as tabelas
-      const tables = COLLECTIONS_TO_SYNC.map(name => (dexieDB as any)[name]);
-      
-      await dexieDB.transaction("rw", tables, async () => {
-          for (let i = 0; i < COLLECTIONS_TO_SYNC.length; i++) {
-              const collectionName = COLLECTIONS_TO_SYNC[i];
-              const table = (dexieDB as any)[collectionName];
-              const data = allCollectionsData[i];
-
-              await table.clear();
-              if (data.length > 0) {
-                await table.bulkPut(data);
-              }
-              console.log(`[Sync] ${data.length} documentos sincronizados para a coleção '${collectionName}'.`);
-          }
+      allCollectionsData.forEach(collectionInfo => {
+        try {
+          localStorage.setItem(collectionInfo.name, JSON.stringify(collectionInfo.data));
+          console.log(`[Sync] ${collectionInfo.data.length} documentos sincronizados para a coleção '${collectionInfo.name}'.`);
+        } catch (error) {
+          console.error(`[Sync] Erro ao salvar a coleção '${collectionInfo.name}' no localStorage.`, error);
+          alert(`Não foi possível salvar a coleção '${collectionInfo.name}'. O armazenamento pode estar cheio.`);
+        }
       });
       
-      await setLastSyncTime(new Date());
       console.log("[Sync] Dados sincronizados com sucesso.");
 
     } else {
-      console.log("[Sync] Offline. Usando dados locais do IndexedDB.");
-      const countSongs = await (dexieDB as any).songs.count();
-      console.log(`[Sync] Músicas já disponíveis offline: ${countSongs}`);
+      console.log("[Sync] Offline. Usando dados locais do localStorage.");
     }
   } catch (error) {
     console.error("[Sync] Erro durante a sincronização:", error);
-    // Lança o erro para que a UI possa notificar o usuário
     throw error;
   }
 }

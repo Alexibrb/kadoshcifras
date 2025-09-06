@@ -15,7 +15,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { syncOfflineData } from '@/services/offline-service';
-import { getLastSyncTime } from '@/lib/dexie';
+import { getLastSyncTime, setLastSyncTime } from '@/lib/local-storage';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -26,12 +26,12 @@ export default function DashboardPage() {
   const { data: setlists, loading: loadingSetlists } = useFirestoreCollection<Setlist>('setlists');
   const [isOnline, setIsOnline] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [lastSyncTime, setLastSyncTimeState] = useState<Date | null>(null);
   const { toast } = useToast();
 
-  const fetchLastSync = async () => {
-    const time = await getLastSyncTime();
-    setLastSyncTime(time);
+  const fetchLastSync = () => {
+    const time = getLastSyncTime();
+    setLastSyncTimeState(time);
   }
 
   useEffect(() => {
@@ -81,7 +81,9 @@ export default function DashboardPage() {
       })
     try {
       await syncOfflineData();
-      await fetchLastSync();
+      const newSyncTime = new Date();
+      setLastSyncTime(newSyncTime);
+      setLastSyncTimeState(newSyncTime);
        toast({
         title: "Sincronização Concluída",
         description: "Seus dados estão prontos para uso offline.",

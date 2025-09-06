@@ -2,41 +2,78 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { db as firestoreDB } from '@/lib/firebase';
-import { db as dexieDB } from '@/lib/dexie';
 import { doc, onSnapshot, updateDoc, DocumentData } from 'firebase/firestore';
-import { useLiveQuery } from 'dexie-react-hooks';
+
+function getDataFromLocalStorage<T>(collectionName: string, docId: string): T | null {
+    if (typeof window === 'undefined') return null;
+    const key = `${collectionName}_${docId}`;
+    try {
+        const item = window.localStorage.getItem(key);
+        return item ? JSON.parse(item) : null;
+    } catch (error) {
+        console.error(`Error reading ${key} from localStorage`, error);
+        // Try to read the whole collection as a fallback
+        try {
+            const collectionItem = window.localStorage.getItem(collectionName);
+            if (collectionItem) {
+                const collectionData = JSON.parse(collectionItem);
+                const doc = collectionData.find((d: any) => d.id === docId);
+                return doc || null;
+            }
+        } catch (collectionError) {
+             console.error(`Error reading collection ${collectionName} from localStorage`, collectionError);
+        }
+        return null;
+    }
+}
+
+function setDataToLocalStorage<T>(collectionName: string, docId: string, data: T) {
+    if (typeof window === 'undefined') return;
+    const key = `${collectionName}_${docId}`;
+    try {
+        window.localStorage.setItem(key, JSON.stringify(data));
+    } catch (error) {
+        console.error(`Error writing ${key} to localStorage`, error);
+    }
+}
+
 
 export function useFirestoreDocument<T extends { id: string }>(
     collectionName: string, 
     docId: string
 ) {
+  const [data, setData] = useState<T | null>(() => getDataFromLocalStorage<T>(collectionName, docId));
   const [loading, setLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(true);
 
-  // 1. A fonte da verdade para a UI é SEMPRE o Dexie (banco de dados local).
-  const localData = useLiveQuery(
-    async () => {
-      if (!docId) return null;
-      const table = (dexieDB as any)[collectionName];
-      if (!table) return null;
-      
-      const item = await table.get(docId);
-      return item as T ?? null;
-    },
-    [collectionName, docId], // Dependências para o useLiveQuery
-    null // Valor inicial
-  );
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsOnline(navigator.onLine);
+    }
 
-  // 2. Efeito para ouvir o Firestore e manter o Dexie atualizado.
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   useEffect(() => {
     if (!docId) {
+        setLoading(false);
+        setData(null);
+        return;
+    }
+
+    if (!isOnline) {
+      setData(getDataFromLocalStorage<T>(collectionName, docId));
       setLoading(false);
       return;
-    }
-    
-    // Só executa no navegador e quando online
-    if (typeof window === 'undefined' || !navigator.onLine) {
-        setLoading(false); // Se offline, paramos de carregar, confiando nos dados do Dexie
-        return;
     }
     
     setLoading(true);
@@ -45,23 +82,20 @@ export function useFirestoreDocument<T extends { id: string }>(
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         const firestoreData = { id: docSnap.id, ...docSnap.data() } as T;
-        
-        // Sincroniza o dado recebido com o Dexie.
-        const table = (dexieDB as any)[collectionName];
-        if (table) {
-          table.put(firestoreData).catch((err: any) => {
-            console.error(`Erro ao atualizar documento em Dexie para ${collectionName}:`, err);
-          });
-        }
+        setData(firestoreData);
+        setDataToLocalStorage<T>(collectionName, docId, firestoreData);
+      } else {
+        setData(null);
       }
       setLoading(false);
     }, (error) => {
       console.error(`Error fetching document '${docId}' from Firestore: `, error);
+      setData(getDataFromLocalStorage<T>(collectionName, docId)); // Fallback
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [collectionName, docId]);
+  }, [collectionName, docId, isOnline]);
 
   const updateDocument = useCallback(async (updatedData: Partial<Omit<T, 'id'>>) => {
     if (!docId) {
@@ -71,22 +105,14 @@ export function useFirestoreDocument<T extends { id: string }>(
     try {
       const docRef = doc(firestoreDB, collectionName, docId);
       await updateDoc(docRef, updatedData as DocumentData);
-      
-      // Atualiza o Dexie também para uma UI mais responsiva
-      const table = (dexieDB as any)[collectionName];
-      if(table) {
-        await table.update(docId, updatedData);
-      }
     } catch (error) {
       console.error(`Error updating document in '${collectionName}': `, error);
     }
   }, [collectionName, docId]);
   
-  // A UI sempre usa os dados do Dexie (localData).
-  // O estado de loading é uma combinação do carregamento inicial do Firestore e da disponibilidade do localData.
   return { 
-      data: localData, 
-      loading: loading && !localData, 
+      data, 
+      loading, 
       updateDocument 
   };
 }

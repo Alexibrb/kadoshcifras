@@ -1,76 +1,80 @@
-
 // src/hooks/use-firestore-collection.ts
 'use client';
 import { useState, useEffect } from 'react';
 import { db as firestoreDB } from '@/lib/firebase';
-import { db as dexieDB } from '@/lib/dexie';
 import { collection, onSnapshot, query, where, QueryConstraint, WhereFilterOp, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { useLiveQuery } from 'dexie-react-hooks';
 
 export type FirestoreQueryFilter = [string, WhereFilterOp, any];
+
+function getDataFromLocalStorage<T>(key: string): T[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const item = window.localStorage.getItem(key);
+    return item ? JSON.parse(item) : [];
+  } catch (error) {
+    console.error(`Error reading ${key} from localStorage`, error);
+    return [];
+  }
+}
+
+function setDataToLocalStorage<T>(key: string, data: T[]) {
+    if (typeof window === 'undefined') return;
+    try {
+        window.localStorage.setItem(key, JSON.stringify(data));
+    } catch (error) {
+        console.error(`Error writing ${key} to localStorage`, error);
+    }
+}
+
 
 export function useFirestoreCollection<T extends { id: string }>(
   collectionName: string,
   initialSort?: string, 
   initialFilters: FirestoreQueryFilter[] = []
 ) {
+  const [data, setData] = useState<T[]>(() => getDataFromLocalStorage<T>(collectionName));
   const [loading, setLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(true);
 
-  const localData = useLiveQuery(
-    async () => {
-      const table = (dexieDB as any)[collectionName];
-      if (!table) return [];
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsOnline(navigator.onLine);
+    }
 
-      // Garante que TODOS os filtros sejam válidos antes de prosseguir.
-      const areFiltersValid = initialFilters.every(f => f[2] !== undefined && f[2] !== null);
-      if (!areFiltersValid) {
-          return []; // Retorna vazio se algum filtro for inválido, evitando a consulta
-      }
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
 
-      let query = table;
-      
-      const validFilters = initialFilters.filter(f => f[2] !== '');
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
-      if(validFilters.length > 0) {
-        const filterObj: { [key: string]: any } = {};
-        validFilters.forEach(f => {
-            if(f[1] === '==') {
-                filterObj[f[0]] = f[2];
-            }
-        })
-        if (Object.keys(filterObj).length > 0) {
-            query = query.where(filterObj);
-        }
-      }
-      
-      const items = await query.toArray();
-
-      if (initialSort && items.length > 0 && items[0][initialSort]) {
-        items.sort((a: any, b: any) => {
-          if (a[initialSort] < b[initialSort]) return -1;
-          if (a[initialSort] > b[initialSort]) return 1;
-          return 0;
-        });
-      }
-
-      return items as T[];
-    },
-    [collectionName, JSON.stringify(initialFilters), initialSort], 
-    [] 
-  );
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
   
   useEffect(() => {
-    if (typeof window === 'undefined' || !navigator.onLine) {
-        setLoading(false); 
-        return;
+    // If offline, we rely on the data already loaded from localStorage in useState initial value.
+    if (!isOnline) {
+      setLoading(false);
+      return;
     }
     
+    // Check if filters are valid before querying
+    const areFiltersValid = initialFilters.every(f => f[2] !== undefined && f[2] !== null);
+    if (!areFiltersValid) {
+        setLoading(false);
+        setData([]); // Clear data if filters are not ready
+        return; // Don't query firestore
+    }
+
     setLoading(true);
 
     const collectionRef = collection(firestoreDB, collectionName);
     const constraints: QueryConstraint[] = [];
     
     initialFilters.forEach(filter => {
+      // Also check for empty string as it can be an invalid filter value sometimes
       if (filter[2] !== undefined && filter[2] !== null && filter[2] !== '') {
         constraints.push(where(filter[0], filter[1], filter[2]));
       }
@@ -79,25 +83,33 @@ export function useFirestoreCollection<T extends { id: string }>(
     const q = constraints.length > 0 ? query(collectionRef, ...constraints) : collectionRef;
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const dataFromFirestore = querySnapshot.docs.map(doc => ({
+      let dataFromFirestore = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
       } as T));
 
-      const table = (dexieDB as any)[collectionName];
-      if (table) {
-        table.bulkPut(dataFromFirestore).catch((err: any) => {
-          console.error(`Erro ao atualizar Dexie para ${collectionName}:`, err);
-        });
+      // Client-side sort if needed
+      if (initialSort) {
+          dataFromFirestore = dataFromFirestore.sort((a: any, b: any) => {
+              if (a[initialSort] < b[initialSort]) return -1;
+              if (a[initialSort] > b[initialSort]) return 1;
+              return 0;
+          })
       }
+
+      setData(dataFromFirestore);
+      setDataToLocalStorage<T>(collectionName, dataFromFirestore);
+
       setLoading(false);
     }, (error) => {
       console.error(`Error fetching collection '${collectionName}' from Firestore: `, error);
+      // On error, fall back to local data
+      setData(getDataFromLocalStorage<T>(collectionName));
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [collectionName, initialSort, JSON.stringify(initialFilters)]);
+  }, [collectionName, initialSort, JSON.stringify(initialFilters), isOnline]);
   
   const addDocument = async (newData: Omit<T, 'id' | 'createdAt'>) => {
       try {
@@ -131,8 +143,8 @@ export function useFirestoreCollection<T extends { id: string }>(
   };
   
   return { 
-    data: localData || [], 
-    loading: loading && localData?.length === 0, 
+    data, 
+    loading, 
     addDocument,
     updateDocument,
     deleteDocument
