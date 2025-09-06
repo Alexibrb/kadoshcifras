@@ -4,8 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 9002",
-    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
-    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -41,6 +39,8 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
+    "dexie": "^4.0.7",
+    "dexie-react-hooks": "^1.1.7",
     "embla-carousel-react": "^8.6.0",
     "firebase": "^10.12.2",
     "genkit": "^1.14.1",

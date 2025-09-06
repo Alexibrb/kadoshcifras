@@ -1,7 +1,7 @@
 
 'use client';
 import { Button } from '@/components/ui/button';
-import { LogOut, Music, ListMusic, HardDriveDownload, Check, AlertCircle } from 'lucide-react';
+import { LogOut, Music, ListMusic, HardDriveDownload, Check, AlertCircle, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
@@ -11,18 +11,18 @@ import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import type { Song, Setlist } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cacheAllDataForOffline } from '@/services/offline-service';
 import { useState } from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { syncOfflineData } from '@/services/offline-service';
 
 export default function DashboardPage() {
-  const { user, appUser } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const { data: songs, loading: loadingSongs } = useFirestoreCollection<Song>('songs');
   const { data: setlists, loading: loadingSetlists } = useFirestoreCollection<Setlist>('setlists');
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadSuccess, setDownloadSuccess] = useState(false);
-  const [downloadError, setDownloadError] = useState<string | null>(null);
+  
+  const [syncState, setSyncState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [syncError, setSyncError] = useState<string | null>(null);
 
 
   const handleLogout = async () => {
@@ -30,24 +30,18 @@ export default function DashboardPage() {
     router.push('/login');
   };
   
-  const handleDownload = async () => {
-    if (!appUser) {
-        setDownloadError("Perfil de usuário não carregado. Tente novamente em alguns segundos.");
-        return;
-    }
-    setIsDownloading(true);
-    setDownloadSuccess(false);
-    setDownloadError(null);
+  const handleSync = async () => {
+    setSyncState('loading');
+    setSyncError(null);
     try {
-      // Passa o appUser para a função de cache para que ela possa
-      // decidir quais coleções baixar com base na função do usuário.
-      await cacheAllDataForOffline(appUser);
-      setDownloadSuccess(true);
+      await syncOfflineData();
+      setSyncState('success');
+      // Esconde a mensagem de sucesso após alguns segundos
+      setTimeout(() => setSyncState('idle'), 3000);
     } catch (error: any) {
-      console.error("Failed to cache data for offline use:", error);
-      setDownloadError(error.message || "Ocorreu um erro ao tentar baixar os dados. Verifique sua conexão e tente novamente.");
-    } finally {
-      setIsDownloading(false);
+      console.error("Failed to sync data for offline use:", error);
+      setSyncError(error.message || "Ocorreu um erro ao tentar baixar os dados. Verifique sua conexão e tente novamente.");
+      setSyncState('error');
     }
   };
 
@@ -88,10 +82,10 @@ export default function DashboardPage() {
           </Link>
         </Button>
 
-        <Button onClick={handleDownload} size="lg" variant="outline" className="h-20 text-lg justify-start" disabled={isDownloading}>
-            {isDownloading ? (
+        <Button onClick={handleSync} size="lg" variant="outline" className="h-20 text-lg justify-start" disabled={syncState === 'loading'}>
+            {syncState === 'loading' ? (
                 <>
-                    <HardDriveDownload className="mr-4 h-6 w-6 animate-pulse" /> Baixando dados...
+                    <RefreshCw className="mr-4 h-6 w-6 animate-spin" /> Sincronizando dados...
                 </>
             ) : (
                  <>
@@ -100,7 +94,7 @@ export default function DashboardPage() {
             )}
         </Button>
 
-        {downloadSuccess && (
+        {syncState === 'success' && (
             <Alert variant="default" className="bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-600">
                 <Check className="h-4 w-4 text-green-700 dark:text-green-300" />
                 <AlertTitle className="text-green-800 dark:text-green-200">Sucesso!</AlertTitle>
@@ -109,12 +103,12 @@ export default function DashboardPage() {
                 </AlertDescription>
             </Alert>
         )}
-        {downloadError && (
+        {syncState === 'error' && (
             <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Erro no Download</AlertTitle>
+                <AlertTitle>Erro na Sincronização</AlertTitle>
                 <AlertDescription>
-                    {downloadError}
+                    {syncError}
                 </AlertDescription>
             </Alert>
         )}

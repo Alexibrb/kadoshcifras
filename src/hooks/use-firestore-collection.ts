@@ -2,9 +2,10 @@
 // src/hooks/use-firestore-collection.ts
 'use client';
 import { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, where, Query, WhereFilterOp } from 'firebase/firestore';
-import type { Song } from '@/types';
+import { db as firestoreDB } from '@/lib/firebase';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, where, Query, WhereFilterOp, getDocs } from 'firebase/firestore';
+import { db as dexieDB } from '@/lib/dexie';
+import { useLiveQuery } from 'dexie-react-hooks';
 
 export type FirestoreQueryFilter = [string, WhereFilterOp, any];
 
@@ -13,60 +14,66 @@ export function useFirestoreCollection<T extends { id: string }>(
   initialSort?: string,
   initialFilters: FirestoreQueryFilter[] = []
 ) {
-  const [data, setData] = useState<T[]>([]);
-  const [loading, setLoading] = useState(true);
+  const liveData = useLiveQuery(async () => {
+    // @ts-ignore
+    const table = dexieDB[collectionName];
+    if (!table) return [];
 
-  useEffect(() => {
-    // Se um filtro estiver vazio (por exemplo, aguardando o ID do usuário), não execute a query.
-    // Isso previne um erro do Firestore por tentar usar um valor `undefined` em `where`.
-    if (initialFilters.some(f => f[2] === undefined || f[2] === null)) {
-      setLoading(false);
-      setData([]); // Garante que dados antigos não sejam mostrados
-      return;
-    }
-
-    let q: Query = collection(db, collectionName);
+    let collection = table;
     
+    // Dexie doesn't support complex 'where' clauses like Firestore in its basic form.
+    // Filtering will be done client-side for simplicity here.
+    // For more complex scenarios, you might need to use Dexie's `filter()` method.
+    const allItems = await collection.toArray();
+
+    let filtered = allItems;
+
     initialFilters.forEach(filter => {
-      // Ignora filtros com valor `false` ou vazio para evitar queries desnecessárias
-      if (filter[2]) {
-         q = query(q, where(...filter));
+      const [field, op, value] = filter;
+      if (value) {
+        filtered = filtered.filter((item: any) => {
+          if (op === '==') return item[field] === value;
+          // Add other operators as needed
+          return true;
+        });
       }
     });
 
     if (initialSort) {
-      q = query(q, orderBy(initialSort));
+      filtered.sort((a: any, b: any) => {
+        if (a[initialSort] < b[initialSort]) return -1;
+        if (a[initialSort] > b[initialSort]) return 1;
+        return 0;
+      });
     }
+    
+    return filtered;
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const collectionData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      } as T));
-      setData(collectionData);
-      setLoading(false);
-    }, (error) => {
-      console.error(`Error fetching collection '${collectionName}': `, error);
-      // Em caso de erro de permissão, é melhor retornar uma lista vazia do que dados antigos.
-      setData([]);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collectionName, initialSort, JSON.stringify(initialFilters)]);
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (liveData !== undefined) {
+      setLoading(false);
+    }
+  }, [liveData]);
+  
+  // This hook now primarily reads from Dexie. The write operations still go to Firestore.
+  // The sync service is responsible for populating Dexie from Firestore.
 
   const addDocument = async (newData: Omit<T, 'id' | 'createdAt'>) => {
     try {
-      // Remove campos nulos ou indefinidos antes de salvar
       const cleanedData = Object.fromEntries(
         Object.entries(newData).filter(([_, v]) => v != null && v !== '')
       );
-
-      const docRef = await addDoc(collection(db, collectionName), {
+      const docRef = await addDoc(collection(firestoreDB, collectionName), {
         ...cleanedData,
         createdAt: serverTimestamp(),
       });
+      // After adding to Firestore, you might want to re-sync or just add to Dexie locally
+      // @ts-ignore
+      await dexieDB[collectionName].add({ ...cleanedData, id: docRef.id });
       return docRef.id;
     } catch (error) {
       console.error("Error adding document: ", error);
@@ -76,8 +83,10 @@ export function useFirestoreCollection<T extends { id: string }>(
 
   const updateDocument = async (id: string, updatedData: Partial<T>) => {
     try {
-      const docRef = doc(db, collectionName, id);
+      const docRef = doc(firestoreDB, collectionName, id);
       await updateDoc(docRef, updatedData);
+      // @ts-ignore
+      await dexieDB[collectionName].update(id, updatedData);
     } catch (error) {
       console.error("Error updating document: ", error);
     }
@@ -85,12 +94,14 @@ export function useFirestoreCollection<T extends { id: string }>(
 
   const deleteDocument = async (id: string) => {
     try {
-      const docRef = doc(db, collectionName, id);
+      const docRef = doc(firestoreDB, collectionName, id);
       await deleteDoc(docRef);
+       // @ts-ignore
+      await dexieDB[collectionName].delete(id);
     } catch (error) {
       console.error("Error deleting document: ", error);
     }
   };
 
-  return { data, loading, addDocument, updateDocument, deleteDocument };
+  return { data: liveData || [], loading, addDocument, updateDocument, deleteDocument };
 }

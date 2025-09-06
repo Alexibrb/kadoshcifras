@@ -1,56 +1,52 @@
-// src/services/offline-service.ts
-import { collection, getDocs, getDoc, doc, Query } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { User } from '@/types';
 
-// Coleções que todos os usuários aprovados podem baixar.
-const collectionsForList = ['songs', 'setlists', 'artists', 'genres', 'categories'];
-const collectionsForDetails = ['songs', 'setlists'];
+// src/services/offline-service.ts
+import { db as dexieDB } from '@/lib/dexie';
 
 /**
- * Busca todos os documentos das coleções principais e seus documentos individuais
- * para armazená-los no cache de persistência do Firestore para uso offline.
- * @param appUser - O objeto do usuário do aplicativo para verificar as permissões.
+ * Fetches all necessary data from the server via a dedicated API endpoint
+ * and stores it in the local IndexedDB database using Dexie.
  */
-export const cacheAllDataForOffline = async (appUser: User | null) => {
-    if (!appUser) {
-        throw new Error("Usuário não autenticado ou perfil não carregado.");
-    }
-    
-    console.log("Iniciando o cache de dados para uso offline...");
+export const syncOfflineData = async () => {
+    console.log("Iniciando a sincronização de dados para uso offline...");
 
-    const finalCollections = [...collectionsForList];
-    
-    // Apenas administradores podem baixar a lista de usuários
-    if (appUser.role === 'admin') {
-        finalCollections.push('users');
+    let response;
+    try {
+        // A URL da API pode ser absoluta se o frontend e o backend estiverem em domínios diferentes
+        response = await fetch('/api/offline-data');
+    } catch (networkError) {
+        console.error("Erro de rede ao buscar dados offline:", networkError);
+        throw new Error("Falha de conexão. Não foi possível baixar os dados.");
     }
 
-    // Primeiro, busca as listas de todas as coleções permitidas
-    for (const collectionName of finalCollections) {
-        try {
-            const q: Query = collection(db, collectionName);
-            await getDocs(q);
-            console.log(`[${collectionName}] Lista de documentos buscada e cacheada.`);
-        } catch (error: any) {
-             console.error(`Erro ao colocar em cache a coleção '${collectionName}':`, error.message);
-             throw new Error(`Falha ao baixar a lista: ${collectionName}. Verifique as regras de segurança do Firestore.`);
-        }
-    }
-    
-    // Em seguida, busca o conteúdo de cada item individualmente para as coleções que precisam de detalhes
-    for (const collectionName of collectionsForDetails) {
-        try {
-            const listSnapshot = await getDocs(collection(db, collectionName));
-            const detailPromises = listSnapshot.docs.map(d => getDoc(doc(db, collectionName, d.id)));
-            await Promise.all(detailPromises);
-            console.log(`[${collectionName}] Conteúdo de ${listSnapshot.docs.length} documentos individuais cacheado.`);
-        } catch (error: any) {
-            console.error(`Erro ao colocar em cache os detalhes da coleção '${collectionName}':`, error.message);
-            throw new Error(`Falha ao baixar os detalhes de: ${collectionName}.`);
-        }
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Erro da API ao buscar dados offline: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`O servidor retornou um erro: ${response.statusText}`);
     }
 
+    const data = await response.json();
 
-    console.log("Todos os dados permitidos foram colocados em cache com sucesso para uso offline.");
+    if (!data.collections) {
+        throw new Error("Formato de dados da API inválido.");
+    }
+
+    try {
+        await dexieDB.transaction('rw', Object.keys(data.collections), async () => {
+            for (const collectionName in data.collections) {
+                // @ts-ignore
+                const table = dexieDB[collectionName];
+                if (table) {
+                    await table.clear();
+                    console.log(`Tabela local '${collectionName}' limpa.`);
+                    await table.bulkAdd(data.collections[collectionName]);
+                    console.log(`${data.collections[collectionName].length} registros adicionados à tabela '${collectionName}'.`);
+                }
+            }
+        });
+    } catch (dbError) {
+        console.error("Erro ao salvar dados no IndexedDB:", dbError);
+        throw new Error("Não foi possível salvar os dados no dispositivo.");
+    }
+
+    console.log("Todos os dados foram sincronizados com sucesso para uso offline.");
 };

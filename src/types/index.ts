@@ -1,16 +1,25 @@
 
 import type { Timestamp } from 'firebase/firestore';
 
+// O tipo para o Firestore pode continuar usando Timestamp
+export interface FirestoreTimestamp {
+  _seconds: number;
+  _nanoseconds: number;
+}
+
+// O tipo para o app/Dexie usará string ou Date
+export type AppTimestamp = string | Date;
+
 export interface Song {
   id: string;
   title: string;
   artist: string;
-  content: string; // Letras e cifras, ex: "Verso 1:\n[C]Letra vai [G]aqui"
+  content: string;
   key?: string;
   genre?: string;
   category?: string;
   url?: string;
-  createdAt?: Timestamp;
+  createdAt?: AppTimestamp;
 }
 
 export interface SetlistSong {
@@ -19,14 +28,14 @@ export interface SetlistSong {
 }
 
 export interface Setlist {
-  id: string;
+  id:string;
   name: string;
   songs: SetlistSong[];
   creatorId?: string;
   creatorName?: string;
   isPublic?: boolean;
   isVisible?: boolean;
-  createdAt?: Timestamp;
+  createdAt?: AppTimestamp;
 }
 
 export interface User {
@@ -35,13 +44,13 @@ export interface User {
     email: string;
     isApproved: boolean;
     role: 'admin' | 'user';
-    createdAt: Timestamp;
+    createdAt: AppTimestamp;
 }
 
 export interface MetadataItem {
     id: string;
     name: string;
-    createdAt?: Timestamp;
+    createdAt?: AppTimestamp;
 }
 
 export interface PedalSettings {
