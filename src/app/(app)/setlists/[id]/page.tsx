@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useFirestoreDocument } from '@/hooks/use-firestore-document';
 import { type Setlist, type Song, type SetlistSong } from '@/types';
-import { ArrowLeft, Music, Plus, Minus, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff, HardDriveDownload } from 'lucide-react';
+import { ArrowLeft, Music, Plus, Minus, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff, HardDriveDownload, MonitorPlay } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
@@ -31,12 +31,20 @@ export default function SetlistPage() {
   const { data: allSongs, loading: loadingSongs } = useFirestoreCollection<Song>('songs');
 
   const [isClient, setIsClient] = useState(false);
+  const [hasOfflineVersion, setHasOfflineVersion] = useState(false);
   const [orderedSongs, setOrderedSongs] = useState<SetlistSong[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   
-  useEffect(() => { setIsClient(true) }, []);
+  useEffect(() => { 
+    setIsClient(true);
+    // Verifica se existe uma versão offline no localStorage
+    if (typeof window !== 'undefined') {
+      const offlineData = localStorage.getItem(`offline-setlist-${setlistId}`);
+      setHasOfflineVersion(!!offlineData);
+    }
+  }, [setlistId]);
   
   useEffect(() => {
     if (setlist) {
@@ -153,6 +161,7 @@ export default function SetlistPage() {
         name: setlist.name,
         content: offlineContent
       }));
+      setHasOfflineVersion(true); // Atualiza o estado para mostrar o botão de apresentação
       toast({
         title: "Repertório Salvo Offline!",
         description: "Redirecionando para a página de visualização...",
@@ -261,6 +270,14 @@ export default function SetlistPage() {
                     <HardDriveDownload className="mr-2 h-4 w-4" />
                     Gerar Offline
                 </Button>
+                 {isClient && hasOfflineVersion && (
+                  <Button asChild variant="default">
+                    <Link href={`/setlists/${setlistId}/offline`}>
+                      <MonitorPlay className="mr-2 h-4 w-4" />
+                      Modo Apresentação
+                    </Link>
+                  </Button>
+                )}
             </div>
       </div>
       
