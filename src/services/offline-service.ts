@@ -47,13 +47,14 @@ export const syncOfflineData = async () => {
         }
 
         // 2. Salvar os dados no IndexedDB (Dexie)
-        await dexieDB.transaction('rw', Object.keys(allData), async () => {
-            for (const collectionName in allData) {
+        await dexieDB.transaction('rw', collectionsToSync, async () => {
+            for (const collectionName of collectionsToSync) {
                 // @ts-ignore
                 const table = dexieDB[collectionName];
                 if (table) {
                     const collectionData = allData[collectionName];
 
+                    // Valida os dados para garantir que cada item tenha um ID.
                     const validatedData = collectionData.map((item: any, index: number) => {
                         if (!item.id) {
                             console.warn(`Item na coleção '${collectionName}' sem ID. Gerando UUID:`, item);
@@ -65,8 +66,11 @@ export const syncOfflineData = async () => {
                     await table.clear();
                     console.log(`Tabela local '${collectionName}' limpa.`);
 
+                    // Usa bulkPut para inserir/atualizar os dados.
                     await table.bulkPut(validatedData);
                     console.log(`${validatedData.length} registros sincronizados na tabela '${collectionName}'.`);
+                } else {
+                     console.warn(`Tabela local '${collectionName}' não encontrada no schema do Dexie.`);
                 }
             }
         });
