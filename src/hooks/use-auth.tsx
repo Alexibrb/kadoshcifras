@@ -31,6 +31,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (docSnap.exists()) {
             setAppUser({ id: docSnap.id, ...docSnap.data() } as AppUser);
           } else {
+            // Isso pode acontecer se o documento do usuário ainda não foi criado.
             setAppUser(null);
           }
           setLoading(false);
@@ -84,13 +85,15 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
     }, []);
 
     useEffect(() => {
+        // Se os dados de autenticação ainda estão carregando, não fazemos nada.
         if (loading) {
             return;
         }
 
-        // Se estiver offline, o Firebase Auth mantém o estado de login do usuário.
-        // Se `user` existir, confiamos que ele está logado e evitamos redirecionamentos.
-        // Isso permite o acesso ao app mesmo offline se o usuário já fez login antes.
+        // Se o app estiver offline, a principal verificação é se temos um 'user' em cache.
+        // O Firebase Auth persiste o estado de login, então se 'user' existe,
+        // confiamos que o usuário está logado e permitimos o acesso para que os dados
+        // do Firestore possam carregar do cache de persistência.
         if (!isOnline && user) {
             return;
         }
@@ -99,6 +102,8 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
         const isPendingApprovalPage = pathname === '/pending-approval';
         const isAdminPage = pathname.startsWith('/users');
 
+        // Se não há usuário (online), redireciona para a página de login,
+        // a menos que já estejamos em uma página de autenticação.
         if (!user) {
             if (!isAuthPage) {
                 router.push(redirectUrl);
@@ -106,10 +111,10 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
             return;
         }
         
-        if (!appUser) {
-           // Isso pode acontecer momentaneamente enquanto o documento do Firestore carrega.
-           // Se o usuário existir mas o appUser não, e não estivermos offline,
-           // é provável que seja um novo usuário que precisa ser redirecionado.
+        // Se temos um usuário, mas o perfil do Firestore (appUser) ainda não carregou,
+        // isso pode ser uma condição temporária. Se estivermos online, é provável que seja um
+        // novo usuário que precisa ser enviado para a página de aprovação.
+        if (!appUser && isOnline) {
            if (!isPendingApprovalPage) {
              router.push('/pending-approval');
            }
@@ -117,16 +122,19 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
         }
         
         if (appUser) {
+            // Se o usuário não está aprovado, ele deve ficar na página de aprovação.
             if (!appUser.isApproved && !isPendingApprovalPage) {
                 router.push('/pending-approval');
                 return;
             }
 
+            // Se o usuário está aprovado, ele não deve estar nas páginas de auth ou de aprovação.
             if (appUser.isApproved && (isPendingApprovalPage || isAuthPage)) {
                 router.push('/dashboard');
                 return;
             }
-
+            
+            // Se o usuário não for admin, ele não pode acessar as páginas de gerenciamento de usuários.
             if (appUser.isApproved && appUser.role !== 'admin' && isAdminPage) {
                 router.push('/dashboard');
                 return;
