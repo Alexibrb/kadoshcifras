@@ -29,7 +29,7 @@ export default function SetlistsPage() {
   const { data: mySetlistsData, loading: loadingMySetlists } = useFirestoreCollection<Setlist>(
     'setlists',
     undefined, // Ordenação removida do servidor
-    [['creatorId', '==', appUser?.id ?? '']]
+    appUser ? [['creatorId', '==', appUser.id]] : [] // Aplica filtro apenas quando appUser está disponível
   );
 
   // Busca os repertórios de OUTROS usuários que sejam VISÍVEIS
