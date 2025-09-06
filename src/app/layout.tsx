@@ -5,6 +5,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/hooks/use-auth';
+import { useEffect } from 'react';
 
 // export const metadata: Metadata = {
 //   title: 'CifraFácil',
@@ -22,6 +23,18 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && navigator.storage && navigator.storage.persist) {
+      navigator.storage.persist().then(granted => {
+        if (granted) {
+          console.log("Armazenamento persistente garantido. O IndexedDB não será limpo automaticamente. ✅");
+        } else {
+          console.warn("Permissão para armazenamento persistente não concedida. O navegador pode limpar os dados. ⚠️");
+        }
+      });
+    }
+  }, []);
 
   return (
     <html lang="pt" suppressHydrationWarning>
