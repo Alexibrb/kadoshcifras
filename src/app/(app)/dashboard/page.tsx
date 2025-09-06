@@ -15,7 +15,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useEffect, useState } from 'react';
 import { syncOfflineData } from '@/services/offline-service';
 import { useToast } from '@/hooks/use-toast';
-import { getLastSyncTime, db } from '@/lib/dexie';
+import { getLastSyncTime } from '@/lib/dexie';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card } from '@/components/ui/card';
@@ -30,26 +30,22 @@ export default function DashboardPage() {
   const [isOnline, setIsOnline] = useState(true);
   const { toast } = useToast();
 
+  const fetchLastSync = async () => {
+    const time = await getLastSyncTime();
+    setLastSync(time);
+  };
+
   useEffect(() => {
     const updateOnlineStatus = () => setIsOnline(navigator.onLine);
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
     updateOnlineStatus();
 
-    const fetchLastSync = async () => {
-      const time = await getLastSyncTime();
-      setLastSync(time);
-    };
     fetchLastSync();
-    
-    const syncSubscription = db.on('changes', () => {
-        fetchLastSync();
-    });
 
     return () => {
       window.removeEventListener('online', updateOnlineStatus);
       window.removeEventListener('offline', updateOnlineStatus);
-      syncSubscription.unsubscribe();
     };
   }, []);
 
@@ -62,6 +58,7 @@ export default function DashboardPage() {
         description: "Todos os dados foram salvos para uso offline.",
         action: <Check />,
       });
+      fetchLastSync(); // Atualiza o tempo da última sincronização após o sucesso
     } catch (error) {
       console.error("Erro na sincronização:", error);
       toast({
