@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useFirestoreDocument } from '@/hooks/use-firestore-document';
 import { type Setlist, type Song, type SetlistSong } from '@/types';
-import { ArrowLeft, Music, Plus, Minus, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Music, Plus, Minus, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff, HardDriveDownload } from 'lucide-react';
 import Link from 'next/link';
-import { notFound, useParams } from 'next/navigation';
+import { notFound, useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
@@ -17,15 +17,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/use-auth';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { transposeChord } from '@/lib/music';
+import { transposeChord, transposeContent } from '@/lib/music';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SetlistPage() {
   const params = useParams();
   const setlistId = params.id as string;
+  const router = useRouter();
+  const { toast } = useToast();
   
   const { appUser } = useAuth();
   const { data: setlist, loading: loadingSetlist, updateDocument: updateSetlistDoc } = useFirestoreDocument<Setlist>('setlists', setlistId);
-  const { data: allSongs, loading: loadingSongs } = useFirestoreCollection<Song>('songs', 'title');
+  const { data: allSongs, loading: loadingSongs } = useFirestoreCollection<Song>('songs');
 
   const [isClient, setIsClient] = useState(false);
   const [orderedSongs, setOrderedSongs] = useState<SetlistSong[]>([]);
@@ -130,6 +133,40 @@ export default function SetlistPage() {
     setOrderedSongs(items);
     updateSetlistDoc({ songs: items });
   };
+
+  const handleGenerateOffline = () => {
+    if (!setlist || !songMap) return;
+
+    const offlineContent = orderedSongs.map(setlistSong => {
+      const song = songMap.get(setlistSong.songId);
+      if (!song) return `\n\n[Música não encontrada: ${setlistSong.songId}]\n\n`;
+      
+      const header = `--- ${song.title.toUpperCase()} (${song.artist}) ---\n\n`;
+      const transposed = transposeContent(song.content, setlistSong.transpose);
+      
+      return header + transposed;
+    }).join('\n\n\n');
+
+    try {
+      const storageKey = `offline-setlist-${setlistId}`;
+      localStorage.setItem(storageKey, JSON.stringify({
+        name: setlist.name,
+        content: offlineContent
+      }));
+      toast({
+        title: "Repertório Salvo Offline!",
+        description: "Redirecionando para a página de visualização...",
+      });
+      router.push(`/setlists/${setlistId}/offline`);
+    } catch (error) {
+       console.error("Erro ao salvar no localStorage:", error);
+       toast({
+        title: "Erro ao Salvar",
+        description: "Não foi possível salvar o repertório para uso offline. O armazenamento pode estar cheio.",
+        variant: "destructive"
+      });
+    }
+  };
   
   if (isClient && !loadingSetlist && !setlist) {
     notFound();
@@ -195,30 +232,36 @@ export default function SetlistPage() {
                 </div>
             </div>
           </div>
-          {canChangeSettings && (
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex items-center space-x-2 rounded-md border p-2">
-                <Label htmlFor="public-switch" className="text-sm font-medium">
-                  {setlist.isPublic ? 'Público' : 'Privado'}
-                </Label>
-                <Switch
-                  id="public-switch"
-                  checked={setlist.isPublic}
-                  onCheckedChange={handlePublicToggle}
-                />
-              </div>
-              <div className="flex items-center space-x-2 rounded-md border p-2">
-                <Label htmlFor="visibility-switch" className="text-sm font-medium">
-                  {setlist.isVisible ? 'Visível' : 'Oculto'}
-                </Label>
-                <Switch
-                  id="visibility-switch"
-                  checked={setlist.isVisible}
-                  onCheckedChange={handleVisibilityToggle}
-                />
-              </div>
+           <div className="flex items-center gap-4 flex-wrap">
+              {canChangeSettings && (
+                <div className="flex items-center gap-4 flex-wrap">
+                  <div className="flex items-center space-x-2 rounded-md border p-2">
+                    <Label htmlFor="public-switch" className="text-sm font-medium">
+                      {setlist.isPublic ? 'Público' : 'Privado'}
+                    </Label>
+                    <Switch
+                      id="public-switch"
+                      checked={setlist.isPublic}
+                      onCheckedChange={handlePublicToggle}
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2 rounded-md border p-2">
+                    <Label htmlFor="visibility-switch" className="text-sm font-medium">
+                      {setlist.isVisible ? 'Visível' : 'Oculto'}
+                    </Label>
+                    <Switch
+                      id="visibility-switch"
+                      checked={setlist.isVisible}
+                      onCheckedChange={handleVisibilityToggle}
+                    />
+                  </div>
+                </div>
+              )}
+               <Button onClick={handleGenerateOffline} variant="secondary">
+                    <HardDriveDownload className="mr-2 h-4 w-4" />
+                    Gerar Offline
+                </Button>
             </div>
-          )}
       </div>
       
       <div className="flex flex-col gap-8 lg:grid lg:grid-cols-2">
