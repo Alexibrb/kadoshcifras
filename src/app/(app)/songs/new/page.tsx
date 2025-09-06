@@ -21,7 +21,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useAuthenticatedFirestoreCollection } from '@/hooks/use-authenticated-firestore-collection';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 
 
@@ -33,9 +32,9 @@ const ALL_KEYS = [
 export default function NewSongPage() {
   const router = useRouter();
   const { addDocument: addSong } = useFirestoreCollection<Song>('songs');
-  const { data: categories, addDocument: addCategory } = useAuthenticatedFirestoreCollection<MetadataItem>('categories', 'name');
-  const { data: genres, addDocument: addGenre } = useAuthenticatedFirestoreCollection<MetadataItem>('genres', 'name');
-  const { data: artists, addDocument: addArtist } = useAuthenticatedFirestoreCollection<MetadataItem>('artists', 'name');
+  const { data: categories, addDocument: addCategory } = useFirestoreCollection<MetadataItem>('categories', 'name');
+  const { data: genres, addDocument: addGenre } = useFirestoreCollection<MetadataItem>('genres', 'name');
+  const { data: artists, addDocument: addArtist } = useFirestoreCollection<MetadataItem>('artists', 'name');
 
   const [title, setTitle] = useState('');
   const [selectedArtist, setSelectedArtist] = useState('');

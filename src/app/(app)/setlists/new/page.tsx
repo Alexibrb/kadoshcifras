@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuthenticatedFirestoreCollection } from '@/hooks/use-authenticated-firestore-collection';
+import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useAuth } from '@/hooks/use-auth';
 import type { Setlist } from '@/types';
 import { ArrowLeft, Globe, Lock, Eye, EyeOff } from 'lucide-react';
@@ -15,7 +15,7 @@ import { Switch } from '@/components/ui/switch';
 
 export default function NewSetlistPage() {
   const router = useRouter();
-  const { addDocument } = useAuthenticatedFirestoreCollection<Setlist>('setlists');
+  const { addDocument } = useFirestoreCollection<Setlist>('setlists');
   const { appUser } = useAuth();
   const [name, setName] = useState('');
   const [isPublic, setIsPublic] = useState(false);
