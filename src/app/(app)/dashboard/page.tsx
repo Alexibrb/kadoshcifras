@@ -1,7 +1,7 @@
 
 'use client';
 import { Button } from '@/components/ui/button';
-import { LogOut, Music, ListMusic, HardDriveDownload, Check, AlertCircle, RefreshCw, WifiOff, Wifi } from 'lucide-react';
+import { LogOut, Music, ListMusic, Check, RefreshCw, WifiOff, Wifi } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getLastSyncTime, db } from '@/lib/dexie';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Card } from '@/components/ui/card';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -59,6 +60,7 @@ export default function DashboardPage() {
       toast({
         title: "Sincronização Concluída",
         description: "Todos os dados foram salvos para uso offline.",
+        action: <Check />,
       });
     } catch (error) {
       console.error("Erro na sincronização:", error);
