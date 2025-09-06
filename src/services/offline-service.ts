@@ -1,16 +1,29 @@
-
 // src/services/offline-service.ts
 import { collection, getDocs, Query } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import type { User } from '@/types';
 
-const collectionsToCache = ['songs', 'setlists', 'artists', 'genres', 'categories', 'users'];
+// Coleções que todos os usuários aprovados podem baixar.
+const baseCollectionsToCache = ['songs', 'setlists', 'artists', 'genres', 'categories'];
 
 /**
  * Busca todos os documentos das coleções principais e os armazena
  * no cache de persistência do Firestore para uso offline.
+ * @param appUser - O objeto do usuário do aplicativo para verificar as permissões.
  */
-export const cacheAllDataForOffline = async () => {
+export const cacheAllDataForOffline = async (appUser: User | null) => {
+    if (!appUser) {
+        throw new Error("Usuário não autenticado.");
+    }
+    
     console.log("Iniciando o cache de dados para uso offline...");
+
+    const collectionsToCache = [...baseCollectionsToCache];
+    
+    // Apenas administradores devem tentar baixar a lista de todos os usuários.
+    if (appUser.role === 'admin') {
+        collectionsToCache.push('users');
+    }
 
     const cachePromises = collectionsToCache.map(async (collectionName) => {
         try {

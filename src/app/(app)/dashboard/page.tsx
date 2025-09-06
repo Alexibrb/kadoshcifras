@@ -16,7 +16,7 @@ import { useState } from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, appUser } = useAuth();
   const router = useRouter();
   const { data: songs, loading: loadingSongs } = useFirestoreCollection<Song>('songs');
   const { data: setlists, loading: loadingSetlists } = useFirestoreCollection<Setlist>('setlists');
@@ -35,7 +35,8 @@ export default function DashboardPage() {
     setDownloadSuccess(false);
     setDownloadError(null);
     try {
-      await cacheAllDataForOffline();
+      // Passa o appUser para a função de cache
+      await cacheAllDataForOffline(appUser);
       setDownloadSuccess(true);
     } catch (error) {
       console.error("Failed to cache data for offline use:", error);
