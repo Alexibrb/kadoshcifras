@@ -12,5 +12,7 @@ export function middleware(request: NextRequest) {
  
 // See "Matching Paths" below to learn more
 export const config = {
-  matcher: ['/dashboard/:path*', '/songs/:path*', '/setlists/:path*', '/tools/:path*', '/pending-approval'],
+  // Adicionamos uma lookahead negativa para excluir caminhos que terminam em /offline.
+  matcher: ['/dashboard/:path*', '/songs/:path*', '/setlists/((?!offline).*)', '/tools/:path*', '/pending-approval'],
 }
+
