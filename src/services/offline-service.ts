@@ -1,8 +1,8 @@
-import { getDB } from "@/lib/dexie";
+
+import { db } from "@/lib/dexie";
 import { api } from "./api-service";
 
-export async function syncData() {
-  const db = getDB();
+export async function syncOfflineData() {
   if (!db) return;
 
   try {
