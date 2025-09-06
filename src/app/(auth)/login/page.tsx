@@ -12,12 +12,13 @@ import { Logo } from '@/components/logo';
 import { auth } from '@/lib/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -38,6 +39,10 @@ export default function LoginPage() {
         setLoading(false);
     }
   };
+  
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  }
 
   return (
     <Card className="w-full max-w-sm">
@@ -54,7 +59,26 @@ export default function LoginPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Senha</Label>
-            <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} />
+            <div className="relative">
+                 <Input 
+                    id="password" 
+                    type={showPassword ? "text" : "password"} 
+                    required 
+                    value={password} 
+                    onChange={e => setPassword(e.target.value)}
+                    className="pr-10"
+                 />
+                 <Button 
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground"
+                    onClick={togglePasswordVisibility}
+                 >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    <span className="sr-only">{showPassword ? "Ocultar senha" : "Mostrar senha"}</span>
+                 </Button>
+            </div>
           </div>
           {error && (
             <Alert variant="destructive">
