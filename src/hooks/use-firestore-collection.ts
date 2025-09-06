@@ -1,3 +1,4 @@
+
 // src/hooks/use-firestore-collection.ts
 'use client';
 import { useState, useEffect } from 'react';
@@ -20,70 +21,64 @@ export function useFirestoreCollection<T extends { id: string }>(
   // Determina a tabela Dexie com base no nome da coleção
   const dexieTable = (dexieDB as any)[collectionName];
 
-  // Observa os dados do Dexie
+  // Observa os dados do Dexie incondicionalmente.
   const dexieData = useLiveQuery(() => {
-    if (!dexieTable || isOnline) return [];
+    if (!dexieTable) return [];
     
-    // Aplica filtros e ordenação ao Dexie (simples)
-    // Nota: A filtragem complexa no Dexie pode exigir índices mais avançados.
-    let query = dexieTable;
-    // Adicionar lógica de filtro do dexie se necessário
-    return query.toArray();
-  }, [collectionName, isOnline], []);
+    // A lógica de filtragem/ordenação no Dexie pode ser adicionada aqui se necessário.
+    // Por enquanto, apenas pegamos todos os dados da tabela.
+    return dexieTable.toArray();
+  }, [collectionName], []);
 
 
   useEffect(() => {
-    const updateOnlineStatus = () => {
-        setIsOnline(navigator.onLine);
-    };
+    // Monitora o status da conexão
+    const updateOnlineStatus = () => setIsOnline(navigator.onLine);
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
     updateOnlineStatus();
 
-    // Se estivermos online, busca do Firestore
-    if (isOnline) {
-      setLoading(true);
-      let q: any = collection(firestoreDB, collectionName);
-      const constraints: QueryConstraint[] = [];
+    // Sempre tenta buscar do Firestore. O SDK do Firestore gerenciará o cache,
+    // mas nossa lógica offline-first confiará no Dexie quando a conexão cair.
+    setLoading(true);
+    let q: any = collection(firestoreDB, collectionName);
+    const constraints: QueryConstraint[] = [];
 
-      initialFilters.forEach(filter => {
-          if (filter[2] !== undefined && filter[2] !== null && filter[2] !== '') {
-             constraints.push(where(filter[0], filter[1], filter[2]));
-          }
-      });
+    initialFilters.forEach(filter => {
+        if (filter[2] !== undefined && filter[2] !== null && filter[2] !== '') {
+           constraints.push(where(filter[0], filter[1], filter[2]));
+        }
+    });
 
-      if (initialSort) {
-          constraints.push(orderBy(initialSort));
-      }
-      
-      if (constraints.length > 0) {
-          q = query(q, ...constraints);
-      }
-      
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const dataFromFirestore = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        } as T));
-
-        setFirestoreData(dataFromFirestore);
-        setLoading(false);
-
-      }, (error) => {
-        console.error(`Error fetching collection '${collectionName}' from Firestore: `, error);
-        setLoading(false);
-      });
-
-      return () => {
-        unsubscribe();
-        window.removeEventListener('online', updateOnlineStatus);
-        window.removeEventListener('offline', updateOnlineStatus);
-      }
-    } else {
-        // Se offline, já estamos usando o dexieData do useLiveQuery
-        setLoading(false);
+    if (initialSort) {
+        constraints.push(orderBy(initialSort));
     }
-  }, [collectionName, initialSort, JSON.stringify(initialFilters), isOnline]);
+    
+    if (constraints.length > 0) {
+        q = query(q, ...constraints);
+    }
+    
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const dataFromFirestore = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      } as T));
+
+      setFirestoreData(dataFromFirestore);
+      setLoading(false);
+
+    }, (error) => {
+      console.error(`Error fetching collection '${collectionName}' from Firestore: `, error);
+      // Em caso de erro (ex: offline), paramos o carregamento. Os dados do Dexie serão usados.
+      setLoading(false);
+    });
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('online', updateOnlineStatus);
+      window.removeEventListener('offline', updateOnlineStatus);
+    }
+  }, [collectionName, initialSort, JSON.stringify(initialFilters)]);
 
 
   const addDocument = async (newData: Omit<T, 'id' | 'createdAt'>) => {
@@ -120,6 +115,8 @@ export function useFirestoreCollection<T extends { id: string }>(
     }
   };
 
+  // A fonte da verdade é o Firestore se estivermos online e houver dados.
+  // Caso contrário, usamos os dados do Dexie.
   const data = isOnline ? firestoreData : (dexieData as T[] | undefined) ?? [];
   
   return { data, loading: loading && isOnline, addDocument, updateDocument, deleteDocument };
