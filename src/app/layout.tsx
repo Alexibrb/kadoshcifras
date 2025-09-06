@@ -1,22 +1,10 @@
 
 'use client';
-import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/hooks/use-auth';
 import { useEffect } from 'react';
-
-// export const metadata: Metadata = {
-//   title: 'CifraFácil',
-//   description: 'Seu companheiro para criar, gerenciar e apresentar músicas.',
-//   manifest: '/manifest.json',
-//   icons: {
-//     icon: '/favicon.ico',
-//     shortcut: '/favicon-16x16.png',
-//     apple: '/apple-touch-icon.png',
-//   },
-// };
 
 export default function RootLayout({
   children,
