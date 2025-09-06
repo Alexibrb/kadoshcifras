@@ -62,7 +62,7 @@ export function useFirestoreDocument<T extends { id: string }>(collectionName: s
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
             const firestoreData = { id: docSnap.id, ...docSnap.data() } as T;
-            setData(firestoreData); // Atualiza o estado com os dados frescos do Firestore
+            setData(firestoreData);
         } else {
             setData(null);
         }
@@ -81,8 +81,7 @@ export function useFirestoreDocument<T extends { id: string }>(collectionName: s
   
   const updateDocument = useCallback(async (updatedData: Partial<T>) => {
     if (!docId || !isOnline) {
-      console.warn("Update skipped: document ID is missing or app is offline.");
-      // Opcional: poderia enfileirar a atualização para quando estiver online
+      alert("Você está offline. A atualização de itens não está disponível.");
       return;
     }
     try {
