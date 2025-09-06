@@ -22,10 +22,10 @@ export function useFirestoreCollection<T extends { id: string }>(
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
+    // Garante que o código só execute no cliente
     if (typeof window !== 'undefined') {
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
-        // Garante que o estado inicial seja o correto
         setIsOnline(navigator.onLine);
     }
     
@@ -49,24 +49,31 @@ export function useFirestoreCollection<T extends { id: string }>(
 
     let filtered = allItems;
     // Aplica filtros no lado do cliente para os dados do Dexie
-    initialFilters.forEach(filter => {
-      const [field, op, value] = filter;
-      // Ignora filtros com valores indefinidos ou vazios
-      if (value === undefined || value === '' || value === null) return;
-      
-      filtered = filtered.filter((item: any) => {
-          if (item[field] === undefined) return false;
-          if (op === '==') return item[field] === value;
-          // Adicione outros operadores de filtro conforme necessário
-          return true;
+    if (initialFilters.length > 0) {
+      initialFilters.forEach(filter => {
+        const [field, op, value] = filter;
+        // Ignora filtros com valores indefinidos ou vazios
+        if (value === undefined || value === '' || value === null) return;
+        
+        filtered = filtered.filter((item: any) => {
+            if (item[field] === undefined) return false;
+            if (op === '==') return item[field] === value;
+            if (op === 'array-contains') return item[field].includes(value);
+            // Adicione outros operadores de filtro conforme necessário
+            return true;
+        });
       });
-    });
+    }
+
 
     // Aplica ordenação no lado do cliente
     if (initialSort) {
       filtered.sort((a: any, b: any) => {
         const valA = a[initialSort] ?? '';
         const valB = b[initialSort] ?? '';
+        if (typeof valA === 'string' && typeof valB === 'string') {
+          return valA.localeCompare(valB);
+        }
         return valA < valB ? -1 : (valA > valB ? 1 : 0);
       });
     }
@@ -77,7 +84,7 @@ export function useFirestoreCollection<T extends { id: string }>(
 
 
   useEffect(() => {
-    // Se estivermos offline, usamos os dados do Dexie.
+    // Se estivermos offline, usamos os dados do Dexie e paramos.
     if (!isOnline) {
       if (dexieData !== undefined) {
         setData(dexieData as T[]);
@@ -87,10 +94,11 @@ export function useFirestoreCollection<T extends { id: string }>(
     }
 
     // Se estiver online, usamos o Firestore como fonte da verdade
-    let q = collection(firestoreDB, collectionName);
+    let q: any = collection(firestoreDB, collectionName);
     const constraints: QueryConstraint[] = [];
 
     initialFilters.forEach(filter => {
+        // Apenas adiciona o filtro se o valor for válido
         if (filter[2] !== undefined && filter[2] !== null && filter[2] !== '') {
            constraints.push(where(filter[0], filter[1], filter[2]));
         }
@@ -100,6 +108,7 @@ export function useFirestoreCollection<T extends { id: string }>(
         constraints.push(orderBy(initialSort));
     }
     
+    // Só aplica o query se houver constraints.
     if (constraints.length > 0) {
         q = query(q, ...constraints);
     }

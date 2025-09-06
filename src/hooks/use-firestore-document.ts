@@ -2,7 +2,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { db as firestoreDB } from '@/lib/firebase';
-import { doc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db as dexieDB } from '@/lib/dexie';
 import { useLiveQuery } from 'dexie-react-hooks';
 
@@ -38,23 +38,24 @@ export function useFirestoreDocument<T extends { id: string }>(collectionName: s
     if (!table) return null;
     
     const item = await table.get(docId);
-    return item;
+    return item || null;
   }, [collectionName, docId]);
 
   useEffect(() => {
+    setLoading(true);
     if (!docId) {
         setData(null);
         setLoading(false);
         return;
     }
     
-    // Se estiver offline, os dados do dexieData já serão usados.
+    // Se estiver offline, os dados do dexieData serão usados.
     if (!isOnline) {
         if (dexieData !== undefined) {
-            setData(dexieData);
+            setData(dexieData as T | null);
             setLoading(false);
         }
-        return;
+        return; // Impede a execução do código do Firestore
     }
     
     // Se estiver online, usamos o Firestore como fonte da verdade
@@ -71,7 +72,7 @@ export function useFirestoreDocument<T extends { id: string }>(collectionName: s
         console.error(`Error fetching document '${docId}' from Firestore: `, error);
         // Em caso de erro no Firestore, tenta usar o Dexie como fallback
         if (dexieData !== undefined) {
-            setData(dexieData);
+            setData(dexieData as T | null);
         }
         setLoading(false);
     });
