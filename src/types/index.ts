@@ -44,7 +44,7 @@ export interface User {
     email: string;
     isApproved: boolean;
     role: 'admin' | 'user';
-    createdAt: AppTimestamp;
+    createdAt?: AppTimestamp;
 }
 
 export interface MetadataItem {

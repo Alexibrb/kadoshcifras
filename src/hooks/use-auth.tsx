@@ -5,7 +5,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User as FirebaseAuthUser } from 'firebase/auth';
-import { doc, onSnapshot, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, Timestamp } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
 import type { User as AppUser } from '@/types';
 
@@ -13,6 +13,16 @@ interface AuthContextType {
   user: FirebaseAuthUser | null;
   appUser: AppUser | null;
   loading: boolean;
+}
+
+// Função para converter Timestamps em um objeto
+const convertTimestampsInObject = (data: any) => {
+    for (const key in data) {
+        if (data[key] instanceof Timestamp) {
+            data[key] = data[key].toDate().toISOString();
+        }
+    }
+    return data;
 }
 
 const AuthContext = createContext<AuthContextType>({ user: null, appUser: null, loading: true });
@@ -29,7 +39,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         const unsubscribeFirestore = onSnapshot(userDocRef, (docSnap) => {
           if (docSnap.exists()) {
-            setAppUser({ id: docSnap.id, ...docSnap.data() } as AppUser);
+            const userData = docSnap.data();
+            const convertedData = convertTimestampsInObject(userData);
+            setAppUser({ id: docSnap.id, ...convertedData } as AppUser);
           } else {
             // Isso pode acontecer se o documento do usuário ainda não foi criado.
             setAppUser(null);
