@@ -10,6 +10,12 @@ const convertTimestamps = (data: any): any => {
         return data;
     }
 
+    // Verifica se o objeto se parece com um timestamp serializado pelo Firestore antes do envio
+    if (data && typeof data.seconds === 'number' && typeof data.nanoseconds === 'number') {
+        return new Timestamp(data.seconds, data.nanoseconds).toDate().toISOString();
+    }
+    
+    // Verifica se já é um Timestamp do SDK do Firebase
     if (data instanceof Timestamp) {
         return data.toDate().toISOString();
     }
