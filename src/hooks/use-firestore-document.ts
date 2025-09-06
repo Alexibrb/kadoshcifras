@@ -64,10 +64,21 @@ export function useFirestoreDocument<T extends { id: string }>(
     }
 
     if (!isOnline) {
-      console.log(`[Offline] Carregando documento '${docId}' do localStorage.`);
-      const localData = getDataFromLocalStorage<T>(storageKey);
-      if (localData) {
-        setData(localData);
+      console.log(`[Offline] Carregando documento '${docId}' do cache da coleção.`);
+      const collectionData = getDataFromLocalStorage<T[]>(`collection_${collectionName}`);
+      if (collectionData) {
+        const docData = collectionData.find(doc => doc.id === docId);
+        if (docData) {
+            setData(docData);
+        } else {
+            // Tenta como fallback buscar o documento individual
+            const individualDocData = getDataFromLocalStorage<T>(storageKey);
+            setData(individualDocData);
+        }
+      } else {
+         // Fallback final para documento individual se a coleção não estiver no cache
+        const individualDocData = getDataFromLocalStorage<T>(storageKey);
+        setData(individualDocData);
       }
       setLoading(false);
       return;
@@ -82,7 +93,8 @@ export function useFirestoreDocument<T extends { id: string }>(
         const convertedData = convertTimestamps(firestoreData);
         const finalData = { id: docSnap.id, ...convertedData } as T;
         setData(finalData);
-        setDataToLocalStorage(storageKey, finalData); // Salva no cache
+        // Salva o documento individualmente no cache para acesso rápido e atualizações
+        setDataToLocalStorage(storageKey, finalData); 
       } else {
         setData(null);
         if (typeof window !== 'undefined') {
@@ -92,6 +104,7 @@ export function useFirestoreDocument<T extends { id: string }>(
       setLoading(false);
     }, (error) => {
       console.error(`Error fetching document '${docId}' from Firestore: `, error);
+      // Fallback para o cache em caso de erro de fetch.
       const localData = getDataFromLocalStorage<T>(storageKey);
        if (localData) {
           setData(localData);
@@ -100,12 +113,16 @@ export function useFirestoreDocument<T extends { id: string }>(
     });
 
     return () => unsubscribe();
-  }, [collectionName, docId, isOnline]);
+  }, [collectionName, docId, isOnline, storageKey]);
 
   const updateDocument = useCallback(async (updatedData: Partial<Omit<T, 'id'>>) => {
     if (!docId) {
       console.error("ID do documento não fornecido para atualização.");
       return;
+    }
+    if (!isOnline) {
+      console.warn("Offline: A atualização será enviada quando a conexão for restaurada.");
+      // O Firestore lida com a fila de atualizações offline automaticamente.
     }
     try {
       const docRef = doc(firestoreDB, collectionName, docId);
@@ -113,7 +130,7 @@ export function useFirestoreDocument<T extends { id: string }>(
     } catch (error) {
       console.error(`Error updating document in '${collectionName}': `, error);
     }
-  }, [collectionName, docId]);
+  }, [collectionName, docId, isOnline]);
 
   return {
       data,
