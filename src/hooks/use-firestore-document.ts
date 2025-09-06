@@ -2,37 +2,24 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { db as firestoreDB } from '@/lib/firebase';
-import { doc, onSnapshot, updateDoc, DocumentData, Timestamp } from 'firebase/firestore';
-
-// Helper para converter Timestamps do Firestore para strings ISO, que são serializáveis.
-const convertTimestamps = (data: any) => {
-    if (!data) return data;
-    const newObj: { [key: string]: any } = {};
-    for (const key in data) {
-        if (data[key] instanceof Timestamp) {
-            newObj[key] = data[key].toDate().toISOString();
-        } else {
-            newObj[key] = data[key];
-        }
-    }
-    return newObj;
-};
+import { doc, onSnapshot, updateDoc, DocumentData } from 'firebase/firestore';
 
 export function useFirestoreDocument<T extends { id: string }>(
     collectionName: string,
-    docId: string
+    docId: string | undefined | null
 ) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Se o docId não for fornecido, não faz nada.
     if (!docId) {
         setLoading(false);
         setData(null);
         return;
     }
 
-    // A lógica agora confia no cache do Firestore.
+    // Esta versão do hook confia 100% no cache do Firestore (IndexedDB).
     // `onSnapshot` obterá dados do cache primeiro se estiver offline,
     // e depois obterá dados em tempo real do servidor se estiver online.
     console.log(`[Firestore] Montando listener para documento: ${collectionName}/${docId}`);
@@ -42,13 +29,10 @@ export function useFirestoreDocument<T extends { id: string }>(
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         const firestoreData = docSnap.data();
-        // Converte timestamps para um formato consistente
-        const convertedData = convertTimestamps(firestoreData);
-        const finalData = { id: docSnap.id, ...convertedData } as T;
-        
+        const finalData = { id: docSnap.id, ...firestoreData } as T;
         setData(finalData);
 
-        if(docSnap.metadata.fromCache) {
+        if (docSnap.metadata.fromCache) {
           console.log(`[Firestore Cache] Dados para '${collectionName}/${docId}' vieram do cache.`);
         } else {
           console.log(`[Firestore Server] Dados para '${collectionName}/${docId}' vieram do servidor.`);

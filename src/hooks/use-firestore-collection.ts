@@ -6,20 +6,6 @@ import { collection, onSnapshot, query, where, QueryConstraint, WhereFilterOp, a
 
 export type FirestoreQueryFilter = [string, WhereFilterOp, any];
 
-// Helper para converter Timestamps do Firestore para strings ISO, que são serializáveis.
-const convertTimestamps = (data: any) => {
-    if (!data) return data;
-    const newObj: { [key: string]: any } = {};
-    for (const key in data) {
-        if (data[key] instanceof Timestamp) {
-            newObj[key] = data[key].toDate().toISOString();
-        } else {
-            newObj[key] = data[key];
-        }
-    }
-    return newObj;
-};
-
 export function useFirestoreCollection<T extends { id: string }>(
   collectionName: string,
   initialSort?: string,
@@ -29,11 +15,12 @@ export function useFirestoreCollection<T extends { id: string }>(
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // A lógica agora confia no cache do Firestore.
+    // Esta versão do hook confia 100% no cache do Firestore (IndexedDB).
     // `onSnapshot` obterá dados do cache primeiro se estiver offline,
     // e depois obterá dados em tempo real do servidor se estiver online.
     console.log(`[Firestore] Montando listener para coleção: ${collectionName}`);
 
+    // Valida se os filtros estão prontos para serem usados. Evita queries com valores undefined.
     const areFiltersValid = initialFilters.every(f => f[2] !== undefined && f[2] !== null);
     if (!areFiltersValid) {
         setLoading(false);
@@ -45,6 +32,7 @@ export function useFirestoreCollection<T extends { id: string }>(
     const constraints: QueryConstraint[] = [];
 
     initialFilters.forEach(filter => {
+      // Garante que filtros com valores vazios ou nulos não sejam adicionados à query.
       if (filter[2] !== undefined && filter[2] !== null && filter[2] !== '') {
         constraints.push(where(filter[0], filter[1], filter[2]));
       }
@@ -58,18 +46,17 @@ export function useFirestoreCollection<T extends { id: string }>(
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const dataFromFirestore = querySnapshot.docs.map(doc => {
-        const docData = doc.data();
-        // Converte timestamps para um formato consistente
-        const convertedData = convertTimestamps(docData);
-        return { id: doc.id, ...convertedData } as T;
+        return { id: doc.id, ...doc.data() } as T;
       });
       
       setData(dataFromFirestore);
-      if(querySnapshot.metadata.fromCache) {
+
+      if (querySnapshot.metadata.fromCache) {
           console.log(`[Firestore Cache] Dados para '${collectionName}' vieram do cache.`);
       } else {
           console.log(`[Firestore Server] Dados para '${collectionName}' vieram do servidor.`);
       }
+
       setLoading(false);
     }, (error) => {
       console.error(`Erro ao buscar coleção '${collectionName}': `, error);
@@ -80,6 +67,7 @@ export function useFirestoreCollection<T extends { id: string }>(
         console.log(`[Firestore] Desmontando listener para coleção: ${collectionName}`);
         unsubscribe();
     }
+    // A dependência JSON.stringify é uma forma de garantir que o hook reaja a mudanças nos filtros.
   }, [collectionName, initialSort, JSON.stringify(initialFilters)]);
 
   const addDocument = async (newData: Omit<T, 'id' | 'createdAt'>) => {
