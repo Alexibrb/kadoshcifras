@@ -30,38 +30,48 @@ export async function syncOfflineData() {
     if (navigator.onLine) {
       console.log("[Sync] Buscando todos os dados do Firestore...");
       
-      const fetchPromises = COLLECTIONS_TO_SYNC.map(name => 
-        fetchAllFromFirestore(name).then(data => ({ name, data }))
-      );
-      const allCollectionsData = await Promise.all(fetchPromises);
-
-      console.log("[Sync] Limpando localStorage e inserindo novos dados...");
-
       // Limpa dados antigos da sincronização anterior
+      console.log("[Sync] Limpando localStorage...");
       Object.keys(localStorage).forEach(key => {
         if (key.includes('_doc_') || COLLECTIONS_TO_SYNC.includes(key)) {
             localStorage.removeItem(key);
         }
       });
-      
-      // Salva cada documento individualmente para evitar o limite do localStorage
-      allCollectionsData.forEach(collectionInfo => {
-        try {
-            // Salva a lista de IDs da coleção para referência
-            const ids = collectionInfo.data.map(doc => doc.id);
-            localStorage.setItem(collectionInfo.name, JSON.stringify(ids));
 
-            // Salva cada documento
-            collectionInfo.data.forEach(doc => {
-                const docKey = `${collectionInfo.name}_doc_${doc.id}`;
-                localStorage.setItem(docKey, JSON.stringify(doc));
-            });
-            console.log(`[Sync] ${collectionInfo.data.length} documentos sincronizados para a coleção '${collectionInfo.name}'.`);
-        } catch (error) {
-          console.error(`[Sync] Erro ao salvar a coleção '${collectionInfo.name}' no localStorage.`, error);
-          alert(`Não foi possível salvar a coleção '${collectionInfo.name}'. O armazenamento pode estar cheio.`);
-        }
-      });
+      console.log("[Sync] Inserindo novos dados...");
+      // Processa cada coleção sequencialmente para melhor controle de erro
+      for (const collectionName of COLLECTIONS_TO_SYNC) {
+          try {
+              const data = await fetchAllFromFirestore(collectionName);
+              
+              // Salva cada documento da coleção individualmente
+              for (const doc of data) {
+                  const docKey = `${collectionName}_doc_${doc.id}`;
+                  try {
+                      localStorage.setItem(docKey, JSON.stringify(doc));
+                  } catch (error: any) {
+                      // Se o erro for de quota excedida, paramos a sincronização aqui
+                      if (error.name === 'QuotaExceededError') {
+                          console.error(`[Sync] Quota do localStorage excedida ao tentar salvar ${docKey}. Parando a sincronização.`);
+                          alert("Armazenamento cheio. Nem todos os dados puderam ser sincronizados. O que foi salvo até agora está disponível offline.");
+                          // Retorna para interromper a função completamente
+                          return; 
+                      }
+                      // Lança outros erros
+                      throw error;
+                  }
+              }
+
+              // Salva a lista de IDs da coleção para referência
+               const collectionIds = data.map(doc => doc.id);
+               localStorage.setItem(collectionName, JSON.stringify(collectionIds));
+              
+              console.log(`[Sync] ${data.length} documentos sincronizados para a coleção '${collectionName}'.`);
+          } catch (fetchError) {
+             console.error(`[Sync] Erro ao buscar ou salvar a coleção '${collectionName}'.`, fetchError);
+             alert(`Não foi possível sincronizar a coleção '${collectionName}'.`);
+          }
+      }
       
       console.log("[Sync] Dados sincronizados com sucesso.");
 
