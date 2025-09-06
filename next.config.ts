@@ -1,32 +1,6 @@
 
 import type {NextConfig} from 'next';
 
-const withPWA = require('next-pwa')({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
-  runtimeCaching: [
-    {
-      urlPattern: ({url}) => {
-          return url.pathname === '/' || url.pathname === '/login' || url.pathname === '/signup';
-      },
-      handler: 'NetworkFirst',
-      options: {
-          cacheName: 'start-url-cache',
-      },
-    },
-    {
-      urlPattern: /^https$:\/\/.*/i,
-      handler: 'NetworkFirst',
-      options: {
-        cacheName: 'http-cache',
-      },
-    },
-  ],
-  disable: false, 
-});
-
-
 const nextConfig: NextConfig = {
   /* config options here */
   typescript: {
@@ -51,4 +25,4 @@ const nextConfig: NextConfig = {
   transpilePackages: ['next-themes'],
 };
 
-export default withPWA(nextConfig);
+export default nextConfig;
