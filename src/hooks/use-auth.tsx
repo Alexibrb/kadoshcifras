@@ -102,11 +102,10 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
             return;
         }
 
-        // Se o app estiver offline, a principal verificação é se temos um 'user' em cache.
-        // O Firebase Auth persiste o estado de login, então se 'user' existe,
-        // confiamos que o usuário está logado e permitimos o acesso para que os dados
-        // do Firestore possam carregar do cache de persistência.
-        if (!isOnline && user) {
+        // Se estivermos offline, confiamos no cache do Firebase Auth e Dexie.
+        // A lógica de renderização se encarregará de mostrar os dados em cache.
+        // A principal verificação aqui é para redirecionamento, que só deve ocorrer online.
+        if (!isOnline) {
             return;
         }
 
@@ -114,8 +113,8 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
         const isPendingApprovalPage = pathname === '/pending-approval';
         const isAdminPage = pathname.startsWith('/users');
 
-        // Se não há usuário (online), redireciona para a página de login,
-        // a menos que já estejamos em uma página de autenticação.
+        // Se não há usuário logado (online), redireciona para a página de login,
+        // a menos que já estejamos em uma página pública permitida.
         if (!user) {
             if (!isAuthPage) {
                 router.push(redirectUrl);
@@ -123,24 +122,27 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
             return;
         }
         
-        // Se temos um usuário, mas o perfil do Firestore (appUser) ainda não carregou,
-        // isso pode ser uma condição temporária. Se estivermos online, é provável que seja um
-        // novo usuário que precisa ser enviado para a página de aprovação.
-        if (!appUser && isOnline) {
+        // Se há um usuário, mas o documento do Firestore (appUser) ainda não carregou,
+        // isso pode ser uma condição temporária ou um novo usuário.
+        if (!appUser) {
+           // Se for um novo usuário, ele deve ser enviado para a página de aprovação.
            if (!isPendingApprovalPage) {
              router.push('/pending-approval');
            }
            return;
         }
         
+        // Se temos o appUser, podemos aplicar a lógica de permissões.
         if (appUser) {
-            // Se o usuário não está aprovado, ele deve ficar na página de aprovação.
-            if (!appUser.isApproved && !isPendingApprovalPage) {
-                router.push('/pending-approval');
+            // Se o usuário não está aprovado, ele deve permanecer na página de aprovação.
+            if (!appUser.isApproved) {
+                if (!isPendingApprovalPage) {
+                    router.push('/pending-approval');
+                }
                 return;
             }
 
-            // Se o usuário está aprovado, ele não deve estar nas páginas de auth ou de aprovação.
+            // Se o usuário está aprovado, ele não deve poder acessar as páginas de auth ou de aprovação.
             if (appUser.isApproved && (isPendingApprovalPage || isAuthPage)) {
                 router.push('/dashboard');
                 return;
