@@ -1,6 +1,6 @@
 // src/hooks/use-firestore-collection.ts
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { db as firestoreDB } from '@/lib/firebase';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, where, Query, WhereFilterOp, getDocs, QueryConstraint } from 'firebase/firestore';
 import { db as dexieDB } from '@/lib/dexie';
@@ -48,12 +48,15 @@ export function useFirestoreCollection<T extends { id: string }>(
     let filtered = allItems;
     initialFilters.forEach(filter => {
       const [field, op, value] = filter;
-      if (value) {
-        filtered = filtered.filter((item: any) => {
+       // Ignora filtros com valores indefinidos ou vazios que podem vir de estados iniciais
+      if (value === undefined || value === '' || value === null) return;
+      
+      filtered = filtered.filter((item: any) => {
+          if (!item.hasOwnProperty(field)) return false;
           if (op === '==') return item[field] === value;
+          // Adicione outros operadores de filtro conforme necessário
           return true;
-        });
-      }
+      });
     });
 
     if (initialSort) {
@@ -70,13 +73,14 @@ export function useFirestoreCollection<T extends { id: string }>(
 
 
   useEffect(() => {
+    // Se estivermos offline, os dados do dexieData já serão usados.
+    // O loading se torna falso quando dexieData é definido.
     if (!isOnline) {
-        // Se estiver offline, usamos os dados do Dexie
-        if (dexieData !== undefined) {
-            setData(dexieData);
-            setLoading(false);
-        }
-        return;
+      if (dexieData !== undefined) {
+        setData(dexieData as T[]);
+        setLoading(false);
+      }
+      return;
     }
 
     // Se estiver online, usamos o Firestore como fonte da verdade
@@ -86,13 +90,17 @@ export function useFirestoreCollection<T extends { id: string }>(
         constraints.push(orderBy(initialSort));
     }
     initialFilters.forEach(filter => {
-        constraints.push(where(filter[0], filter[1], filter[2]));
+        // Apenas aplica filtros válidos
+        if (filter[2] !== undefined && filter[2] !== null && filter[2] !== '') {
+           constraints.push(where(filter[0], filter[1], filter[2]));
+        }
     });
+
     if (constraints.length > 0) {
         q = query(q, ...constraints);
     }
 
-    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const firestoreData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -100,24 +108,12 @@ export function useFirestoreCollection<T extends { id: string }>(
 
       setData(firestoreData); // Atualiza o estado com os dados frescos do Firestore
 
-      // Sincroniza com o Dexie em segundo plano
-      try {
-        // @ts-ignore
-        const table = dexieDB[collectionName];
-        if (table) {
-          // Usamos bulkPut para adicionar/atualizar documentos de forma eficiente
-          await table.bulkPut(firestoreData);
-        }
-      } catch (e) {
-        console.error(`Failed to sync ${collectionName} to Dexie:`, e);
-      }
-
       setLoading(false);
     }, (error) => {
       console.error(`Error fetching collection '${collectionName}' from Firestore: `, error);
-      // Em caso de erro no Firestore (ex: permissão), tenta usar o Dexie como fallback
+      // Em caso de erro no Firestore (ex: permissão), usa o Dexie como fallback
       if (dexieData !== undefined) {
-          setData(dexieData);
+          setData(dexieData as T[]);
       }
       setLoading(false);
     });
@@ -135,7 +131,6 @@ export function useFirestoreCollection<T extends { id: string }>(
         ...cleanedData,
         createdAt: serverTimestamp(),
       });
-      // A atualização do Dexie ocorrerá automaticamente pelo listener do onSnapshot
       return docRef.id;
     } catch (error) {
       console.error("Error adding document: ", error);
@@ -146,7 +141,7 @@ export function useFirestoreCollection<T extends { id: string }>(
   const updateDocument = async (id: string, updatedData: Partial<T>) => {
     try {
       const docRef = doc(firestoreDB, collectionName, id);
-      await updateDoc(docRef, updatedData);
+      await updateDoc(docRef, updatedData as any);
     } catch (error) {
       console.error("Error updating document: ", error);
     }

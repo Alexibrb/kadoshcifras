@@ -48,8 +48,8 @@ export function useFirestoreDocument<T extends { id: string }>(collectionName: s
         return;
     }
     
+    // Se estiver offline, os dados do dexieData já serão usados.
     if (!isOnline) {
-        // Se estiver offline, usamos os dados do Dexie
         if (dexieData !== undefined) {
             setData(dexieData);
             setLoading(false);
@@ -59,21 +59,10 @@ export function useFirestoreDocument<T extends { id: string }>(collectionName: s
     
     // Se estiver online, usamos o Firestore como fonte da verdade
     const docRef = doc(firestoreDB, collectionName, docId);
-    const unsubscribe = onSnapshot(docRef, async (docSnap) => {
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
             const firestoreData = { id: docSnap.id, ...docSnap.data() } as T;
             setData(firestoreData); // Atualiza o estado com os dados frescos do Firestore
-
-            // Sincroniza com o Dexie em segundo plano
-            try {
-                // @ts-ignore
-                const table = dexieDB[collectionName];
-                if (table) {
-                    await table.put(firestoreData);
-                }
-            } catch (e) {
-                 console.error(`Failed to sync document ${docId} to Dexie:`, e);
-            }
         } else {
             setData(null);
         }
@@ -95,7 +84,6 @@ export function useFirestoreDocument<T extends { id: string }>(collectionName: s
     try {
       const docRef = doc(firestoreDB, collectionName, docId);
       await updateDoc(docRef, updatedData as any);
-       // A atualização do Dexie ocorrerá automaticamente pelo listener do onSnapshot
     } catch (error) {
       console.error(`Error updating document in '${collectionName}': `, error);
     }
