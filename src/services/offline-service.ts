@@ -20,6 +20,7 @@ export const cacheAllDataForOffline = async (appUser: User | null) => {
 
     const finalCollections = [...collectionsToCache];
     
+    // Apenas administradores podem baixar a lista de usuários
     if (appUser.role === 'admin') {
         finalCollections.push('users');
     }
@@ -41,10 +42,12 @@ export const cacheAllDataForOffline = async (appUser: User | null) => {
             return { status: 'success', collection: collectionName, count: docs.length };
         } catch (error: any) {
             console.error(`Erro ao colocar em cache a coleção '${collectionName}':`, error.message);
+            // Lança um erro mais específico para que a UI possa exibir uma mensagem útil.
             throw new Error(`Falha ao baixar a coleção: ${collectionName}. Verifique as regras de segurança do Firestore.`);
         }
     });
 
+    // Espera que todas as coleções sejam baixadas.
     await Promise.all(cachePromises);
 
     console.log("Todos os dados permitidos foram colocados em cache com sucesso para uso offline.");
