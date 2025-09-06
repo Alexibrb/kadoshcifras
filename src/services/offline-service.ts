@@ -1,3 +1,4 @@
+
 // src/services/offline-service.ts
 import { db as dexieDB } from '@/lib/dexie';
 import { db as firestoreDB } from '@/lib/firebase';
@@ -7,7 +8,7 @@ const collectionsToSync = ['songs', 'setlists', 'artists', 'genres', 'categories
 
 // Função para converter Timestamps do Firestore para strings ISO 8601
 const convertTimestamps = (obj: any): any => {
-    if (!obj) return obj;
+    if (obj === null || obj === undefined) return obj;
     if (obj instanceof Timestamp) {
         return obj.toDate().toISOString();
     }
