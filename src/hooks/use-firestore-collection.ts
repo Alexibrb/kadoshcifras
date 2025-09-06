@@ -16,27 +16,24 @@ export function useFirestoreCollection<T extends { id: string }>(
 ) {
   const [loading, setLoading] = useState(true);
 
-  // 1. A fonte da verdade para a UI é SEMPRE o Dexie (banco de dados local).
-  //    useLiveQuery irá re-renderizar o componente sempre que os dados no Dexie mudarem.
   const localData = useLiveQuery(
     async () => {
       const table = (dexieDB as any)[collectionName];
       if (!table) return [];
 
-      // Garante que o filtro só seja aplicado se o valor for válido
-      const validFilters = initialFilters.filter(f => f[2] !== undefined && f[2] !== null && f[2] !== '');
-      
-      // Se algum filtro inicial ainda não tem um valor válido, não executa a consulta
-      if (validFilters.length !== initialFilters.length) {
-          return [];
+      // Garante que TODOS os filtros sejam válidos antes de prosseguir.
+      const areFiltersValid = initialFilters.every(f => f[2] !== undefined && f[2] !== null);
+      if (!areFiltersValid) {
+          return []; // Retorna vazio se algum filtro for inválido, evitando a consulta
       }
 
       let query = table;
       
+      const validFilters = initialFilters.filter(f => f[2] !== '');
+
       if(validFilters.length > 0) {
         const filterObj: { [key: string]: any } = {};
         validFilters.forEach(f => {
-            // Dexie `where` só funciona bem com '=='
             if(f[1] === '==') {
                 filterObj[f[0]] = f[2];
             }
@@ -48,7 +45,6 @@ export function useFirestoreCollection<T extends { id: string }>(
       
       const items = await query.toArray();
 
-      // Aplica ordenação no cliente
       if (initialSort && items.length > 0 && items[0][initialSort]) {
         items.sort((a: any, b: any) => {
           if (a[initialSort] < b[initialSort]) return -1;
@@ -59,15 +55,13 @@ export function useFirestoreCollection<T extends { id: string }>(
 
       return items as T[];
     },
-    [collectionName, JSON.stringify(initialFilters), initialSort], // Dependências para o useLiveQuery
-    [] // Valor inicial
+    [collectionName, JSON.stringify(initialFilters), initialSort], 
+    [] 
   );
   
-  // 2. Efeito para ouvir o Firestore e manter o Dexie atualizado.
   useEffect(() => {
-    // Só executa no navegador e quando online
     if (typeof window === 'undefined' || !navigator.onLine) {
-        setLoading(false); // Se offline, paramos de carregar, confiando nos dados do Dexie
+        setLoading(false); 
         return;
     }
     
@@ -77,7 +71,6 @@ export function useFirestoreCollection<T extends { id: string }>(
     const constraints: QueryConstraint[] = [];
     
     initialFilters.forEach(filter => {
-      // Garante que o filtro só seja aplicado se o valor for válido
       if (filter[2] !== undefined && filter[2] !== null && filter[2] !== '') {
         constraints.push(where(filter[0], filter[1], filter[2]));
       }
@@ -91,13 +84,8 @@ export function useFirestoreCollection<T extends { id: string }>(
         ...doc.data(),
       } as T));
 
-      // Sincroniza os dados recebidos com o Dexie.
-      // Esta operação irá acionar o useLiveQuery para atualizar a UI.
       const table = (dexieDB as any)[collectionName];
       if (table) {
-        // Usamos bulkPut para adicionar/atualizar documentos de forma eficiente.
-        // A sincronização completa (com clear) é feita pelo botão "Sincronizar".
-        // Este onSnapshot apenas mantém os dados atualizados em tempo real.
         table.bulkPut(dataFromFirestore).catch((err: any) => {
           console.error(`Erro ao atualizar Dexie para ${collectionName}:`, err);
         });
@@ -142,8 +130,6 @@ export function useFirestoreCollection<T extends { id: string }>(
       }
   };
   
-  // A UI sempre usa os dados do Dexie (localData).
-  // O estado de loading é uma combinação do carregamento inicial do Firestore e da disponibilidade do localData.
   return { 
     data: localData || [], 
     loading: loading && localData?.length === 0, 
