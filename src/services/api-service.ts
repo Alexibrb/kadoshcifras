@@ -1,3 +1,4 @@
+
 // src/services/api-service.ts
 
 // Este é um serviço de API simulado (mock).
@@ -15,7 +16,14 @@ const MOCK_DATA = {
             { id: '5', title: 'A Casa É Sua', artist: 'Casa Worship', category: 'Adoração', genre: 'Gospel' },
             { id: '6', title: 'Girassol', artist: 'Priscilla Alcantara', category: 'Pop', genre: 'Pop' },
             { id: '7', title: 'Deus Proverá', artist: 'Gabriela Gomes', category: 'Adoração', genre: 'Gospel' },
-            { id: '8', title: 'Em Teus Braços', artist: 'Laura Souguellis', category: 'Adoração', genre: 'Gospel' }
+            { id: '8', title: 'Em Teus Braços', artist: 'Laura Souguellis', category: 'Adoração', genre: 'Gospel' },
+            { id: '9', title: 'Que Ele Cresça', artist: 'Deigma Marques', category: 'Adoração', genre: 'Gospel' },
+            { id: '10', title: 'Todavia Me Alegrarei', artist: 'Sarah Beatriz', category: 'Louvor', genre: 'Gospel' },
+            { id: '11', title: 'Me Leva Pra Casa', artist: 'Israel Subirá', category: 'Adoração', genre: 'Gospel' },
+            { id: '12', title: 'Ruja o Leão', artist: 'Talita Catanzaro', category: 'Louvor', genre: 'Gospel' },
+            { id: '13', title: 'Não Pare', artist: 'Midian Lima', category: 'Pop', genre: 'Gospel' },
+            { id: '14', title: 'O Carpinteiro', artist: 'Alessandro Vilas Boas', category: 'Adoração', genre: 'Gospel' },
+            { id: '15', title: 'Canção ao Cordeiro', artist: 'Israel Salazar', category: 'Adoração', genre: 'Gospel' }
         ],
         artists: [
             { id: '1', name: 'Aline Barros' },
@@ -25,7 +33,14 @@ const MOCK_DATA = {
             { id: '5', name: 'Casa Worship' },
             { id: '6', name: 'Priscilla Alcantara' },
             { id: '7', name: 'Gabriela Gomes' },
-            { id: '8', name: 'Laura Souguellis' }
+            { id: '8', name: 'Laura Souguellis' },
+            { id: '9', name: 'Deigma Marques' },
+            { id: '10', name: 'Sarah Beatriz' },
+            { id: '11', name: 'Israel Subirá' },
+            { id: '12', name: 'Talita Catanzaro' },
+            { id: '13', name: 'Midian Lima' },
+            { id: '14', name: 'Alessandro Vilas Boas' },
+            { id: '15', name: 'Israel Salazar' }
         ],
         categories: [
             { id: '1', name: 'Adoração' },
