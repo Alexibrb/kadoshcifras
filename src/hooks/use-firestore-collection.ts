@@ -1,3 +1,4 @@
+
 // src/hooks/use-firestore-collection.ts
 'use client';
 import { useState, useEffect } from 'react';
@@ -22,10 +23,15 @@ export function useFirestoreCollection<T extends { id: string }>(
       const table = (dexieDB as any)[collectionName];
       if (!table) return [];
 
-      // Aplica filtros diretamente na consulta Dexie se possível
-      let query = table;
       // Garante que o filtro só seja aplicado se o valor for válido
       const validFilters = initialFilters.filter(f => f[2] !== undefined && f[2] !== null && f[2] !== '');
+      
+      // Se algum filtro inicial ainda não tem um valor válido, não executa a consulta
+      if (validFilters.length !== initialFilters.length) {
+          return [];
+      }
+
+      let query = table;
       
       if(validFilters.length > 0) {
         const filterObj: { [key: string]: any } = {};
