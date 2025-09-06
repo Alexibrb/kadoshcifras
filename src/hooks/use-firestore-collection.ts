@@ -1,6 +1,6 @@
 // src/hooks/use-firestore-collection.ts
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { db as firestoreDB } from '@/lib/firebase';
 import { collection, onSnapshot, query, where, QueryConstraint, WhereFilterOp, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, orderBy, Query, Timestamp } from 'firebase/firestore';
 
@@ -16,8 +16,13 @@ const convertTimestamps = (data: any) => {
 // Helper para obter dados do localStorage
 const getDataFromLocalStorage = <T>(key: string): T | null => {
     if (typeof window === 'undefined') return null;
-    const item = window.localStorage.getItem(key);
-    return item ? JSON.parse(item) : null;
+    try {
+        const item = window.localStorage.getItem(key);
+        return item ? JSON.parse(item) : null;
+    } catch (error) {
+        console.error(`Erro ao ler do localStorage: ${key}`, error);
+        return null;
+    }
 };
 
 // Helper para salvar dados no localStorage
@@ -27,7 +32,6 @@ const setDataToLocalStorage = (key: string, data: any) => {
         window.localStorage.setItem(key, JSON.stringify(data));
     } catch (e) {
         console.error(`Falha ao salvar a coleção '${key}' no localStorage. O armazenamento pode estar cheio.`, e);
-        // Opcional: Adicionar um toast para o usuário aqui
     }
 };
 
@@ -38,36 +42,21 @@ export function useFirestoreCollection<T extends { id: string }>(
 ) {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isOnline, setIsOnline] = useState(true);
 
   const storageKey = `collection_${collectionName}`;
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-        setIsOnline(navigator.onLine);
+    // 1. Carrega os dados do localStorage imediatamente para uma experiência offline-first.
+    const localData = getDataFromLocalStorage<T[]>(storageKey);
+    if (localData) {
+      setData(localData);
     }
-    
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    setLoading(!localData); // Só continua carregando se não houver dados locais
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-        window.removeEventListener('online', handleOnline);
-        window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isOnline) {
-      console.log(`[Offline] Carregando '${collectionName}' do localStorage.`);
-      const localData = getDataFromLocalStorage<T[]>(storageKey);
-      if (localData) {
-        setData(localData);
-      }
-      setLoading(false);
-      return;
+    // 2. Se estiver online, conecta-se ao Firestore para obter os dados mais recentes.
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+       setLoading(false);
+       return;
     }
 
     const areFiltersValid = initialFilters.every(f => f[2] !== undefined && f[2] !== null);
@@ -76,8 +65,6 @@ export function useFirestoreCollection<T extends { id: string }>(
         setData([]);
         return;
     }
-
-    setLoading(true);
 
     const collectionRef = collection(firestoreDB, collectionName);
     const constraints: QueryConstraint[] = [];
@@ -101,21 +88,18 @@ export function useFirestoreCollection<T extends { id: string }>(
         return { id: doc.id, ...convertedData } as T;
       });
       
+      // 3. Atualiza o estado e salva os novos dados no localStorage.
       setData(dataFromFirestore);
-      setDataToLocalStorage(storageKey, dataFromFirestore); // Salva no cache
+      setDataToLocalStorage(storageKey, dataFromFirestore);
       setLoading(false);
     }, (error) => {
-      console.error(`Error fetching collection '${collectionName}' from Firestore: `, error);
-      // Em caso de erro, tenta carregar do cache local
-      const localData = getDataFromLocalStorage<T[]>(storageKey);
-      if (localData) {
-          setData(localData);
-      }
+      console.error(`Erro ao buscar coleção '${collectionName}': `, error);
+      // Mantém os dados locais se a busca online falhar.
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [collectionName, initialSort, JSON.stringify(initialFilters), isOnline]);
+  }, [collectionName, initialSort, JSON.stringify(initialFilters)]); // Dependências simplificadas
 
   const addDocument = async (newData: Omit<T, 'id' | 'createdAt'>) => {
       try {
@@ -125,7 +109,7 @@ export function useFirestoreCollection<T extends { id: string }>(
         });
         return docRef.id;
       } catch (error) {
-        console.error(`Error adding document to '${collectionName}': `, error);
+        console.error(`Erro ao adicionar documento a '${collectionName}': `, error);
         return null;
       }
   };
@@ -135,7 +119,7 @@ export function useFirestoreCollection<T extends { id: string }>(
           const docRef = doc(firestoreDB, collectionName, id);
           await updateDoc(docRef, updatedData);
       } catch (error) {
-          console.error(`Error updating document in '${collectionName}': `, error);
+          console.error(`Erro ao atualizar documento em '${collectionName}': `, error);
       }
   };
 
@@ -144,7 +128,7 @@ export function useFirestoreCollection<T extends { id: string }>(
           const docRef = doc(firestoreDB, collectionName, id);
           await deleteDoc(docRef);
       } catch (error) {
-          console.error(`Error deleting document from '${collectionName}': `, error);
+          console.error(`Erro ao deletar documento de '${collectionName}': `, error);
       }
   };
 
