@@ -6,33 +6,18 @@ import { collection, onSnapshot, query, where, QueryConstraint, WhereFilterOp, a
 
 export type FirestoreQueryFilter = [string, WhereFilterOp, any];
 
+// Helper para converter Timestamps do Firestore para strings ISO, que são serializáveis.
 const convertTimestamps = (data: any) => {
-    if (data?.createdAt instanceof Timestamp) {
-        return { ...data, createdAt: data.createdAt.toDate().toISOString() };
+    if (!data) return data;
+    const newObj: { [key: string]: any } = {};
+    for (const key in data) {
+        if (data[key] instanceof Timestamp) {
+            newObj[key] = data[key].toDate().toISOString();
+        } else {
+            newObj[key] = data[key];
+        }
     }
-    return data;
-};
-
-// Helper para obter dados do localStorage
-const getDataFromLocalStorage = <T>(key: string): T | null => {
-    if (typeof window === 'undefined') return null;
-    try {
-        const item = window.localStorage.getItem(key);
-        return item ? JSON.parse(item) : null;
-    } catch (error) {
-        console.error(`Erro ao ler do localStorage: ${key}`, error);
-        return null;
-    }
-};
-
-// Helper para salvar dados no localStorage
-const setDataToLocalStorage = (key: string, data: any) => {
-    if (typeof window === 'undefined') return;
-    try {
-        window.localStorage.setItem(key, JSON.stringify(data));
-    } catch (e) {
-        console.error(`Falha ao salvar a coleção '${key}' no localStorage. O armazenamento pode estar cheio.`, e);
-    }
+    return newObj;
 };
 
 export function useFirestoreCollection<T extends { id: string }>(
@@ -43,21 +28,11 @@ export function useFirestoreCollection<T extends { id: string }>(
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const storageKey = `collection_${collectionName}`;
-
   useEffect(() => {
-    // 1. Carrega os dados do localStorage imediatamente para uma experiência offline-first.
-    const localData = getDataFromLocalStorage<T[]>(storageKey);
-    if (localData) {
-      setData(localData);
-    }
-    setLoading(!localData); // Só continua carregando se não houver dados locais
-
-    // 2. Se estiver online, conecta-se ao Firestore para obter os dados mais recentes.
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-       setLoading(false);
-       return;
-    }
+    // A lógica agora confia no cache do Firestore.
+    // `onSnapshot` obterá dados do cache primeiro se estiver offline,
+    // e depois obterá dados em tempo real do servidor se estiver online.
+    console.log(`[Firestore] Montando listener para coleção: ${collectionName}`);
 
     const areFiltersValid = initialFilters.every(f => f[2] !== undefined && f[2] !== null);
     if (!areFiltersValid) {
@@ -84,22 +59,28 @@ export function useFirestoreCollection<T extends { id: string }>(
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const dataFromFirestore = querySnapshot.docs.map(doc => {
         const docData = doc.data();
+        // Converte timestamps para um formato consistente
         const convertedData = convertTimestamps(docData);
         return { id: doc.id, ...convertedData } as T;
       });
       
-      // 3. Atualiza o estado e salva os novos dados no localStorage.
       setData(dataFromFirestore);
-      setDataToLocalStorage(storageKey, dataFromFirestore);
+      if(querySnapshot.metadata.fromCache) {
+          console.log(`[Firestore Cache] Dados para '${collectionName}' vieram do cache.`);
+      } else {
+          console.log(`[Firestore Server] Dados para '${collectionName}' vieram do servidor.`);
+      }
       setLoading(false);
     }, (error) => {
       console.error(`Erro ao buscar coleção '${collectionName}': `, error);
-      // Mantém os dados locais se a busca online falhar.
       setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [collectionName, initialSort, JSON.stringify(initialFilters)]); // Dependências simplificadas
+    return () => {
+        console.log(`[Firestore] Desmontando listener para coleção: ${collectionName}`);
+        unsubscribe();
+    }
+  }, [collectionName, initialSort, JSON.stringify(initialFilters)]);
 
   const addDocument = async (newData: Omit<T, 'id' | 'createdAt'>) => {
       try {
