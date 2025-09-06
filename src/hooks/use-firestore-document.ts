@@ -1,63 +1,40 @@
-
 // src/hooks/use-firestore-document.ts
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { db as firestoreDB } from '@/lib/firebase';
-import { db as dexieDB } from '@/lib/dexie';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '@/lib/firebase';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 
 
 export function useFirestoreDocument<T extends { id: string }>(collectionName: string, docId: string) {
-  const [isOnline, setIsOnline] = useState(true);
-  const [firestoreData, setFirestoreData] = useState<T | null>(null);
+  const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Determina a tabela Dexie com base no nome da coleção
-  const dexieTable = (dexieDB as any)[collectionName];
-
-  // Observa o documento específico do Dexie incondicionalmente.
-  const dexieData = useLiveQuery(() => {
-    if (!dexieTable || !docId) return null;
-    return dexieTable.get(docId);
-  }, [collectionName, docId], null);
-  
   useEffect(() => {
-    const updateOnlineStatus = () => setIsOnline(navigator.onLine);
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
-    updateOnlineStatus();
-
-    // Sempre tenta buscar do Firestore
     setLoading(true);
     if (!docId) {
-        setFirestoreData(null);
+        setData(null);
         setLoading(false);
         return;
     }
     
-    const docRef = doc(firestoreDB, collectionName, docId);
+    const docRef = doc(db, collectionName, docId);
 
+    // onSnapshot will use the cache when offline
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
             const dataFromFirestore = { id: docSnap.id, ...docSnap.data() } as T;
-            setFirestoreData(dataFromFirestore);
+            setData(dataFromFirestore);
         } else {
             console.log(`Documento não encontrado no Firestore: ${collectionName}/${docId}`);
-            setFirestoreData(null);
+            setData(null);
         }
         setLoading(false);
     }, (error) => {
         console.error(`Error fetching document '${docId}' from Firestore: `, error);
-        // Em caso de erro, paramos o carregamento. Os dados do Dexie serão usados.
         setLoading(false);
     });
 
-    return () => {
-        unsubscribe();
-        window.removeEventListener('online', updateOnlineStatus);
-        window.removeEventListener('offline', updateOnlineStatus);
-    }
+    return () => unsubscribe();
   }, [collectionName, docId]);
   
   const updateDocument = useCallback(async (updatedData: Partial<T>) => {
@@ -66,16 +43,12 @@ export function useFirestoreDocument<T extends { id: string }>(collectionName: s
       return;
     }
     try {
-      const docRef = doc(firestoreDB, collectionName, docId);
+      const docRef = doc(db, collectionName, docId);
       await updateDoc(docRef, updatedData as any);
     } catch (error) {
       console.error(`Error updating document in '${collectionName}': `, error);
     }
   }, [collectionName, docId]);
   
-  // A fonte da verdade é o Firestore se estivermos online e houver dados.
-  // Caso contrário, usamos os dados do Dexie.
-  const data = isOnline ? firestoreData : (dexieData as T | null | undefined) ?? null;
-
-  return { data, loading: loading && isOnline, updateDocument };
+  return { data, loading, updateDocument };
 }

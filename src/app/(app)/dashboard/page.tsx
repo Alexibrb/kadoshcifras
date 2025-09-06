@@ -13,11 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useEffect, useState } from 'react';
-import { syncOfflineData } from '@/services/offline-service';
 import { useToast } from '@/hooks/use-toast';
-import { getLastSyncTime } from '@/lib/dexie';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { Card } from '@/components/ui/card';
 
 export default function DashboardPage() {
@@ -25,51 +21,33 @@ export default function DashboardPage() {
   const router = useRouter();
   const { data: songs, loading: loadingSongs } = useFirestoreCollection<Song>('songs');
   const { data: setlists, loading: loadingSetlists } = useFirestoreCollection<Setlist>('setlists');
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [lastSync, setLastSync] = useState<Date | null>(null);
   const [isOnline, setIsOnline] = useState(true);
   const { toast } = useToast();
 
-  const fetchLastSync = async () => {
-    const time = await getLastSyncTime();
-    setLastSync(time);
-  };
-
   useEffect(() => {
-    const updateOnlineStatus = () => setIsOnline(navigator.onLine);
+    const updateOnlineStatus = () => {
+      setIsOnline(navigator.onLine);
+      const message = navigator.onLine ? "Você está online. Os dados são em tempo real." : "Você está offline. Exibindo dados salvos.";
+      toast({
+          title: navigator.onLine ? "Conectado" : "Modo Offline",
+          description: message,
+          action: navigator.onLine ? <Wifi /> : <WifiOff />,
+      });
+    };
+
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
-    updateOnlineStatus();
-
-    fetchLastSync();
+    // Initial check
+    if (typeof navigator !== 'undefined') {
+        setIsOnline(navigator.onLine);
+    }
 
     return () => {
       window.removeEventListener('online', updateOnlineStatus);
       window.removeEventListener('offline', updateOnlineStatus);
     };
-  }, []);
+  }, [toast]);
 
-  const handleSync = async () => {
-    setIsSyncing(true);
-    try {
-      await syncOfflineData();
-      toast({
-        title: "Sincronização Concluída",
-        description: "Todos os dados foram salvos para uso offline.",
-        action: <Check />,
-      });
-      fetchLastSync(); // Atualiza o tempo da última sincronização após o sucesso
-    } catch (error) {
-      console.error("Erro na sincronização:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro na Sincronização",
-        description: "Não foi possível baixar os dados. Verifique sua conexão e tente novamente.",
-      });
-    } finally {
-      setIsSyncing(false);
-    }
-  };
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -90,26 +68,12 @@ export default function DashboardPage() {
             <AlertTitle>{isOnline ? 'Você está Online' : 'Você está Offline'}</AlertTitle>
             <AlertDescription>
                 {isOnline 
-                    ? 'Sincronize os dados para garantir o acesso offline.'
-                    : 'Os dados estão sendo carregados do cache local.'
+                    ? 'Os dados estão sendo sincronizados em tempo real.'
+                    : 'Os dados visualizados anteriormente estão disponíveis offline.'
                 }
             </AlertDescription>
         </Alert>
 
-        <Card className="p-4">
-          <div className="flex flex-col items-center gap-2">
-              <Button onClick={handleSync} disabled={isSyncing || !isOnline} size="lg" className="w-full h-16 text-lg">
-                <RefreshCw className={`mr-2 h-5 w-5 ${isSyncing ? 'animate-spin' : ''}`} />
-                {isSyncing ? 'Sincronizando...' : 'Sincronizar para Uso Offline'}
-              </Button>
-               {lastSync && (
-                <p className="text-xs text-muted-foreground mt-2">
-                    Última sincronização: {formatDistanceToNow(lastSync, { addSuffix: true, locale: ptBR })}
-                </p>
-            )}
-          </div>
-        </Card>
-        
         <Button asChild size="lg" className="h-20 text-lg justify-between">
           <Link href="/songs">
             <div className="flex items-center">

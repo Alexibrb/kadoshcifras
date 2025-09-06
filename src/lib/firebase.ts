@@ -1,4 +1,3 @@
-
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, enableIndexedDbPersistence, initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
@@ -17,24 +16,28 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Initialize Firestore with offline persistence
-const db = initializeFirestore(app, {
-  cacheSizeBytes: CACHE_SIZE_UNLIMITED,
-});
-
-// Enable offline persistence
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code == 'failed-precondition') {
-    console.warn(
-      'Firestore persistence failed to enable. This is likely due to multiple ' +
-      'tabs being open. Offline functionality will be limited.'
-    );
-  } else if (err.code == 'unimplemented') {
-    console.warn(
-      'The current browser does not support all of ahe features required to ' +
-      'enable Firestore persistence.'
-    );
-  }
-});
+let db: any;
+try {
+    db = initializeFirestore(app, {
+      cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+    });
+    enableIndexedDbPersistence(db).catch((err) => {
+        if (err.code == 'failed-precondition') {
+            console.warn(
+            'Firestore persistence failed to enable. This is likely due to multiple ' +
+            'tabs being open. Offline functionality will be limited.'
+            );
+        } else if (err.code == 'unimplemented') {
+            console.warn(
+            'The current browser does not support all of the features required to ' +
+            'enable Firestore persistence.'
+            );
+        }
+    });
+} catch (e) {
+    console.error("Error initializing Firestore with persistence", e);
+    db = getFirestore(app); // Fallback to memory-only cache
+}
 
 
 const auth = getAuth(app);
