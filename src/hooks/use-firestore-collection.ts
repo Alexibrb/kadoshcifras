@@ -1,8 +1,8 @@
 // src/hooks/use-firestore-collection.ts
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { db as firestoreDB } from '@/lib/firebase';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, where, Query, WhereFilterOp, getDocs, QueryConstraint } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, where, QueryConstraint } from 'firebase/firestore';
 import { db as dexieDB } from '@/lib/dexie';
 import { useLiveQuery } from 'dexie-react-hooks';
 
@@ -37,6 +37,7 @@ export function useFirestoreCollection<T extends { id: string }>(
   }, []);
 
   // Hook para buscar dados do Dexie (funciona sempre, offline ou online)
+  // Esta será a nossa fonte de verdade para a UI quando offline.
   const dexieData = useLiveQuery(async () => {
     // @ts-ignore
     const table = dexieDB[collectionName];
@@ -52,7 +53,7 @@ export function useFirestoreCollection<T extends { id: string }>(
       if (value === undefined || value === '' || value === null) return;
       
       filtered = filtered.filter((item: any) => {
-          if (!item.hasOwnProperty(field)) return false;
+          if (item[field] === undefined) return false;
           if (op === '==') return item[field] === value;
           // Adicione outros operadores de filtro conforme necessário
           return true;
@@ -61,8 +62,10 @@ export function useFirestoreCollection<T extends { id: string }>(
 
     if (initialSort) {
       filtered.sort((a: any, b: any) => {
-        if (a[initialSort] < b[initialSort]) return -1;
-        if (a[initialSort] > b[initialSort]) return 1;
+        const valA = a[initialSort] ?? '';
+        const valB = b[initialSort] ?? '';
+        if (valA < valB) return -1;
+        if (valA > valB) return 1;
         return 0;
       });
     }

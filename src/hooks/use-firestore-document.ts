@@ -2,7 +2,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { db as firestoreDB } from '@/lib/firebase';
-import { doc, onSnapshot, updateDoc, DocumentData, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
 import { db as dexieDB } from '@/lib/dexie';
 import { useLiveQuery } from 'dexie-react-hooks';
 
@@ -80,14 +80,18 @@ export function useFirestoreDocument<T extends { id: string }>(collectionName: s
   }, [collectionName, docId, isOnline, dexieData]);
   
   const updateDocument = useCallback(async (updatedData: Partial<T>) => {
-    if (!docId) return;
+    if (!docId || !isOnline) {
+      console.warn("Update skipped: document ID is missing or app is offline.");
+      // Opcional: poderia enfileirar a atualização para quando estiver online
+      return;
+    }
     try {
       const docRef = doc(firestoreDB, collectionName, docId);
       await updateDoc(docRef, updatedData as any);
     } catch (error) {
       console.error(`Error updating document in '${collectionName}': `, error);
     }
-  }, [collectionName, docId]);
+  }, [collectionName, docId, isOnline]);
 
   return { data, loading, updateDocument };
 }
