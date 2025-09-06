@@ -1,4 +1,3 @@
-
 // src/app/api/offline-data/route.ts
 
 import { NextResponse } from 'next/server';
@@ -11,13 +10,14 @@ const collectionsToSync = ['songs', 'setlists', 'artists', 'genres', 'categories
 // Função para converter Timestamps do Firestore para strings ISO 8601
 // O IndexedDB não consegue armazenar objetos Timestamp do Firestore diretamente.
 const convertTimestamps = (obj: any): any => {
+    if (!obj) return obj; // Adiciona verificação para nulo ou indefinido
     if (obj instanceof Timestamp) {
         return obj.toDate().toISOString();
     }
     if (Array.isArray(obj)) {
         return obj.map(convertTimestamps);
     }
-    if (obj !== null && typeof obj === 'object') {
+    if (typeof obj === 'object') {
         const newObj: { [key: string]: any } = {};
         for (const key in obj) {
             if (Object.prototype.hasOwnProperty.call(obj, key)) {
