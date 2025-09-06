@@ -7,6 +7,15 @@ const withPWA = require('next-pwa')({
   skipWaiting: true,
   runtimeCaching: [
     {
+      urlPattern: ({url}) => {
+          return url.pathname === '/' || url.pathname === '/login' || url.pathname === '/signup';
+      },
+      handler: 'NetworkFirst',
+      options: {
+          cacheName: 'start-url-cache',
+      },
+    },
+    {
       urlPattern: /^https$:\/\/.*/i,
       handler: 'NetworkFirst',
       options: {
@@ -14,22 +23,7 @@ const withPWA = require('next-pwa')({
       },
     },
   ],
-  // Garante que o service worker funcione no modo de desenvolvimento para testes
   disable: false, 
-  // Pré-cacheia as rotas mais importantes para o acesso inicial offline
-  workboxOptions: {
-    runtimeCaching: [
-      {
-        urlPattern: ({url}) => {
-            return url.pathname === '/' || url.pathname === '/login' || url.pathname === '/signup';
-        },
-        handler: 'NetworkFirst',
-        options: {
-            cacheName: 'start-url-cache',
-        },
-      }
-    ]
-  }
 });
 
 
