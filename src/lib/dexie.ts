@@ -1,4 +1,3 @@
-
 // src/lib/dexie.ts
 import Dexie, { type Table } from 'dexie';
 import type { Song, Setlist, User, MetadataItem } from '@/types';
