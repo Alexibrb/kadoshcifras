@@ -24,10 +24,12 @@ export function useFirestoreCollection<T extends { id: string }>(
 
       // Aplica filtros diretamente na consulta Dexie se possível
       let query = table;
-      const filters = initialFilters.filter(f => f[2] !== undefined && f[2] !== null && f[2] !== '');
-      if(filters.length > 0) {
+      // Garante que o filtro só seja aplicado se o valor for válido
+      const validFilters = initialFilters.filter(f => f[2] !== undefined && f[2] !== null && f[2] !== '');
+      
+      if(validFilters.length > 0) {
         const filterObj: { [key: string]: any } = {};
-        filters.forEach(f => {
+        validFilters.forEach(f => {
             // Dexie `where` só funciona bem com '=='
             if(f[1] === '==') {
                 filterObj[f[0]] = f[2];
