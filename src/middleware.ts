@@ -12,5 +12,5 @@ export function middleware(request: NextRequest) {
  
 // See "Matching Paths" below to learn more
 export const config = {
-  matcher: ['/dashboard/:path*', '/songs/:path*', '/setlists/:path*', '/tools/:path*', '/pending-approval', '/users/:path*'],
+  matcher: ['/dashboard/:path*', '/songs/:path*', '/setlists/:path*', '/tools/:path*', '/pending-approval'],
 }
