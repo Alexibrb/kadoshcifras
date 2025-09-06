@@ -13,7 +13,7 @@ export class CifrasDexie extends Dexie {
 
   constructor() {
     super('CifrasDB');
-    this.version(1).stores({
+    this.version(2).stores({
       // A sintaxe é '++id' para auto-incremento, '&id' para chaves únicas não auto-incrementadas,
       // ou apenas 'id' se o ID é fornecido externamente (nosso caso, vem do Firestore).
       // Em seguida, listamos os campos que queremos indexar para buscas rápidas.
