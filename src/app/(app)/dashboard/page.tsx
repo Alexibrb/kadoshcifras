@@ -15,9 +15,21 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { syncOfflineData } from '@/services/offline-service';
-import { getLastSyncTime, setLastSyncTime } from '@/lib/local-storage';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+
+// Simples localStorage para a última sincronização
+const setLastSyncTime = (time: Date) => {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('lastSyncTime', time.toISOString());
+    }
+}
+const getLastSyncTime = (): Date | null => {
+     if (typeof window === 'undefined') return null;
+     const time = localStorage.getItem('lastSyncTime');
+     return time ? new Date(time) : null;
+}
+
 
 export default function DashboardPage() {
   const { user } = useAuth();
