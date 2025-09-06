@@ -1,7 +1,7 @@
 
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
+import { getFirestore, enableIndexedDbPersistence, initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
@@ -13,27 +13,31 @@ const firebaseConfig = {
   appId: "1:682160842216:web:f5329c818ff76a7ac4705d"
 };
 
+// Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const db = getFirestore(app);
-const auth = getAuth(app);
 
-// Habilita a persistência offline.
-// Isso deve ser feito apenas uma vez. O SDK do Firebase lida com isso de forma inteligente.
-try {
-    enableIndexedDbPersistence(db)
-        .catch((err) => {
-            if (err.code == 'failed-precondition') {
-                // Múltiplas abas abertas, o que pode causar problemas.
-                // A persistência já deve estar habilitada.
-                console.warn("A persistência do Firestore falhou em ser habilitada, talvez por múltiplas abas abertas.");
-            } else if (err.code == 'unimplemented') {
-                // O navegador não suporta a persistência.
-                console.warn("O navegador não suporta a persistência offline do Firestore.");
-            }
-        });
-} catch (error) {
-    console.error("Erro ao inicializar a persistência do Firestore:", error);
-}
+// Initialize Firestore with offline persistence
+const db = initializeFirestore(app, {
+  cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+});
+
+// Enable offline persistence
+enableIndexedDbPersistence(db).catch((err) => {
+  if (err.code == 'failed-precondition') {
+    console.warn(
+      'Firestore persistence failed to enable. This is likely due to multiple ' +
+      'tabs being open. Offline functionality will be limited.'
+    );
+  } else if (err.code == 'unimplemented') {
+    console.warn(
+      'The current browser does not support all of ahe features required to ' +
+      'enable Firestore persistence.'
+    );
+  }
+});
+
+
+const auth = getAuth(app);
 
 
 export { app, db, auth };
