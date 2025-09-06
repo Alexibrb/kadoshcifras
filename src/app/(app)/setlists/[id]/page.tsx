@@ -272,7 +272,7 @@ export default function SetlistPage() {
                 </Button>
                  {isClient && hasOfflineVersion && (
                   <Button asChild variant="default">
-                    <Link href={`/setlists/${setlistId}/offline`}>
+                    <Link href={`/setlists/${setlistId}/offline`} target="_blank" rel="noopener noreferrer">
                       <MonitorPlay className="mr-2 h-4 w-4" />
                       Modo Apresentação
                     </Link>
