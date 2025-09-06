@@ -2,7 +2,7 @@
 'use client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, ListMusic, LogOut, Music, User, Users, Wrench, FlaskConical } from 'lucide-react';
+import { LayoutDashboard, ListMusic, LogOut, Music, User, Users, Wrench } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/logo';
@@ -28,7 +28,6 @@ const navLinks = [
     { href: '/songs', icon: Music, label: 'Músicas' },
     { href: '/setlists', icon: ListMusic, label: 'Repertórios' },
     { href: '/tools', icon: Wrench, label: 'Ferramentas' },
-    { href: '/storage-test', icon: FlaskConical, label: 'Teste de Storage' },
 ];
 
 const adminNavLinks = [

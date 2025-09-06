@@ -19,9 +19,6 @@ export function useFirestoreDocument<T extends { id: string }>(
         return;
     }
 
-    // Esta versão do hook confia 100% no cache do Firestore (IndexedDB).
-    // `onSnapshot` obterá dados do cache primeiro se estiver offline,
-    // e depois obterá dados em tempo real do servidor se estiver online.
     console.log(`[Firestore] Montando listener para documento: ${collectionName}/${docId}`);
     
     const docRef = doc(firestoreDB, collectionName, docId);
@@ -31,12 +28,6 @@ export function useFirestoreDocument<T extends { id: string }>(
         const firestoreData = docSnap.data();
         const finalData = { id: docSnap.id, ...firestoreData } as T;
         setData(finalData);
-
-        if (docSnap.metadata.fromCache) {
-          console.log(`[Firestore Cache] Dados para '${collectionName}/${docId}' vieram do cache.`);
-        } else {
-          console.log(`[Firestore Server] Dados para '${collectionName}/${docId}' vieram do servidor.`);
-        }
       } else {
         setData(null);
         console.warn(`[Firestore] Documento não encontrado: ${collectionName}/${docId}`);
