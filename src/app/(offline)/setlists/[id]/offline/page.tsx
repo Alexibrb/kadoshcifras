@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Music, CircleCheck } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,6 +16,7 @@ import { PedalSettings, Song } from '@/types';
 import { Carousel, CarouselApi, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { transposeChord, transposeContent } from '@/lib/music';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 interface OfflineSong extends Omit<Song, 'id' | 'createdAt'> {
     initialTranspose: number;
@@ -30,6 +31,7 @@ interface Section {
     songIndex: number;
     partIndex: number;
     content: string;
+    isLastSection: boolean;
 }
 
 
@@ -102,7 +104,8 @@ export default function OfflineSetlistPage() {
             sections.push({
                 songIndex: songIndex,
                 partIndex: partIndex,
-                content: part
+                content: part,
+                isLastSection: partIndex === parts.length - 1
             });
         });
     });
@@ -319,6 +322,15 @@ export default function OfflineSetlistPage() {
                                 content={content} 
                                 showChords={showChords} 
                             />
+                            {section.isLastSection && (
+                                <div className="mt-8 text-center text-muted-foreground">
+                                    <Separator className="my-4" />
+                                    <div className="flex items-center justify-center gap-2 text-sm">
+                                       <Music className="h-4 w-4" />
+                                       <span>Fim da Música</span>
+                                    </div>
+                                </div>
+                            )}
                           </ScrollArea>
                         </CardContent>
                       </Card>
