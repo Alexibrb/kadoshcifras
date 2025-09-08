@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -41,6 +41,7 @@ export default function OfflineSetlistPage() {
   const [isClient, setIsClient] = useState(false);
   const [offlineData, setOfflineData] = useState<OfflineSetlist | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const [fontSize, setFontSize] = useLocalStorage('song-font-size', 16);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
@@ -65,7 +66,7 @@ export default function OfflineSetlistPage() {
       const item = localStorage.getItem(storageKey);
       if (item) {
         const parsedData = JSON.parse(item) as OfflineSetlist;
-        if (parsedData && parsedData.name && parsedData.songs) {
+        if (parsedData && parsedData.name && Array.isArray(parsedData.songs)) {
             setOfflineData(parsedData);
             // Inicializa o estado de transposições com os valores do repertório
             setTranspositions(parsedData.songs.map(s => s.initialTranspose));
@@ -78,6 +79,8 @@ export default function OfflineSetlistPage() {
     } catch (e) {
       console.error("Erro ao ler do localStorage:", e);
       setError("Não foi possível carregar os dados offline.");
+    } finally {
+        setLoading(false);
     }
   }, [setlistId]);
   
@@ -118,12 +121,12 @@ export default function OfflineSetlistPage() {
 
   const currentSection = allSections[currentSectionIndex];
   const currentSongIndex = currentSection?.songIndex;
-  const currentSong = offlineData?.songs[currentSongIndex];
-  const currentSongTranspose = transpositions[currentSongIndex] ?? 0;
+  const currentSong = typeof currentSongIndex === 'number' ? offlineData?.songs[currentSongIndex] : undefined;
+  const currentSongTranspose = typeof currentSongIndex === 'number' ? (transpositions[currentSongIndex] ?? 0) : 0;
 
   // Navegação entre MÚSICAS (usado pelo pedal)
   const goToSong = (direction: 'next' | 'prev') => {
-      if (currentSongIndex === undefined) return;
+      if (typeof currentSongIndex !== 'number') return;
       
       const nextSongIndex = direction === 'next' ? currentSongIndex + 1 : currentSongIndex - 1;
       
@@ -158,7 +161,7 @@ export default function OfflineSetlistPage() {
   
 
   const changeTranspose = (change: number) => {
-    if (currentSongIndex === undefined) return;
+    if (typeof currentSongIndex !== 'number') return;
     setTranspositions(prev => {
         const newTranspositions = [...prev];
         const currentTranspose = newTranspositions[currentSongIndex];
@@ -169,6 +172,21 @@ export default function OfflineSetlistPage() {
   };
 
   if (!isClient) return null;
+
+  if (loading) {
+    return (
+     <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
+       <h2 className="text-2xl font-bold mb-4">Carregando Dados Offline...</h2>
+       <p className="text-muted-foreground">Se esta mensagem persistir, tente voltar e gerar os dados novamente.</p>
+        <Button asChild className="mt-6">
+         <Link href={`/setlists/${setlistId}`}>
+           <ArrowLeft className="mr-2 h-4 w-4" />
+           Voltar para o Repertório
+         </Link>
+       </Button>
+     </div>
+   );
+  }
 
   if (error) {
     return (
@@ -188,8 +206,8 @@ export default function OfflineSetlistPage() {
   if (!offlineData || !currentSong) {
      return (
       <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
-        <h2 className="text-2xl font-bold mb-4">Carregando Dados Offline...</h2>
-        <p className="text-muted-foreground">Se esta mensagem persistir, tente voltar e gerar os dados novamente.</p>
+        <h2 className="text-2xl font-bold mb-4">Dados Offline Não Encontrados</h2>
+        <p className="text-muted-foreground">Gere os dados na página do repertório antes de acessar o modo de apresentação.</p>
          <Button asChild className="mt-6">
           <Link href={`/setlists/${setlistId}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -272,7 +290,9 @@ export default function OfflineSetlistPage() {
                     <span className="sr-only">Voltar</span>
                   </Link>
                 </Button>
-                <h1 className="text-lg font-bold font-headline tracking-tight truncate">{offlineData.name}</h1>
+                <h1 className="text-lg font-bold font-headline tracking-tight truncate">
+                    {offlineData.name} - <span className="font-normal">{currentSong?.title}</span>
+                </h1>
                 <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0">
                   <PanelTopOpen className="h-5 w-5" />
                   <span className="sr-only">Mostrar Controles</span>
