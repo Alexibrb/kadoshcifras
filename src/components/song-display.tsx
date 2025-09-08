@@ -19,9 +19,18 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
        return <p className="mb-0">&nbsp;</p>;
     }
 
-
     if (text.trim() === '') {
         return <p className="mb-2">&nbsp;</p>;
+    }
+
+    // Verifica se a linha é um título de música formatado
+    if (text.startsWith('[title]')) {
+        const titleText = text.replace('[title]', '').trim();
+        return (
+            <h2 className="text-2xl font-bold text-primary mb-4 mt-6 first:mt-0">
+                {titleText}
+            </h2>
+        );
     }
 
     return (
@@ -72,3 +81,5 @@ export function SongDisplay({ content, className, showChords, ...props }: SongDi
         </div>
     );
 }
+
+    

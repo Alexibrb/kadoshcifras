@@ -149,7 +149,7 @@ export default function SetlistPage() {
       const song = songMap.get(setlistSong.songId);
       if (!song) return `\n\n[Música não encontrada: ${setlistSong.songId}]\n\n`;
       
-      const header = `--- ${song.title.toUpperCase()} (${song.artist}) ---\n\n`;
+      const header = `[title]${song.title.toUpperCase()} (${song.artist})\n\n`;
       const transposed = transposeContent(song.content, setlistSong.transpose);
       
       return header + transposed;
@@ -164,9 +164,9 @@ export default function SetlistPage() {
       setHasOfflineVersion(true); // Atualiza o estado para mostrar o botão de apresentação
       toast({
         title: "Repertório Salvo Offline!",
-        description: "Redirecionando para a página de visualização...",
+        description: "Você já pode acessar a página de apresentação.",
       });
-      router.push(`/setlists/${setlistId}/offline`);
+      // Não redireciona mais, apenas informa o sucesso.
     } catch (error) {
        console.error("Erro ao salvar no localStorage:", error);
        toast({
@@ -411,5 +411,7 @@ export default function SetlistPage() {
     </div>
   );
 }
+
+    
 
     
