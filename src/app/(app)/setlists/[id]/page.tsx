@@ -145,24 +145,27 @@ export default function SetlistPage() {
   const handleGenerateOffline = () => {
     if (!setlist || !songMap) return;
 
-    // Use setlist.songs as the direct source of truth
     const songsToProcess = setlist.songs || [];
-
-    const offlineContent = songsToProcess.map(setlistSong => {
+    
+    const offlineSongs = songsToProcess.map(setlistSong => {
       const song = songMap.get(setlistSong.songId);
-      if (!song) return `\n\n[Música não encontrada: ${setlistSong.songId}]\n\n`;
+      if (!song) return null;
       
-      const header = `[title]${song.title.toUpperCase()} (${song.artist})\n\n`;
-      const transposed = transposeContent(song.content, setlistSong.transpose);
-      
-      return header + transposed;
-    }).join('\n\n\n');
+      return {
+          title: song.title,
+          artist: song.artist,
+          content: song.content, // Salva o conteúdo original
+          key: song.key,
+          initialTranspose: setlistSong.transpose // Salva a transposição inicial do repertório
+      };
+    }).filter(Boolean); // Remove músicas não encontradas
+
 
     try {
       const storageKey = `offline-setlist-${setlistId}`;
       localStorage.setItem(storageKey, JSON.stringify({
         name: setlist.name,
-        content: offlineContent
+        songs: offlineSongs
       }));
       setHasOfflineVersion(true); // Update state to show the presentation button
       toast({

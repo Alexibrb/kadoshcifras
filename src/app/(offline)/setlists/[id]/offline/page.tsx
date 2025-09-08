@@ -3,7 +3,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -13,15 +13,27 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
-import { PedalSettings } from '@/types';
+import { PedalSettings, Song } from '@/types';
 import { Carousel, CarouselApi, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { transposeChord, transposeContent } from '@/lib/music';
+import { Badge } from '@/components/ui/badge';
+
+interface OfflineSong extends Omit<Song, 'id' | 'createdAt'> {
+    initialTranspose: number;
+}
+
+interface OfflineSetlist {
+    name: string;
+    songs: OfflineSong[];
+}
+
 
 export default function OfflineSetlistPage() {
   const params = useParams();
   const setlistId = params.id as string;
 
   const [isClient, setIsClient] = useState(false);
-  const [offlineData, setOfflineData] = useState<{name: string, content: string} | null>(null);
+  const [offlineData, setOfflineData] = useState<OfflineSetlist | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [fontSize, setFontSize] = useLocalStorage('song-font-size', 16);
@@ -35,10 +47,9 @@ export default function OfflineSetlistPage() {
   });
 
   const [api, setApi] = useState<CarouselApi>()
-  const [current, setCurrent] = useState(0)
-  const [count, setCount] = useState(0)
-
-
+  const [currentSongIndex, setCurrentSongIndex] = useState(0);
+  const [currentSongTranspose, setCurrentSongTranspose] = useState(0);
+  
   useEffect(() => {
     setIsClient(true);
     try {
@@ -46,8 +57,11 @@ export default function OfflineSetlistPage() {
       const item = localStorage.getItem(storageKey);
       if (item) {
         const parsedData = JSON.parse(item);
-        if (parsedData && parsedData.name && parsedData.content) {
+        if (parsedData && parsedData.name && parsedData.songs) {
             setOfflineData(parsedData);
+            if(parsedData.songs.length > 0) {
+                setCurrentSongTranspose(parsedData.songs[0].initialTranspose);
+            }
         } else {
             setError("Dados offline corrompidos ou vazios. Por favor, gere novamente.");
         }
@@ -63,32 +77,62 @@ export default function OfflineSetlistPage() {
    useEffect(() => {
     if (!api) return;
 
-    setCount(api.scrollSnapList().length)
-    setCurrent(api.selectedScrollSnap() + 1)
+    const handleSelect = () => {
+        const newIndex = api.selectedScrollSnap();
+        setCurrentSongIndex(newIndex);
+        if (offlineData && offlineData.songs[newIndex]) {
+            setCurrentSongTranspose(offlineData.songs[newIndex].initialTranspose);
+        }
+    }
+    
+    api.on("select", handleSelect);
+    // Seta o estado inicial
+    handleSelect();
 
-    api.on("select", () => {
-      setCurrent(api.selectedScrollSnap() + 1)
-    })
-  }, [api])
+    return () => {
+        api.off("select", handleSelect);
+    }
+  }, [api, offlineData]);
+
+  const currentSong = useMemo(() => {
+    if (!offlineData || !offlineData.songs) return null;
+    return offlineData.songs[currentSongIndex];
+  }, [offlineData, currentSongIndex]);
+
+  const contentToDisplay = useMemo(() => {
+    if (!currentSong) return '';
+    return transposeContent(currentSong.content, currentSongTranspose);
+  }, [currentSong, currentSongTranspose]);
 
   const songParts = useMemo(() => {
-    if (!offlineData?.content) return [];
-    return offlineData.content.split(/\n\s*\n\s*\n/);
-  }, [offlineData?.content]);
+    if (!offlineData?.songs) return [];
+    
+    return offlineData.songs.map(song => {
+        const header = `[title]${song.title.toUpperCase()}[artist]${song.artist}\n\n`;
+        return header + song.content;
+    }).join('\n\n\n').split(/\n\s*\n\s*\n/);
+
+  }, [offlineData?.songs]);
   
   const handleKeyDown = useCallback(
       (event: React.KeyboardEvent<HTMLDivElement>) => {
         const key = event.key;
-        if (showChords && (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prevPage)) {
+        if (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prevPage) {
           event.preventDefault()
           api?.scrollPrev()
-        } else if (showChords && (key === "ArrowRight" || key === 'PageDown' || key === pedalSettings.nextPage)) {
+        } else if (key === "ArrowRight" || key === 'PageDown' || key === pedalSettings.nextPage) {
           event.preventDefault()
           api?.scrollNext()
         }
       },
-      [api, showChords, pedalSettings]
+      [api, pedalSettings]
     )
+
+  const changeTranspose = (change: number) => {
+    const newTranspose = Math.min(12, Math.max(-12, currentSongTranspose + change));
+    setCurrentSongTranspose(newTranspose);
+  };
+  
 
   if (!isClient) {
     return null; // Renderiza nada no servidor
@@ -100,7 +144,6 @@ export default function OfflineSetlistPage() {
         <h2 className="text-2xl font-bold text-destructive mb-4">Erro ao Carregar</h2>
         <p className="text-muted-foreground mb-6">{error}</p>
         <Button asChild>
-          {/* Este link agora é a única saída, garantindo que o usuário possa voltar */}
           <Link href={`/setlists/${setlistId}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar para o Repertório
@@ -125,6 +168,8 @@ export default function OfflineSetlistPage() {
     );
   }
 
+  const displayedKey = currentSong?.key ? transposeChord(currentSong.key, currentSongTranspose) : 'N/A';
+
   return (
     <div className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen outline-none bg-background" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
        <Card className="mb-4 bg-accent/10 transition-all duration-300">
@@ -142,6 +187,9 @@ export default function OfflineSetlistPage() {
                   <div className="flex-1 space-y-1">
                     <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{offlineData.name}</h1>
                     <p className="text-muted-foreground text-sm">Modo de Apresentação Offline</p>
+                    <Badge variant="outline" className="whitespace-nowrap text-sm mt-1">
+                        Música: {currentSong?.title}
+                    </Badge>
                   </div>
                   
                   <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon" className="shrink-0">
@@ -150,21 +198,33 @@ export default function OfflineSetlistPage() {
                   </Button>
                 </div>
               
-                <div className="flex justify-center items-center gap-4 pt-2 flex-wrap">
-                  <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-fit">
-                    <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
-                    <Button variant="ghost" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-7 w-7 px-1">
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <span className="text-sm font-medium tabular-nums">{fontSize}px</span>
-                    <Button variant="ghost" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-7 w-7 px-1">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10">
-                    <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
-                    <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} className="ml-auto" />
-                  </div>
+                <div className="flex justify-center items-center gap-2 pt-2 flex-wrap">
+                   <div className="flex items-center gap-1 rounded-md border p-1 w-full max-w-sm bg-background">
+                        <Button variant="ghost" size="icon" onClick={() => changeTranspose(-1)} className="h-8 w-8">
+                            <Minus className="h-4 w-4" />
+                        </Button>
+                        <Badge variant="secondary" className="px-3 py-1 text-xs whitespace-nowrap flex-grow text-center justify-center">
+                            Tom: {displayedKey} ({currentSongTranspose > 0 ? '+' : ''}{currentSongTranspose})
+                        </Badge>
+                        <Button variant="ghost" size="icon" onClick={() => changeTranspose(1)} className="h-8 w-8">
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-xs">
+                        <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
+                        <Button variant="ghost" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-7 w-7 px-1">
+                        <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm font-medium tabular-nums">{fontSize}px</span>
+                        <Button variant="ghost" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-7 w-7 px-1">
+                        <Plus className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10">
+                        <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
+                        <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} className="ml-auto" />
+                    </div>
                 </div>
               </>
             ) : (
@@ -186,55 +246,50 @@ export default function OfflineSetlistPage() {
         </Card>
         
       <div className="flex-1 flex flex-col min-h-0">
-        {showChords ? (
-          <div className="relative flex-1 flex flex-col">
-             <div className="absolute top-0 left-0 right-0 z-20 flex justify-center items-center w-full px-4 text-center text-sm text-muted-foreground pb-2 pt-2">
-                {count > 1 && <span>Página {current} de {count}</span>}
-             </div>
-             <Carousel className="w-full flex-1 pt-8" setApi={setApi} opts={{ watchDrag: true }}>
-                <CarouselContent>
-                  {songParts.map((part, index) => (
+         <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
+            <CarouselContent>
+              {offlineData.songs.map((song, index) => {
+                  const content = transposeContent(song.content, song.initialTranspose === currentSongTranspose ? song.initialTranspose : currentSongTranspose);
+                  return (
                     <CarouselItem key={index} className="h-full">
                       <Card className="w-full h-full flex flex-col bg-background shadow-none border-none">
                         <CardContent className="flex-1 h-full p-0">
                           <ScrollArea className="h-full p-4 md:p-6">
-                            <SongDisplay style={{ fontSize: `${fontSize}px` }} content={part} showChords={showChords} />
+                             <div className="mb-4 mt-2">
+                                <h2 className="text-2xl font-bold text-primary leading-tight">
+                                    {song.title}
+                                </h2>
+                                <p className="text-base text-muted-foreground font-normal">
+                                    {song.artist}
+                                </p>
+                            </div>
+                            <SongDisplay 
+                                style={{ fontSize: `${fontSize}px` }} 
+                                content={index === currentSongIndex ? contentToDisplay : transposeContent(song.content, song.initialTranspose)} 
+                                showChords={showChords} 
+                            />
                           </ScrollArea>
                         </CardContent>
                       </Card>
                     </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <div className="absolute -left-4 top-1/2 -translate-y-1/2 hidden md:block">
-                  <CarouselPrevious />
-                </div>
-                <div className="absolute -right-4 top-1/2 -translate-y-1/2 hidden md:block">
-                  <CarouselNext />
-                </div>
-                
-                <div 
-                    className="absolute left-0 top-0 h-full w-1/3 z-10" 
-                    onClick={() => api?.scrollPrev()} 
-                />
-                <div 
-                    className="absolute right-0 top-0 h-full w-1/3 z-10" 
-                    onClick={() => api?.scrollNext()} 
-                />
-              </Carousel>
-          </div>
-        ) : (
-          <Card className="flex-1 flex flex-col bg-background shadow-none border-none">
-            <CardContent className="h-full flex flex-col p-0">
-              <ScrollArea className="h-full p-4 md:p-6 flex-1">
-                <SongDisplay 
-                  style={{ fontSize: `${fontSize}px` }}
-                  content={offlineData.content.replace(/\n\s*\n\s*\n/g, '\n\n')}
-                  showChords={false} 
-                />
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        )}
+                  )
+                })}
+            </CarouselContent>
+            <div className="absolute -left-12 top-1/2 -translate-y-1/2 hidden md:block">
+              <CarouselPrevious />
+            </div>
+            <div className="absolute -right-12 top-1/2 -translate-y-1/2 hidden md:block">
+              <CarouselNext />
+            </div>
+            <div 
+                className="absolute left-0 top-0 h-full w-1/3 z-10" 
+                onClick={() => api?.scrollPrev()} 
+            />
+            <div 
+                className="absolute right-0 top-0 h-full w-1/3 z-10" 
+                onClick={() => api?.scrollNext()} 
+            />
+          </Carousel>
       </div>
     </div>
   );

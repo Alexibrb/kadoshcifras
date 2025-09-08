@@ -26,7 +26,7 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
     // Verifica se a linha é um título de música formatado
     if (text.startsWith('[title]')) {
         const fullTitle = text.replace('[title]', '').trim();
-        const artistMatch = fullTitle.match(/\(([^)]+)\)$/);
+        const artistMatch = fullTitle.match(/\[artist\](.*)/);
         const artist = artistMatch ? artistMatch[1] : '';
         const title = artistMatch ? fullTitle.replace(artistMatch[0], '').trim() : fullTitle;
 
@@ -94,4 +94,3 @@ export function SongDisplay({ content, className, showChords, ...props }: SongDi
 }
 
     
-
