@@ -74,7 +74,7 @@ export default function SignupPage() {
       <CardHeader className="text-center">
         <Logo className="justify-center mb-2" />
         <CardTitle className="font-headline text-2xl">Crie uma Conta</CardTitle>
-        <CardDescription>Comece sua jornada musical com o CifraFácil.</CardDescription>
+        <CardDescription>Comece sua jornada musical com o CifrasKadosh.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">

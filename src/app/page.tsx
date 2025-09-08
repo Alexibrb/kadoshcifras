@@ -11,7 +11,7 @@ export default function Home() {
           Bem-vindo ao
         </h2>
         <div className="inline-flex items-center justify-center">
-          <Image src="/logocifrafacil.png" alt="CifraFácil Logo" width={350} height={350} data-ai-hint="logo music" />
+          <Image src="/logocifrafacil.png" alt="CifrasKadosh Logo" width={350} height={350} data-ai-hint="logo music" />
         </div>
         <p className="max-w-xl mx-auto text-lg md:text-xl text-foreground/80 font-body">
           Seu companheiro definitivo para criar, gerenciar e apresentar músicas. Transponha tons, crie repertórios facilmente.
@@ -26,7 +26,7 @@ export default function Home() {
         </div>
       </div>
       <footer className="absolute bottom-4 text-center text-sm text-muted-foreground">
-        <p>&copy; {new Date().getFullYear()} CifraFácil. Todos os Direitos Reservados.</p>
+        <p>&copy; {new Date().getFullYear()} CifrasKadosh. Todos os Direitos Reservados.</p>
       </footer>
     </main>
   );

@@ -1,11 +1,10 @@
 {
-  "name": "CifraFácil",
-  "short_name": "CifraFácil",
-  "start_url": "/dashboard",
+  "name": "CifrasKadosh",
+  "short_name": "CifrasKadosh",
+  "start_url": "/",
   "display": "fullscreen",
-  "background_color": "#2E1065",
-  "theme_color": "#4C1D95",
-  "orientation": "portrait-primary",
+  "background_color": "#2E094E",
+  "theme_color": "#9f50e5",
   "icons": [
     {
       "src": "/logocifrafacil.png",
