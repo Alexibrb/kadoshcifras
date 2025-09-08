@@ -26,6 +26,7 @@ const nextConfig = {
     ],
   },
   devIndicators: {
+    allowedDevOrigins: ['*'],
     position: 'bottom-right',
   },
   transpilePackages: ['next-themes'],
