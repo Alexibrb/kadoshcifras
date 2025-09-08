@@ -45,7 +45,12 @@ export default function OfflineSetlistPage() {
       const storageKey = `offline-setlist-${setlistId}`;
       const item = localStorage.getItem(storageKey);
       if (item) {
-        setOfflineData(JSON.parse(item));
+        const parsedData = JSON.parse(item);
+        if (parsedData && parsedData.name && parsedData.content) {
+            setOfflineData(parsedData);
+        } else {
+            setError("Dados offline corrompidos ou vazios. Por favor, gere novamente.");
+        }
       } else {
         setError("Dados offline não encontrados. Por favor, gere novamente.");
       }
@@ -91,12 +96,11 @@ export default function OfflineSetlistPage() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen text-center p-4">
+      <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
         <h2 className="text-2xl font-bold text-destructive mb-4">Erro ao Carregar</h2>
         <p className="text-muted-foreground mb-6">{error}</p>
         <Button asChild>
-          {/* O link de volta agora aponta para a página do app normal. */}
-          {/* O usuário precisará logar para voltar. */}
+          {/* Este link agora é a única saída, garantindo que o usuário possa voltar */}
           <Link href={`/setlists/${setlistId}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar para o Repertório
@@ -108,7 +112,7 @@ export default function OfflineSetlistPage() {
 
   if (!offlineData) {
      return (
-      <div className="flex flex-col items-center justify-center h-screen text-center p-4">
+      <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
         <h2 className="text-2xl font-bold mb-4">Carregando Dados Offline...</h2>
         <p className="text-muted-foreground">Se esta mensagem persistir, tente voltar e gerar os dados novamente.</p>
          <Button asChild className="mt-6">
@@ -122,7 +126,7 @@ export default function OfflineSetlistPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen outline-none" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
+    <div className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen outline-none bg-background" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
        <Card className="mb-4 bg-accent/10 transition-all duration-300">
           <CardContent className="p-4 space-y-4">
             {isPanelVisible ? (
