@@ -101,26 +101,18 @@ export default function OfflineSetlistPage() {
 
   const contentToDisplay = useMemo(() => {
     if (!currentSong) return '';
+    // A transposição agora usa o estado `currentSongTranspose`
     return transposeContent(currentSong.content, currentSongTranspose);
   }, [currentSong, currentSongTranspose]);
-
-  const songParts = useMemo(() => {
-    if (!offlineData?.songs) return [];
-    
-    return offlineData.songs.map(song => {
-        const header = `[title]${song.title.toUpperCase()}[artist]${song.artist}\n\n`;
-        return header + song.content;
-    }).join('\n\n\n').split(/\n\s*\n\s*\n/);
-
-  }, [offlineData?.songs]);
   
   const handleKeyDown = useCallback(
       (event: React.KeyboardEvent<HTMLDivElement>) => {
         const key = event.key;
-        if (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prevPage) {
+        // As teclas do pedal/setas agora controlam o carrossel principal de MÚSICAS
+        if (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prevSong) {
           event.preventDefault()
           api?.scrollPrev()
-        } else if (key === "ArrowRight" || key === 'PageDown' || key === pedalSettings.nextPage) {
+        } else if (key === "ArrowRight" || key === 'PageDown' || key === pedalSettings.nextSong) {
           event.preventDefault()
           api?.scrollNext()
         }
@@ -249,23 +241,16 @@ export default function OfflineSetlistPage() {
          <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
             <CarouselContent>
               {offlineData.songs.map((song, index) => {
-                  const content = transposeContent(song.content, song.initialTranspose === currentSongTranspose ? song.initialTranspose : currentSongTranspose);
+                  // A transposição é aplicada apenas à música atual com base no estado `currentSongTranspose`
+                  const content = index === currentSongIndex ? contentToDisplay : transposeContent(song.content, song.initialTranspose);
                   return (
                     <CarouselItem key={index} className="h-full">
                       <Card className="w-full h-full flex flex-col bg-background shadow-none border-none">
                         <CardContent className="flex-1 h-full p-0">
                           <ScrollArea className="h-full p-4 md:p-6">
-                             <div className="mb-4 mt-2">
-                                <h2 className="text-2xl font-bold text-primary leading-tight">
-                                    {song.title}
-                                </h2>
-                                <p className="text-base text-muted-foreground font-normal">
-                                    {song.artist}
-                                </p>
-                            </div>
                             <SongDisplay 
                                 style={{ fontSize: `${fontSize}px` }} 
-                                content={index === currentSongIndex ? contentToDisplay : transposeContent(song.content, song.initialTranspose)} 
+                                content={content} 
                                 showChords={showChords} 
                             />
                           </ScrollArea>
