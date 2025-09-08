@@ -1,12 +1,11 @@
-
 // src/app/(offline)/setlists/[id]/offline/page.tsx
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,10 +26,17 @@ interface OfflineSetlist {
     songs: OfflineSong[];
 }
 
+interface Section {
+    songIndex: number;
+    partIndex: number;
+    content: string;
+}
+
 
 export default function OfflineSetlistPage() {
   const params = useParams();
   const setlistId = params.id as string;
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const [isClient, setIsClient] = useState(false);
   const [offlineData, setOfflineData] = useState<OfflineSetlist | null>(null);
@@ -47,21 +53,22 @@ export default function OfflineSetlistPage() {
   });
 
   const [api, setApi] = useState<CarouselApi>()
-  const [currentSongIndex, setCurrentSongIndex] = useState(0);
-  const [currentSongTranspose, setCurrentSongTranspose] = useState(0);
-  
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  // Estado para armazenar as transposições de cada música individualmente
+  const [transpositions, setTranspositions] = useState<number[]>([]);
+
+  // Carrega os dados e inicializa as transposições
   useEffect(() => {
     setIsClient(true);
     try {
       const storageKey = `offline-setlist-${setlistId}`;
       const item = localStorage.getItem(storageKey);
       if (item) {
-        const parsedData = JSON.parse(item);
+        const parsedData = JSON.parse(item) as OfflineSetlist;
         if (parsedData && parsedData.name && parsedData.songs) {
             setOfflineData(parsedData);
-            if(parsedData.songs.length > 0) {
-                setCurrentSongTranspose(parsedData.songs[0].initialTranspose);
-            }
+            // Inicializa o estado de transposições com os valores do repertório
+            setTranspositions(parsedData.songs.map(s => s.initialTranspose));
         } else {
             setError("Dados offline corrompidos ou vazios. Por favor, gere novamente.");
         }
@@ -74,61 +81,94 @@ export default function OfflineSetlistPage() {
     }
   }, [setlistId]);
   
+  // Foca o container para capturar eventos de teclado
+  useEffect(() => {
+      if(containerRef.current) {
+          containerRef.current.focus();
+      }
+  }, []);
+
+  // Gera uma lista plana de todas as seções de todas as músicas
+  const allSections = useMemo((): Section[] => {
+    if (!offlineData) return [];
+    
+    const sections: Section[] = [];
+    offlineData.songs.forEach((song, songIndex) => {
+        const parts = song.content.split(/\n\s*\n\s*\n/);
+        parts.forEach((part, partIndex) => {
+            sections.push({
+                songIndex: songIndex,
+                partIndex: partIndex,
+                content: part
+            });
+        });
+    });
+    return sections;
+  }, [offlineData]);
+
+  // Atualiza o índice da seção atual quando o carrossel muda
    useEffect(() => {
     if (!api) return;
-
-    const handleSelect = () => {
-        const newIndex = api.selectedScrollSnap();
-        setCurrentSongIndex(newIndex);
-        if (offlineData && offlineData.songs[newIndex]) {
-            setCurrentSongTranspose(offlineData.songs[newIndex].initialTranspose);
-        }
-    }
-    
+    const handleSelect = () => setCurrentSectionIndex(api.selectedScrollSnap());
     api.on("select", handleSelect);
-    // Seta o estado inicial
     handleSelect();
+    return () => { api.off("select", handleSelect); }
+  }, [api]);
 
-    return () => {
-        api.off("select", handleSelect);
-    }
-  }, [api, offlineData]);
 
-  const currentSong = useMemo(() => {
-    if (!offlineData || !offlineData.songs) return null;
-    return offlineData.songs[currentSongIndex];
-  }, [offlineData, currentSongIndex]);
+  const currentSection = allSections[currentSectionIndex];
+  const currentSongIndex = currentSection?.songIndex;
+  const currentSong = offlineData?.songs[currentSongIndex];
+  const currentSongTranspose = transpositions[currentSongIndex] ?? 0;
 
-  const contentToDisplay = useMemo(() => {
-    if (!currentSong) return '';
-    // A transposição agora usa o estado `currentSongTranspose`
-    return transposeContent(currentSong.content, currentSongTranspose);
-  }, [currentSong, currentSongTranspose]);
-  
-  const handleKeyDown = useCallback(
-      (event: React.KeyboardEvent<HTMLDivElement>) => {
+  // Navegação entre MÚSICAS (usado pelo pedal)
+  const goToSong = (direction: 'next' | 'prev') => {
+      if (currentSongIndex === undefined) return;
+      
+      const nextSongIndex = direction === 'next' ? currentSongIndex + 1 : currentSongIndex - 1;
+      
+      if (nextSongIndex < 0 || nextSongIndex >= (offlineData?.songs.length ?? 0)) return;
+
+      // Encontra a primeira seção da próxima/anterior música
+      const targetSectionIndex = allSections.findIndex(s => s.songIndex === nextSongIndex);
+      if (targetSectionIndex !== -1) {
+          api?.scrollTo(targetSectionIndex);
+      }
+  };
+
+  const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
         const key = event.key;
-        // As teclas do pedal/setas agora controlam o carrossel principal de MÚSICAS
-        if (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prevSong) {
-          event.preventDefault()
-          api?.scrollPrev()
-        } else if (key === "ArrowRight" || key === 'PageDown' || key === pedalSettings.nextSong) {
-          event.preventDefault()
-          api?.scrollNext()
+        // Navegação de PÁGINA/SEÇÃO
+        if (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prevPage) {
+          event.preventDefault();
+          api?.scrollPrev();
+        } else if (key === "ArrowRight" || key === 'PageDown' || key === pedalSettings.nextPage) {
+          event.preventDefault();
+          api?.scrollNext();
         }
-      },
-      [api, pedalSettings]
-    )
+        // Navegação de MÚSICA
+        else if (key === pedalSettings.prevSong) {
+          event.preventDefault();
+          goToSong('prev');
+        } else if (key === pedalSettings.nextSong) {
+          event.preventDefault();
+          goToSong('next');
+        }
+  }, [api, pedalSettings, goToSong]);
+  
 
   const changeTranspose = (change: number) => {
-    const newTranspose = Math.min(12, Math.max(-12, currentSongTranspose + change));
-    setCurrentSongTranspose(newTranspose);
+    if (currentSongIndex === undefined) return;
+    setTranspositions(prev => {
+        const newTranspositions = [...prev];
+        const currentTranspose = newTranspositions[currentSongIndex];
+        const newTransposeValue = Math.min(12, Math.max(-12, currentTranspose + change));
+        newTranspositions[currentSongIndex] = newTransposeValue;
+        return newTranspositions;
+    });
   };
-  
 
-  if (!isClient) {
-    return null; // Renderiza nada no servidor
-  }
+  if (!isClient) return null;
 
   if (error) {
     return (
@@ -144,8 +184,8 @@ export default function OfflineSetlistPage() {
       </div>
     );
   }
-
-  if (!offlineData) {
+  
+  if (!offlineData || !currentSong) {
      return (
       <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
         <h2 className="text-2xl font-bold mb-4">Carregando Dados Offline...</h2>
@@ -160,10 +200,12 @@ export default function OfflineSetlistPage() {
     );
   }
 
-  const displayedKey = currentSong?.key ? transposeChord(currentSong.key, currentSongTranspose) : 'N/A';
+  const displayedKey = currentSong.key ? transposeChord(currentSong.key, currentSongTranspose) : 'N/A';
+  const count = allSections.length;
+  const current = currentSectionIndex + 1;
 
   return (
-    <div className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen outline-none bg-background" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
+    <div ref={containerRef} className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen outline-none bg-background" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
        <Card className="mb-4 bg-accent/10 transition-all duration-300">
           <CardContent className="p-4 space-y-4">
             {isPanelVisible ? (
@@ -179,9 +221,12 @@ export default function OfflineSetlistPage() {
                   <div className="flex-1 space-y-1">
                     <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{offlineData.name}</h1>
                     <p className="text-muted-foreground text-sm">Modo de Apresentação Offline</p>
-                    <Badge variant="outline" className="whitespace-nowrap text-sm mt-1">
-                        Música: {currentSong?.title}
-                    </Badge>
+                    <div className="flex items-center flex-wrap gap-2 pt-1">
+                       <Badge variant="outline" className="whitespace-nowrap text-sm">
+                          Música: {currentSong?.title}
+                       </Badge>
+                       {count > 1 && <Badge variant="secondary">Página {current} de {count}</Badge>}
+                    </div>
                   </div>
                   
                   <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon" className="shrink-0">
@@ -240,9 +285,10 @@ export default function OfflineSetlistPage() {
       <div className="flex-1 flex flex-col min-h-0">
          <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
             <CarouselContent>
-              {offlineData.songs.map((song, index) => {
-                  // A transposição é aplicada apenas à música atual com base no estado `currentSongTranspose`
-                  const content = index === currentSongIndex ? contentToDisplay : transposeContent(song.content, song.initialTranspose);
+              {allSections.map((section, index) => {
+                  // A transposição é aplicada com base na música à qual a seção pertence
+                  const transposeValue = transpositions[section.songIndex];
+                  const content = transposeContent(section.content, transposeValue);
                   return (
                     <CarouselItem key={index} className="h-full">
                       <Card className="w-full h-full flex flex-col bg-background shadow-none border-none">
