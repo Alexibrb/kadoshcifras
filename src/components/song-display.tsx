@@ -25,11 +25,22 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
 
     // Verifica se a linha é um título de música formatado
     if (text.startsWith('[title]')) {
-        const titleText = text.replace('[title]', '').trim();
+        const fullTitle = text.replace('[title]', '').trim();
+        const artistMatch = fullTitle.match(/\(([^)]+)\)$/);
+        const artist = artistMatch ? artistMatch[1] : '';
+        const title = artistMatch ? fullTitle.replace(artistMatch[0], '').trim() : fullTitle;
+
         return (
-            <h2 className="text-2xl font-bold text-primary mb-4 mt-6 first:mt-0">
-                {titleText}
-            </h2>
+            <div className="mb-4 mt-6 first:mt-0">
+                <h2 className="text-2xl font-bold text-primary leading-tight">
+                    {title}
+                </h2>
+                {artist && (
+                    <p className="text-base text-muted-foreground font-normal">
+                        {artist}
+                    </p>
+                )}
+            </div>
         );
     }
 
@@ -83,3 +94,4 @@ export function SongDisplay({ content, className, showChords, ...props }: SongDi
 }
 
     
+
