@@ -177,6 +177,10 @@ export default function SetlistPage() {
     }
   };
   
+  const handleOpenPresentationMode = () => {
+    window.open(`/setlists/${setlistId}/offline`, '_blank');
+  };
+
   if (isClient && !loadingSetlist && !setlist) {
     notFound();
   }
@@ -271,11 +275,9 @@ export default function SetlistPage() {
                     Gerar Offline
                 </Button>
                  {isClient && hasOfflineVersion && (
-                  <Button asChild variant="default">
-                    <Link href={`/setlists/${setlistId}/offline`} target="_blank" rel="noopener noreferrer">
-                      <MonitorPlay className="mr-2 h-4 w-4" />
-                      Modo Apresentação
-                    </Link>
+                  <Button onClick={handleOpenPresentationMode} variant="default">
+                    <MonitorPlay className="mr-2 h-4 w-4" />
+                    Modo Apresentação
                   </Button>
                 )}
             </div>
@@ -409,3 +411,5 @@ export default function SetlistPage() {
     </div>
   );
 }
+
+    
