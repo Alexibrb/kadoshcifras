@@ -4,7 +4,7 @@
   "start_url": "/",
   "display": "fullscreen",
   "background_color": "#ffffff",
-  "theme_color": "#9f50e5",
+  "theme_color": "#ffffff",
   "icons": [
     {
       "src": "/logocifrafacil.png",
