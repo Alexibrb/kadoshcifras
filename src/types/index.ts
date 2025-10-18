@@ -23,6 +23,7 @@ export interface Song {
 }
 
 export interface SetlistSong {
+  id: string; // Adicionado para consistência com a biblioteca de D&D
   songId: string;
   transpose: number;
 }
