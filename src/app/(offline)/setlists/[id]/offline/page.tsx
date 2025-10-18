@@ -5,20 +5,24 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Music, CircleCheck } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Music } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
-import { PedalSettings, Song } from '@/types';
+import { PedalSettings } from '@/types';
 import { Carousel, CarouselApi, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { transposeChord, transposeContent } from '@/lib/music';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
-interface OfflineSong extends Omit<Song, 'id' | 'createdAt'> {
+interface OfflineSong {
+    title: string;
+    artist: string;
+    content: string;
+    key?: string;
     initialTranspose: number;
 }
 
@@ -294,7 +298,7 @@ export default function OfflineSetlistPage() {
                   </Link>
                 </Button>
                 <h1 className="text-lg font-bold font-headline tracking-tight truncate">
-                    {offlineData.name} - <span className="font-normal">{currentSong?.title}</span>
+                  {offlineData.name} - <span className="font-normal">{currentSong?.title}</span>
                 </h1>
                 <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0">
                   <PanelTopOpen className="h-5 w-5" />

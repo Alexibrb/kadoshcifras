@@ -145,24 +145,20 @@ export default function SetlistPage() {
   const handleGenerateOffline = () => {
     if (!setlist || !songMap) return;
 
-    const songsToProcess = setlist.songs || [];
-    
-    const offlineSongs = songsToProcess
-        .map(setlistSong => {
-            const song = songMap.get(setlistSong.songId);
-            if (!song) return null;
-            
-            return {
-                id: song.id, // Adicionado o ID da música
-                title: song.title,
-                artist: song.artist,
-                content: song.content, // Salva o conteúdo original
-                key: song.key,
-                initialTranspose: setlistSong.transpose // Salva a transposição inicial do repertório
-            };
-        })
-        .filter((song): song is NonNullable<typeof song> => song !== null);
-
+    const offlineSongs = (setlist.songs || [])
+      .map(setlistSong => {
+        const song = songMap.get(setlistSong.songId);
+        if (!song) return null;
+        
+        return {
+          title: song.title,
+          artist: song.artist,
+          content: song.content,
+          key: song.key,
+          initialTranspose: setlistSong.transpose
+        };
+      })
+      .filter((song): song is NonNullable<typeof song> => song !== null);
 
     try {
       const storageKey = `offline-setlist-${setlistId}`;
@@ -170,7 +166,7 @@ export default function SetlistPage() {
         name: setlist.name,
         songs: offlineSongs
       }));
-      setHasOfflineVersion(true); // Update state to show the presentation button
+      setHasOfflineVersion(true);
       toast({
         title: "Repertório Salvo Offline!",
         description: "Você já pode acessar a página de apresentação.",
