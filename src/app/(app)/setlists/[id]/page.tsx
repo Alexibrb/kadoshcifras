@@ -39,7 +39,6 @@ export default function SetlistPage() {
   
   useEffect(() => { 
     setIsClient(true);
-    // Verifica se existe uma versão offline no localStorage
     if (typeof window !== 'undefined') {
       const offlineData = localStorage.getItem(`offline-setlist-${setlistId}`);
       setHasOfflineVersion(!!offlineData);
@@ -49,12 +48,7 @@ export default function SetlistPage() {
   useEffect(() => {
     if (setlist) {
         setEditedName(setlist.name);
-        // Garante que cada música no repertório tenha um ID único para o D&D
-        const songsWithDnDId = (setlist.songs || []).map((s, index) => ({
-            ...s,
-            id: s.id || `${s.songId}-${index}` // Fallback para garantir um ID
-        }));
-        setOrderedSongs(songsWithDnDId);
+        setOrderedSongs(setlist.songs || []);
     }
   }, [setlist]);
 
@@ -88,25 +82,21 @@ export default function SetlistPage() {
 
   const handleAddSong = async (songId: string) => {
     if (!songId || !setlist || !canEdit) return;
-    const newSong: SetlistSong = { 
-        id: `${songId}-${new Date().getTime()}`, // Cria um ID único para o D&D
-        songId, 
-        transpose: 0 
-    };
-    const newSongs = [...(setlist.songs || []), newSong];
+    const newSongs = [...(setlist.songs || []), { songId, transpose: 0 }];
     await updateSetlistDoc({ songs: newSongs });
   };
 
-  const handleRemoveSong = async (draggableId: string) => {
+  const handleRemoveSong = async (indexToRemove: number) => {
     if (!setlist || !canEdit) return;
-    const newSongs = (setlist.songs || []).filter(s => s.id !== draggableId);
+    const newSongs = [...(setlist.songs || [])];
+    newSongs.splice(indexToRemove, 1);
     await updateSetlistDoc({ songs: newSongs });
   };
   
-  const handleTransposeChange = async (draggableId: string, change: number) => {
+  const handleTransposeChange = async (indexToChange: number, change: number) => {
       if (!setlist || !canEdit) return;
-      const newSongs = (setlist.songs || []).map(s => {
-          if (s.id === draggableId) {
+      const newSongs = (setlist.songs || []).map((s, index) => {
+          if (index === indexToChange) {
               const newTranspose = s.transpose + change;
               return { ...s, transpose: Math.max(-12, Math.min(12, newTranspose)) };
           }
@@ -155,42 +145,42 @@ export default function SetlistPage() {
   const handleGenerateOffline = () => {
     if (!setlist || !songMap) return;
 
-    const songsToProcess = orderedSongs; // Usar a lista ordenada que está no estado
+    const songsToProcess = orderedSongs || [];
     
     const offlineSongs = songsToProcess.map(setlistSong => {
       const song = songMap.get(setlistSong.songId);
-      if (!song) {
-        console.warn(`Música com ID ${setlistSong.songId} não encontrada no songMap.`);
-        return null; // Retorna null se a música não for encontrada
-      }
+      if (!song) return null;
       
       return {
-          // id: song.id, // O id da música original
           title: song.title,
           artist: song.artist,
-          content: song.content, // Salva o conteúdo original
+          content: song.content,
           key: song.key,
-          initialTranspose: setlistSong.transpose // Salva a transposição inicial do repertório
+          initialTranspose: setlistSong.transpose
       };
-    }).filter((song): song is NonNullable<typeof song> => song !== null); // Filtra os nulos de forma segura
+    }).filter((song): song is NonNullable<typeof song> => song !== null);
 
 
     try {
+      if (offlineSongs.length < songsToProcess.length) {
+        throw new Error("Algumas músicas não foram encontradas e não puderam ser salvas offline.");
+      }
+
       const storageKey = `offline-setlist-${setlistId}`;
       localStorage.setItem(storageKey, JSON.stringify({
         name: setlist.name,
         songs: offlineSongs
       }));
-      setHasOfflineVersion(true); // Update state to show the presentation button
+      setHasOfflineVersion(true);
       toast({
         title: "Repertório Salvo Offline!",
         description: "Você já pode acessar a página de apresentação.",
       });
-    } catch (error) {
+    } catch (error: any) {
        console.error("Erro ao salvar no localStorage:", error);
        toast({
         title: "Erro ao Salvar",
-        description: "Não foi possível salvar o repertório para uso offline. O armazenamento pode estar cheio.",
+        description: error.message || "Não foi possível salvar o repertório para uso offline.",
         variant: "destructive"
       });
     }
@@ -322,9 +312,10 @@ export default function SetlistPage() {
                                  if (!song) return null;
                                  
                                  const displayedKey = song.key ? transposeChord(song.key, setlistSong.transpose) : 'N/A';
+                                 const draggableId = `${setlistSong.songId}-${index}`;
 
                                  return (
-                                 <Draggable key={setlistSong.id} draggableId={setlistSong.id} index={index} isDragDisabled={!canEdit}>
+                                 <Draggable key={draggableId} draggableId={draggableId} index={index} isDragDisabled={!canEdit}>
                                   {(provided, snapshot) => (
                                       <li
                                         ref={provided.innerRef}
@@ -343,13 +334,13 @@ export default function SetlistPage() {
                                           <div className="flex items-center gap-2">
                                             {canEdit && (
                                               <div className="flex items-center gap-1 rounded-md border p-0.5 bg-background">
-                                                  <Button variant="ghost" size="icon" onClick={() => handleTransposeChange(setlistSong.id, -1)} className="h-7 w-7"><Minus className="h-4 w-4" /></Button>
+                                                  <Button variant="ghost" size="icon" onClick={() => handleTransposeChange(index, -1)} className="h-7 w-7"><Minus className="h-4 w-4" /></Button>
                                                   <span className="font-mono text-sm font-semibold w-12 text-center">{displayedKey} ({setlistSong.transpose > 0 ? '+' : ''}{setlistSong.transpose})</span>
-                                                  <Button variant="ghost" size="icon" onClick={() => handleTransposeChange(setlistSong.id, 1)} className="h-7 w-7"><Plus className="h-4 w-4" /></Button>
+                                                  <Button variant="ghost" size="icon" onClick={() => handleTransposeChange(index, 1)} className="h-7 w-7"><Plus className="h-4 w-4" /></Button>
                                               </div>
                                             )}
                                             {canEdit && (
-                                                <Button variant="ghost" size="icon" onClick={() => handleRemoveSong(setlistSong.id)} className="h-8 w-8">
+                                                <Button variant="ghost" size="icon" onClick={() => handleRemoveSong(index)} className="h-8 w-8">
                                                     <Trash2 className="h-4 w-4 text-destructive" />
                                                 </Button>
                                             )}
@@ -430,3 +421,5 @@ export default function SetlistPage() {
     </div>
   );
 }
+
+    
