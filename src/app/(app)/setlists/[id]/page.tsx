@@ -1,4 +1,3 @@
-
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -158,7 +157,7 @@ export default function SetlistPage() {
           key: song.key,
           initialTranspose: setlistSong.transpose // Salva a transposição inicial do repertório
       };
-    }).filter(song => song !== null); // Remove músicas não encontradas
+    }).filter(Boolean); // Remove músicas não encontradas
 
 
     try {
@@ -416,5 +415,3 @@ export default function SetlistPage() {
     </div>
   );
 }
-
-    
