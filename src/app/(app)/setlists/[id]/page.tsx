@@ -147,18 +147,20 @@ export default function SetlistPage() {
 
     const songsToProcess = setlist.songs || [];
     
-    const offlineSongs = songsToProcess.map(setlistSong => {
-      const song = songMap.get(setlistSong.songId);
-      if (!song) return null;
-      
-      return {
-          title: song.title,
-          artist: song.artist,
-          content: song.content, // Salva o conteúdo original
-          key: song.key,
-          initialTranspose: setlistSong.transpose // Salva a transposição inicial do repertório
-      };
-    }).filter(Boolean); // Remove músicas não encontradas
+    const offlineSongs = songsToProcess
+        .map(setlistSong => {
+            const song = songMap.get(setlistSong.songId);
+            if (!song) return null;
+            
+            return {
+                title: song.title,
+                artist: song.artist,
+                content: song.content, // Salva o conteúdo original
+                key: song.key,
+                initialTranspose: setlistSong.transpose // Salva a transposição inicial do repertório
+            };
+        })
+        .filter((song): song is NonNullable<typeof song> => song !== null);
 
 
     try {
@@ -416,6 +418,8 @@ export default function SetlistPage() {
     </div>
   );
 }
+
+    
 
     
 
