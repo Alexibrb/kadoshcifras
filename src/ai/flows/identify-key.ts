@@ -11,7 +11,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
 
 const IdentifySongKeyInputSchema = z.object({
   chordProgression: z
@@ -38,7 +37,6 @@ export async function identifySongKey(input: IdentifySongKeyInput): Promise<Iden
 
 const identifySongKeyPrompt = ai.definePrompt({
   name: 'identifySongKeyPrompt',
-  model: googleAI('gemini-pro'),
   input: {schema: IdentifySongKeyInputSchema},
   output: {
     format: 'json',
