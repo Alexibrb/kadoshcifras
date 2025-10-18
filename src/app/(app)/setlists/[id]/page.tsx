@@ -153,6 +153,7 @@ export default function SetlistPage() {
             if (!song) return null;
             
             return {
+                id: song.id, // Adicionado o ID da música
                 title: song.title,
                 artist: song.artist,
                 content: song.content, // Salva o conteúdo original
@@ -418,11 +419,3 @@ export default function SetlistPage() {
     </div>
   );
 }
-
-    
-
-    
-
-    
-
-    
