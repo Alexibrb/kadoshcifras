@@ -1,3 +1,4 @@
+
 // src/app/(offline)/setlists/[id]/offline/page.tsx
 'use client';
 
@@ -132,7 +133,7 @@ export default function OfflineSetlistPage() {
   const currentSongTranspose = typeof currentSongIndex === 'number' ? (transpositions[currentSongIndex] ?? 0) : 0;
 
   // Navegação entre MÚSICAS (usado pelo pedal)
-  const goToSong = (direction: 'next' | 'prev') => {
+  const goToSong = useCallback((direction: 'next' | 'prev') => {
       if (typeof currentSongIndex !== 'number') return;
       
       const nextSongIndex = direction === 'next' ? currentSongIndex + 1 : currentSongIndex - 1;
@@ -144,7 +145,7 @@ export default function OfflineSetlistPage() {
       if (targetSectionIndex !== -1) {
           api?.scrollTo(targetSectionIndex);
       }
-  };
+  }, [api, currentSongIndex, offlineData?.songs.length, allSections]);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
         const key = event.key;
@@ -361,3 +362,5 @@ export default function OfflineSetlistPage() {
     </div>
   );
 }
+
+    

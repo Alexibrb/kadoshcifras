@@ -145,20 +145,21 @@ export default function SetlistPage() {
   const handleGenerateOffline = () => {
     if (!setlist || !songMap) return;
 
-    const offlineSongs = (setlist.songs || [])
-      .map(setlistSong => {
-        const song = songMap.get(setlistSong.songId);
-        if (!song) return null;
-        
-        return {
+    const songsToProcess = setlist.songs || [];
+    
+    const offlineSongs = songsToProcess.map(setlistSong => {
+      const song = songMap.get(setlistSong.songId);
+      if (!song) return null;
+      
+      return {
           title: song.title,
           artist: song.artist,
-          content: song.content,
+          content: song.content, // Salva o conteúdo original
           key: song.key,
-          initialTranspose: setlistSong.transpose
-        };
-      })
-      .filter((song): song is NonNullable<typeof song> => song !== null);
+          initialTranspose: setlistSong.transpose // Salva a transposição inicial do repertório
+      };
+    }).filter(song => song !== null); // Remove músicas não encontradas
+
 
     try {
       const storageKey = `offline-setlist-${setlistId}`;
@@ -166,7 +167,7 @@ export default function SetlistPage() {
         name: setlist.name,
         songs: offlineSongs
       }));
-      setHasOfflineVersion(true);
+      setHasOfflineVersion(true); // Update state to show the presentation button
       toast({
         title: "Repertório Salvo Offline!",
         description: "Você já pode acessar a página de apresentação.",
@@ -315,7 +316,7 @@ export default function SetlistPage() {
                                         ref={provided.innerRef}
                                         {...provided.draggableProps}
                                         {...provided.dragHandleProps}
-                                        className={`flex items-center justify-between p-2 rounded-md border bg-background ${canEdit && "hover:bg-accent/50"} ${snapshot.isDragging ? 'shadow-lg bg-accent/20' : ''}`}
+                                        className={cn('flex items-center justify-between p-2 rounded-md border bg-background', canEdit && "hover:bg-accent/50", snapshot.isDragging ? 'shadow-lg bg-accent/20' : '')}
                                         style={{...provided.draggableProps.style}}
                                       >
                                           <div className="flex items-center gap-2 flex-grow">
@@ -415,3 +416,5 @@ export default function SetlistPage() {
     </div>
   );
 }
+
+    
