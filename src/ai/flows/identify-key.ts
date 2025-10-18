@@ -11,6 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {googleAI} from '@genkit-ai/googleai';
 
 const IdentifySongKeyInputSchema = z.object({
   chordProgression: z
@@ -37,8 +38,12 @@ export async function identifySongKey(input: IdentifySongKeyInput): Promise<Iden
 
 const identifySongKeyPrompt = ai.definePrompt({
   name: 'identifySongKeyPrompt',
+  model: googleAI('gemini-pro'),
   input: {schema: IdentifySongKeyInputSchema},
-  output: {schema: IdentifySongKeyOutputSchema},
+  output: {
+    format: 'json',
+    schema: IdentifySongKeyOutputSchema
+  },
   prompt: `Você é um especialista em teoria musical. Dada uma progressão de acordes e, opcionalmente, o gênero de uma música, identifique a tonalidade da música.
 
 Progressão de Acordes: {{{chordProgression}}}

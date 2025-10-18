@@ -11,6 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {googleAI} from '@genkit-ai/googleai';
 
 const SuggestChordProgressionsInputSchema = z.object({
   genre: z.string().describe('O gênero da música.'),
@@ -29,8 +30,12 @@ export async function suggestChordProgressions(input: SuggestChordProgressionsIn
 
 const prompt = ai.definePrompt({
   name: 'suggestChordProgressionsPrompt',
+  model: googleAI('gemini-pro'),
   input: {schema: SuggestChordProgressionsInputSchema},
-  output: {schema: SuggestChordProgressionsOutputSchema},
+  output: {
+    format: 'json',
+    schema: SuggestChordProgressionsOutputSchema
+  },
   prompt: `Você é um compositor profissional. Com base no gênero e nos acordes iniciais fornecidos, sugira progressões de acordes que se encaixem na música.
 
 Gênero: {{{genre}}}
