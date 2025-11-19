@@ -355,5 +355,4 @@ export default function SetlistPage() {
       </div>
     </div>
   );
-
-    
+}
