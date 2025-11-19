@@ -147,7 +147,6 @@ export default function SetlistPage() {
   };
 
   const handleGenerateOffline = () => {
-    // Agora verifica o estado de carregamento combinado
     if (loading || !setlist || !songMap) return;
 
     const songsToProcess = setlist.songs || [];
@@ -169,7 +168,7 @@ export default function SetlistPage() {
           artist: song.artist,
           content: song.content,
           key: song.key,
-          initialTranspose: setlistSong.transpose // Corrigido de 'transpose' para 'initialTranspose'
+          initialTranspose: setlistSong.transpose
       };
     });
 
@@ -206,7 +205,6 @@ export default function SetlistPage() {
       notFound();
   }
 
-  // Usa o estado de carregamento combinado
   if (!isClient || loading) {
     return (
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">

@@ -1,5 +1,4 @@
 
-// src/app/(offline)/setlists/[id]/offline/page.tsx
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -58,43 +57,41 @@ export default function OfflineSetlistPage() {
 
   const [api, setApi] = useState<CarouselApi>()
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
-  // Estado para armazenar as transposições de cada música individualmente
   const [transpositions, setTranspositions] = useState<number[]>([]);
 
-  // Carrega os dados e inicializa as transposições
   useEffect(() => {
     setIsClient(true);
+    setLoading(true);
     try {
       const storageKey = `offline-setlist-${setlistId}`;
       const item = localStorage.getItem(storageKey);
       if (item) {
         const parsedData = JSON.parse(item) as OfflineSetlist;
-        if (parsedData && parsedData.name && Array.isArray(parsedData.songs)) {
+        // Validação mais robusta dos dados
+        if (parsedData && typeof parsedData.name === 'string' && Array.isArray(parsedData.songs)) {
             setOfflineData(parsedData);
-            // Inicializa o estado de transposições com os valores do repertório
-            setTranspositions(parsedData.songs.map(s => s.initialTranspose));
+            setTranspositions(parsedData.songs.map(s => s.initialTranspose || 0));
+            setError(null);
         } else {
-            setError("Dados offline corrompidos ou vazios. Por favor, gere novamente.");
+            setError("Dados offline corrompidos. Por favor, gere o repertório novamente.");
         }
       } else {
-        setError("Dados offline não encontrados. Por favor, gere novamente.");
+        setError("Dados offline não encontrados. Por favor, gere o repertório novamente.");
       }
     } catch (e) {
       console.error("Erro ao ler do localStorage:", e);
-      setError("Não foi possível carregar os dados offline.");
+      setError("Não foi possível carregar os dados offline. Tente gerar novamente.");
     } finally {
         setLoading(false);
     }
   }, [setlistId]);
   
-  // Foca o container para capturar eventos de teclado
   useEffect(() => {
       if(containerRef.current) {
           containerRef.current.focus();
       }
   }, []);
 
-  // Gera uma lista plana de todas as seções de todas as músicas
   const allSections = useMemo((): Section[] => {
     if (!offlineData) return [];
     
@@ -113,7 +110,6 @@ export default function OfflineSetlistPage() {
     return sections;
   }, [offlineData]);
 
-  // Atualiza o índice da seção atual quando o carrossel muda
    useEffect(() => {
     if (!api) return;
     const handleSelect = () => setCurrentSectionIndex(api.selectedScrollSnap());
@@ -128,7 +124,6 @@ export default function OfflineSetlistPage() {
   const currentSong = typeof currentSongIndex === 'number' ? offlineData?.songs[currentSongIndex] : undefined;
   const currentSongTranspose = typeof currentSongIndex === 'number' ? (transpositions[currentSongIndex] ?? 0) : 0;
 
-  // Navegação entre MÚSICAS (usado pelo pedal)
   const goToSong = useCallback((direction: 'next' | 'prev') => {
       if (typeof currentSongIndex !== 'number') return;
       
@@ -136,7 +131,6 @@ export default function OfflineSetlistPage() {
       
       if (nextSongIndex < 0 || nextSongIndex >= (offlineData?.songs.length ?? 0)) return;
 
-      // Encontra a primeira seção da próxima/anterior música
       const targetSectionIndex = allSections.findIndex(s => s.songIndex === nextSongIndex);
       if (targetSectionIndex !== -1) {
           api?.scrollTo(targetSectionIndex);
@@ -145,7 +139,6 @@ export default function OfflineSetlistPage() {
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
         const key = event.key;
-        // Navegação de PÁGINA/SEÇÃO
         if (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prevPage) {
           event.preventDefault();
           api?.scrollPrev();
@@ -153,7 +146,6 @@ export default function OfflineSetlistPage() {
           event.preventDefault();
           api?.scrollNext();
         }
-        // Navegação de MÚSICA
         else if (key === pedalSettings.prevSong) {
           event.preventDefault();
           goToSong('prev');
@@ -310,7 +302,6 @@ export default function OfflineSetlistPage() {
          <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true, loop: false }}>
             <CarouselContent>
               {allSections.map((section, index) => {
-                  // A transposição é aplicada com base na música à qual a seção pertence
                   const transposeValue = transpositions[section.songIndex];
                   const content = transposeContent(section.content, transposeValue);
                   return (
@@ -358,3 +349,5 @@ export default function OfflineSetlistPage() {
     </div>
   );
 }
+
+    
