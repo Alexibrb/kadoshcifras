@@ -36,9 +36,11 @@ export default function SetlistPage() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   
+  // Estado de carregamento combinado
+  const loading = loadingSetlist || loadingSongs || !appUser;
+
   useEffect(() => { 
     setIsClient(true);
-    // Verifica se existe uma versão offline no localStorage
     if (typeof window !== 'undefined') {
       const offlineData = localStorage.getItem(`offline-setlist-${setlistId}`);
       setHasOfflineVersion(!!offlineData);
@@ -48,6 +50,7 @@ export default function SetlistPage() {
   useEffect(() => {
     if (setlist) {
         setEditedName(setlist.name);
+        // Apenas atualize as músicas ordenadas se não estiverem sendo arrastadas
         setOrderedSongs(setlist.songs || []);
     }
   }, [setlist]);
@@ -68,7 +71,7 @@ export default function SetlistPage() {
   const availableSongs = useMemo(() => {
     if (!setlist) return [];
     
-    const songIdsInSetlist = (setlist.songs || []).map(s => s.songId);
+    const songIdsInSetlist = (orderedSongs || []).map(s => s.songId);
     const songsNotInSetlist = allSongs.filter(song => !songIdsInSetlist.includes(song.id));
 
     const filtered = songsNotInSetlist.filter(song =>
@@ -77,25 +80,25 @@ export default function SetlistPage() {
     );
 
     return filtered.sort((a, b) => a.title.localeCompare(b.title));
-  }, [setlist, allSongs, searchQuery]);
+  }, [orderedSongs, allSongs, searchQuery, setlist]);
 
 
   const handleAddSong = async (songId: string) => {
     if (!songId || !setlist || !canEdit) return;
-    const newSongs = [...(setlist.songs || []), { songId, transpose: 0 }];
+    const newSongs = [...(orderedSongs || []), { songId, transpose: 0 }];
     await updateSetlistDoc({ songs: newSongs });
   };
 
   const handleRemoveSong = async (indexToRemove: number) => {
     if (!setlist || !canEdit) return;
-    const newSongs = [...(setlist.songs || [])];
+    const newSongs = [...orderedSongs];
     newSongs.splice(indexToRemove, 1);
     await updateSetlistDoc({ songs: newSongs });
   };
   
   const handleTransposeChange = async (indexToChange: number, change: number) => {
       if (!setlist || !canEdit) return;
-      const newSongs = (setlist.songs || []).map((s, index) => {
+      const newSongs = orderedSongs.map((s, index) => {
           if (index === indexToChange) {
               const newTranspose = s.transpose + change;
               return { ...s, transpose: Math.max(-12, Math.min(12, newTranspose)) };
@@ -138,30 +141,28 @@ export default function SetlistPage() {
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
-    setOrderedSongs(items);
-    updateSetlistDoc({ songs: items });
+    setOrderedSongs(items); // Atualiza o estado local imediatamente para feedback visual
+    updateSetlistDoc({ songs: items }); // Envia a atualização para o Firestore
   };
 
   const handleGenerateOffline = () => {
-    if (loadingSongs || !setlist || !songMap) return;
+    // Agora verifica o estado de carregamento combinado
+    if (loading || !setlist || !songMap) return;
 
     const songsToProcess = setlist.songs || [];
     
-    // VERIFICAÇÃO: Garantir que todas as músicas existem no mapa antes de continuar.
     const allSongsFound = songsToProcess.every(setlistSong => songMap.has(setlistSong.songId));
     if (!allSongsFound) {
       toast({
         title: "Erro de Sincronização",
-        description: "Algumas músicas do repertório não foram encontradas. Tente recarregar a página e gerar novamente.",
+        description: "Algumas músicas do repertório ainda estão carregando. Tente recarregar a página e gerar novamente.",
         variant: "destructive"
       });
-      return; // Interrompe a execução se uma música não for encontrada.
+      return;
     }
     
-    // MAPEAMENTO: Apenas executa se todas as músicas foram encontradas.
     const offlineSongs = songsToProcess.map(setlistSong => {
-      const song = songMap.get(setlistSong.songId)!; // O "!" é seguro por causa da verificação acima.
-      
+      const song = songMap.get(setlistSong.songId)!;
       return {
           title: song.title,
           artist: song.artist,
@@ -196,7 +197,7 @@ export default function SetlistPage() {
     window.open(`/setlists/${setlistId}/offline`, '_blank');
   };
 
-  if (isClient && !loadingSetlist && !setlist) {
+  if (isClient && !loading && !setlist) {
     notFound();
   }
 
@@ -204,16 +205,27 @@ export default function SetlistPage() {
       notFound();
   }
 
-  if (!isClient || loadingSetlist || !setlist || !appUser || loadingSongs) {
+  // Usa o estado de carregamento combinado
+  if (!isClient || loading) {
     return (
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-            <div className="flex items-center gap-4">
-                <Skeleton className="h-10 w-10 rounded-md" />
-                <div className="space-y-2">
-                    <Skeleton className="h-6 w-48" />
-                </div>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                  <Skeleton className="h-10 w-10 rounded-md" />
+                  <div className="space-y-2">
+                      <Skeleton className="h-6 w-48" />
+                      <Skeleton className="h-4 w-16" />
+                  </div>
+              </div>
+              <div className="flex items-center gap-2">
+                 <Skeleton className="h-10 w-32" />
+                 <Skeleton className="h-10 w-32" />
+              </div>
             </div>
-            <Skeleton className="h-[60vh] w-full" />
+            <div className="flex flex-col gap-8 lg:grid lg:grid-cols-2">
+                <Skeleton className="h-[60vh] w-full" />
+                <Skeleton className="h-[60vh] w-full" />
+            </div>
         </div>
     );
   }
@@ -318,6 +330,7 @@ export default function SetlistPage() {
                                  if (!song) return null;
                                  
                                  const displayedKey = song.key ? transposeChord(song.key, setlistSong.transpose) : 'N/A';
+                                 // Usar uma combinação de songId e index para garantir ID único
                                  const draggableId = `${setlistSong.songId}-${index}`;
 
                                  return (

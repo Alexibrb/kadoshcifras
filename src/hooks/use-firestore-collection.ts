@@ -1,6 +1,6 @@
 // src/hooks/use-firestore-collection.ts
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { db as firestoreDB } from '@/lib/firebase';
 import { collection, onSnapshot, query, where, QueryConstraint, WhereFilterOp, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, orderBy, Query, Timestamp } from 'firebase/firestore';
 
@@ -14,24 +14,26 @@ export function useFirestoreCollection<T extends { id: string }>(
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    console.log(`[Firestore] Montando listener para coleção: ${collectionName}`);
+  // Memoize os filtros para estabilizar a dependência do useEffect
+  const filtersJSON = useMemo(() => JSON.stringify(initialFilters), [initialFilters]);
 
+  useEffect(() => {
+    setLoading(true); // Começa a carregar sempre que os filtros mudam
+
+    const parsedFilters: FirestoreQueryFilter[] = JSON.parse(filtersJSON);
+    
     // Valida se os filtros estão prontos para serem usados. Evita queries com valores undefined.
-    const areFiltersValid = initialFilters.every(f => f[2] !== undefined);
-     if (!areFiltersValid) {
-        // Se os filtros não estão prontos (ex: appUser ainda não carregou),
-        // definimos loading como false para não travar a UI, mas retornamos dados vazios.
-        setLoading(false);
+    const areFiltersValid = parsedFilters.every(f => f[2] !== undefined);
+    if (!areFiltersValid) {
         setData([]);
+        setLoading(false); // Se os filtros não estão prontos, para de carregar e retorna vazio.
         return;
     }
     
     const collectionRef = collection(firestoreDB, collectionName);
     const constraints: QueryConstraint[] = [];
 
-    initialFilters.forEach(filter => {
-      // Garante que filtros com valores vazios ou nulos não sejam adicionados à query.
+    parsedFilters.forEach(filter => {
       if (filter[2] !== undefined && filter[2] !== null && filter[2] !== '') {
         constraints.push(where(filter[0], filter[1], filter[2]));
       }
@@ -48,18 +50,17 @@ export function useFirestoreCollection<T extends { id: string }>(
         return { id: doc.id, ...doc.data() } as T;
       });
       setData(dataFromFirestore);
-      setLoading(false);
+      setLoading(false); // Termina de carregar APÓS os dados serem definidos.
     }, (error) => {
       console.error(`Erro ao buscar coleção '${collectionName}': `, error);
+      setData([]);
       setLoading(false);
     });
 
     return () => {
-        console.log(`[Firestore] Desmontando listener para coleção: ${collectionName}`);
         unsubscribe();
     }
-  // A dependência JSON.stringify é uma forma de garantir que o hook reaja a mudanças nos filtros.
-  }, [collectionName, initialSort, JSON.stringify(initialFilters)]);
+  }, [collectionName, initialSort, filtersJSON]);
 
   const addDocument = async (newData: Omit<T, 'id' | 'createdAt'>) => {
       try {
