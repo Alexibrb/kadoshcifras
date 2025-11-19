@@ -1,3 +1,4 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -168,7 +169,7 @@ export default function SetlistPage() {
           artist: song.artist,
           content: song.content,
           key: song.key,
-          initialTranspose: setlistSong.transpose
+          initialTranspose: setlistSong.transpose // Corrigido de 'transpose' para 'initialTranspose'
       };
     });
 
