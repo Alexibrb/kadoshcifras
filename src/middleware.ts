@@ -8,11 +8,6 @@ export function middleware(request: NextRequest) {
     if (pathname === '/favicon.ico') {
         return NextResponse.next();
     }
-
-    // Se o caminho terminar com /offline, permite o acesso público.
-    if (pathname.endsWith('/offline')) {
-        return NextResponse.next();
-    }
     
     // A lógica de redirecionamento principal é tratada no lado do cliente pelo hook useRequireAuth.
     // Este middleware principalmente define quais rotas são protegidas.
@@ -24,8 +19,10 @@ export const config = {
   matcher: [
     '/dashboard/:path*', 
     '/songs/:path*', 
-    '/setlists/:path*', // Protege todas as rotas de setlists, a lógica no middleware exclui a offline
+    '/setlists/:path*', 
     '/tools/:path*', 
     '/pending-approval'
   ],
 }
+
+    

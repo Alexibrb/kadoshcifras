@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useFirestoreDocument } from '@/hooks/use-firestore-document';
 import { type Setlist, type Song, type SetlistSong } from '@/types';
-import { ArrowLeft, Music, Plus, Minus, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff, HardDriveDownload, MonitorPlay } from 'lucide-react';
+import { ArrowLeft, Music, Plus, Minus, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
@@ -17,21 +17,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/use-auth';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { transposeChord, transposeContent } from '@/lib/music';
-import { useToast } from '@/hooks/use-toast';
+import { transposeChord } from '@/lib/music';
 
 export default function SetlistPage() {
   const params = useParams();
   const setlistId = params.id as string;
   const router = useRouter();
-  const { toast } = useToast();
   
   const { appUser } = useAuth();
   const { data: setlist, loading: loadingSetlist, updateDocument: updateSetlistDoc } = useFirestoreDocument<Setlist>('setlists', setlistId);
   const { data: allSongs, loading: loadingSongs } = useFirestoreCollection<Song>('songs');
 
   const [isClient, setIsClient] = useState(false);
-  const [hasOfflineVersion, setHasOfflineVersion] = useState(false);
   const [orderedSongs, setOrderedSongs] = useState<SetlistSong[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -39,11 +36,7 @@ export default function SetlistPage() {
   
   useEffect(() => { 
     setIsClient(true);
-    if (typeof window !== 'undefined') {
-      const offlineData = localStorage.getItem(`offline-setlist-${setlistId}`);
-      setHasOfflineVersion(!!offlineData);
-    }
-  }, [setlistId]);
+  }, []);
   
   useEffect(() => {
     if (setlist) {
@@ -142,78 +135,6 @@ export default function SetlistPage() {
     updateSetlistDoc({ songs: items });
   };
 
-  const handleGenerateOffline = () => {
-    if (!setlist || !songMap) {
-      toast({
-        title: "Erro de Preparação",
-        description: "Os dados do repertório ou das músicas ainda não foram carregados.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const songsToProcess = orderedSongs || [];
-    let songsWithErrors = 0;
-    
-    const offlineSongs = songsToProcess.map(setlistSong => {
-      const song = songMap.get(setlistSong.songId);
-      if (!song) {
-        songsWithErrors++;
-        return null;
-      }
-      
-      return {
-          title: song.title,
-          artist: song.artist,
-          content: song.content,
-          key: song.key,
-          initialTranspose: setlistSong.transpose
-      };
-    }).filter((song): song is NonNullable<typeof song> => song !== null);
-
-    if (songsWithErrors > 0) {
-      toast({
-        title: "Erro ao Gerar Offline",
-        description: `${songsWithErrors} música(s) não foram encontradas e não foram incluídas.`,
-        variant: "destructive"
-      });
-    }
-
-    if (offlineSongs.length === 0 && songsToProcess.length > 0) {
-        toast({
-            title: "Erro Crítico",
-            description: "Nenhuma música pôde ser preparada para o modo offline.",
-            variant: "destructive"
-        });
-        return;
-    }
-
-    try {
-      const dataToSave = {
-        name: setlist.name,
-        songs: offlineSongs
-      };
-      
-      const storageKey = `offline-setlist-${setlistId}`;
-      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
-      setHasOfflineVersion(true);
-      toast({
-        title: "Repertório Salvo Offline!",
-        description: "Você já pode acessar a página de apresentação.",
-      });
-    } catch (error: any) {
-       toast({
-        title: "Erro ao Salvar",
-        description: error.message || "Não foi possível salvar o repertório para uso offline.",
-        variant: "destructive"
-      });
-    }
-  };
-  
-  const handleOpenPresentationMode = () => {
-    window.open(`/setlists/${setlistId}/offline`, '_blank');
-  };
-
   if (isClient && !loadingSetlist && !setlist) {
     notFound();
   }
@@ -303,16 +224,6 @@ export default function SetlistPage() {
                   </div>
                 </div>
               )}
-               <Button onClick={handleGenerateOffline} variant="secondary">
-                    <HardDriveDownload className="mr-2 h-4 w-4" />
-                    Gerar Offline
-                </Button>
-                 {isClient && hasOfflineVersion && (
-                  <Button onClick={handleOpenPresentationMode} variant="default">
-                    <MonitorPlay className="mr-2 h-4 w-4" />
-                    Modo Apresentação
-                  </Button>
-                )}
             </div>
       </div>
       
@@ -444,4 +355,5 @@ export default function SetlistPage() {
       </div>
     </div>
   );
-}
+
+    
