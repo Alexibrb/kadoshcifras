@@ -20,6 +20,8 @@ export function useFirestoreCollection<T extends { id: string }>(
     // Valida se os filtros estão prontos para serem usados. Evita queries com valores undefined.
     const areFiltersValid = initialFilters.every(f => f[2] !== undefined);
      if (!areFiltersValid) {
+        // Se os filtros não estão prontos (ex: appUser ainda não carregou),
+        // definimos loading como false para não travar a UI, mas retornamos dados vazios.
         setLoading(false);
         setData([]);
         return;

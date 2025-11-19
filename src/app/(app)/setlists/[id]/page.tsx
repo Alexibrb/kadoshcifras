@@ -143,7 +143,7 @@ export default function SetlistPage() {
   };
 
   const handleGenerateOffline = () => {
-    if (!setlist || !songMap) return;
+    if (loadingSongs || !setlist || !songMap) return;
 
     const songsToProcess = setlist.songs || [];
     
