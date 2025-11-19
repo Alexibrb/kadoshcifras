@@ -349,5 +349,3 @@ export default function OfflineSetlistPage() {
     </div>
   );
 }
-
-    

@@ -2,23 +2,22 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
  
+// This function can be marked `async` if using `await` inside
 export function middleware(request: NextRequest) {
-    // Se a rota for a página de apresentação offline, permite o acesso sem verificação.
-    if (request.nextUrl.pathname.endsWith('/offline')) {
-        return NextResponse.next();
-    }
-
-    // Para todas as outras rotas protegidas pelo matcher, o comportamento padrão continua.
-    // A lógica de redirecionamento principal é tratada no lado do cliente pelo hook useRequireAuth.
+    // Este middleware atualmente não executa nenhuma lógica específica,
+    // mas impõe a verificação de autenticação para as rotas correspondentes.
+    // A lógica real de redirecionamento é tratada no lado do cliente pelo hook useRequireAuth.
     return NextResponse.next()
 }
  
-// O matcher define as rotas que acionam o middleware.
+// Veja "Matching Paths" abaixo para saber mais
 export const config = {
   matcher: [
     '/dashboard/:path*', 
     '/songs/:path*', 
-    '/setlists/:path*', // Agora corresponde a todas as sub-rotas de /setlists
+    '/setlists', // Protege a página de listagem de repertórios
+    '/setlists/new', // Protege a página de criação
+    '/setlists/:id', // Protege a página de edição de um repertório específico
     '/tools/:path*', 
     '/pending-approval'
   ],
