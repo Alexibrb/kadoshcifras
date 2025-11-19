@@ -11,6 +11,7 @@ export function middleware(request: NextRequest) {
     
     // A lógica de redirecionamento principal é tratada no lado do cliente pelo hook useRequireAuth.
     // Este middleware principalmente define quais rotas são protegidas.
+    // A exceção para /offline não é mais necessária aqui, pois o layout offline não usa o useRequireAuth
     return NextResponse.next()
 }
  
@@ -24,5 +25,3 @@ export const config = {
     '/pending-approval'
   ],
 }
-
-    

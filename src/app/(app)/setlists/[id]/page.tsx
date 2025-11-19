@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useFirestoreDocument } from '@/hooks/use-firestore-document';
 import { type Setlist, type Song, type SetlistSong } from '@/types';
-import { ArrowLeft, Music, Plus, Minus, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Music, Plus, Minus, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff, HardDriveDownload, MonitorPlay } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
@@ -18,17 +18,20 @@ import { useAuth } from '@/hooks/use-auth';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { transposeChord } from '@/lib/music';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SetlistPage() {
   const params = useParams();
   const setlistId = params.id as string;
   const router = useRouter();
+  const { toast } = useToast();
   
   const { appUser } = useAuth();
   const { data: setlist, loading: loadingSetlist, updateDocument: updateSetlistDoc } = useFirestoreDocument<Setlist>('setlists', setlistId);
   const { data: allSongs, loading: loadingSongs } = useFirestoreCollection<Song>('songs');
 
   const [isClient, setIsClient] = useState(false);
+  const [hasOfflineVersion, setHasOfflineVersion] = useState(false);
   const [orderedSongs, setOrderedSongs] = useState<SetlistSong[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -36,7 +39,12 @@ export default function SetlistPage() {
   
   useEffect(() => { 
     setIsClient(true);
-  }, []);
+    // Verifica se existe uma versão offline no localStorage
+    if (typeof window !== 'undefined') {
+      const offlineData = localStorage.getItem(`offline-setlist-${setlistId}`);
+      setHasOfflineVersion(!!offlineData);
+    }
+  }, [setlistId]);
   
   useEffect(() => {
     if (setlist) {
@@ -135,6 +143,64 @@ export default function SetlistPage() {
     updateSetlistDoc({ songs: items });
   };
 
+  const handleGenerateOffline = () => {
+    if (!setlist || !songMap) return;
+
+    const songsToProcess = setlist.songs || [];
+    
+    const offlineSongs = songsToProcess.map(setlistSong => {
+      const song = songMap.get(setlistSong.songId);
+      if (!song) {
+        toast({
+          title: "Erro de Sincronização",
+          description: `A música com ID ${setlistSong.songId} não foi encontrada e será pulada.`,
+          variant: "destructive"
+        });
+        return null;
+      }
+      
+      return {
+          title: song.title,
+          artist: song.artist,
+          content: song.content, // Salva o conteúdo original
+          key: song.key,
+          initialTranspose: setlistSong.transpose // Salva a transposição inicial do repertório
+      };
+    }).filter(Boolean); // Remove músicas não encontradas
+
+    if (offlineSongs.length !== songsToProcess.length) {
+      toast({
+        title: "Atenção",
+        description: "Algumas músicas não puderam ser processadas para o modo offline.",
+        variant: "destructive"
+      });
+    }
+
+    try {
+      const storageKey = `offline-setlist-${setlistId}`;
+      localStorage.setItem(storageKey, JSON.stringify({
+        name: setlist.name,
+        songs: offlineSongs
+      }));
+      setHasOfflineVersion(true); // Update state to show the presentation button
+      toast({
+        title: "Repertório Salvo Offline!",
+        description: "Você já pode acessar a página de apresentação.",
+      });
+    } catch (error) {
+       console.error("Erro ao salvar no localStorage:", error);
+       toast({
+        title: "Erro ao Salvar",
+        description: "Não foi possível salvar o repertório para uso offline. O armazenamento pode estar cheio.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleOpenPresentationMode = () => {
+    window.open(`/setlists/${setlistId}/offline`, '_blank');
+  };
+
   if (isClient && !loadingSetlist && !setlist) {
     notFound();
   }
@@ -224,6 +290,16 @@ export default function SetlistPage() {
                   </div>
                 </div>
               )}
+               <Button onClick={handleGenerateOffline} variant="secondary">
+                    <HardDriveDownload className="mr-2 h-4 w-4" />
+                    Gerar Offline
+                </Button>
+                 {isClient && hasOfflineVersion && (
+                  <Button onClick={handleOpenPresentationMode} variant="default">
+                    <MonitorPlay className="mr-2 h-4 w-4" />
+                    Modo Apresentação
+                  </Button>
+                )}
             </div>
       </div>
       
