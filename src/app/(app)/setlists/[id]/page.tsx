@@ -144,18 +144,21 @@ export default function SetlistPage() {
 
   const handleGenerateOffline = () => {
     if (!setlist || !songMap) {
-      console.error("[DEBUG] Pré-requisitos para gerar offline não atendidos. setlist:", setlist, "songMap:", songMap);
+      toast({
+        title: "Erro de Preparação",
+        description: "Os dados do repertório ou das músicas ainda não foram carregados.",
+        variant: "destructive"
+      });
       return;
     }
 
     const songsToProcess = orderedSongs || [];
-    
     let songsWithErrors = 0;
+    
     const offlineSongs = songsToProcess.map(setlistSong => {
       const song = songMap.get(setlistSong.songId);
       if (!song) {
         songsWithErrors++;
-        console.error(`[DEBUG] Música com ID ${setlistSong.songId} não foi encontrada no songMap.`);
         return null;
       }
       
@@ -176,14 +179,21 @@ export default function SetlistPage() {
       });
     }
 
+    if (offlineSongs.length === 0 && songsToProcess.length > 0) {
+        toast({
+            title: "Erro Crítico",
+            description: "Nenhuma música pôde ser preparada para o modo offline.",
+            variant: "destructive"
+        });
+        return;
+    }
+
     try {
       const dataToSave = {
         name: setlist.name,
         songs: offlineSongs
       };
       
-      console.log("[DEBUG] Dados que serão salvos no localStorage:", JSON.stringify(dataToSave, null, 2));
-
       const storageKey = `offline-setlist-${setlistId}`;
       localStorage.setItem(storageKey, JSON.stringify(dataToSave));
       setHasOfflineVersion(true);
@@ -192,7 +202,6 @@ export default function SetlistPage() {
         description: "Você já pode acessar a página de apresentação.",
       });
     } catch (error: any) {
-       console.error("[DEBUG] Erro ao salvar no localStorage:", error);
        toast({
         title: "Erro ao Salvar",
         description: error.message || "Não foi possível salvar o repertório para uso offline.",
@@ -436,3 +445,5 @@ export default function SetlistPage() {
     </div>
   );
 }
+
+    
