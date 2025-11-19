@@ -1,4 +1,3 @@
-
 // src/app/(offline)/setlists/[id]/offline/page.tsx
 'use client';
 
@@ -6,7 +5,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Music } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Music, CircleCheck } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -67,11 +66,11 @@ export default function OfflineSetlistPage() {
     try {
       const storageKey = `offline-setlist-${setlistId}`;
       const item = localStorage.getItem(storageKey);
-
       if (item) {
         const parsedData = JSON.parse(item) as OfflineSetlist;
         if (parsedData && parsedData.name && Array.isArray(parsedData.songs)) {
             setOfflineData(parsedData);
+            // Inicializa o estado de transposições com os valores do repertório
             setTranspositions(parsedData.songs.map(s => s.initialTranspose));
         } else {
             setError("Dados offline corrompidos ou vazios. Por favor, gere novamente.");
@@ -80,7 +79,8 @@ export default function OfflineSetlistPage() {
         setError("Dados offline não encontrados. Por favor, gere novamente.");
       }
     } catch (e) {
-      setError("Não foi possível carregar os dados offline. Ocorreu um erro na análise.");
+      console.error("Erro ao ler do localStorage:", e);
+      setError("Não foi possível carregar os dados offline.");
     } finally {
         setLoading(false);
     }
@@ -128,7 +128,7 @@ export default function OfflineSetlistPage() {
   const currentSongTranspose = typeof currentSongIndex === 'number' ? (transpositions[currentSongIndex] ?? 0) : 0;
 
   // Navegação entre MÚSICAS (usado pelo pedal)
-  const goToSong = useCallback((direction: 'next' | 'prev') => {
+  const goToSong = (direction: 'next' | 'prev') => {
       if (typeof currentSongIndex !== 'number') return;
       
       const nextSongIndex = direction === 'next' ? currentSongIndex + 1 : currentSongIndex - 1;
@@ -140,7 +140,7 @@ export default function OfflineSetlistPage() {
       if (targetSectionIndex !== -1) {
           api?.scrollTo(targetSectionIndex);
       }
-  }, [api, currentSongIndex, offlineData?.songs.length, allSections]);
+  };
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
         const key = event.key;
@@ -357,5 +357,3 @@ export default function OfflineSetlistPage() {
     </div>
   );
 }
-
-    
