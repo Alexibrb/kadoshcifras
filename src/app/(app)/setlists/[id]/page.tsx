@@ -143,13 +143,21 @@ export default function SetlistPage() {
   };
 
   const handleGenerateOffline = () => {
-    if (!setlist || !songMap) return;
+    if (!setlist || !songMap) {
+      console.error("[DEBUG] Pré-requisitos para gerar offline não atendidos. setlist:", setlist, "songMap:", songMap);
+      return;
+    }
 
     const songsToProcess = orderedSongs || [];
     
+    let songsWithErrors = 0;
     const offlineSongs = songsToProcess.map(setlistSong => {
       const song = songMap.get(setlistSong.songId);
-      if (!song) return null;
+      if (!song) {
+        songsWithErrors++;
+        console.error(`[DEBUG] Música com ID ${setlistSong.songId} não foi encontrada no songMap.`);
+        return null;
+      }
       
       return {
           title: song.title,
@@ -160,24 +168,31 @@ export default function SetlistPage() {
       };
     }).filter((song): song is NonNullable<typeof song> => song !== null);
 
+    if (songsWithErrors > 0) {
+      toast({
+        title: "Erro ao Gerar Offline",
+        description: `${songsWithErrors} música(s) não foram encontradas e não foram incluídas.`,
+        variant: "destructive"
+      });
+    }
 
     try {
-      if (offlineSongs.length < songsToProcess.length) {
-        throw new Error("Algumas músicas não foram encontradas e não puderam ser salvas offline.");
-      }
-
-      const storageKey = `offline-setlist-${setlistId}`;
-      localStorage.setItem(storageKey, JSON.stringify({
+      const dataToSave = {
         name: setlist.name,
         songs: offlineSongs
-      }));
+      };
+      
+      console.log("[DEBUG] Dados que serão salvos no localStorage:", JSON.stringify(dataToSave, null, 2));
+
+      const storageKey = `offline-setlist-${setlistId}`;
+      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
       setHasOfflineVersion(true);
       toast({
         title: "Repertório Salvo Offline!",
         description: "Você já pode acessar a página de apresentação.",
       });
     } catch (error: any) {
-       console.error("Erro ao salvar no localStorage:", error);
+       console.error("[DEBUG] Erro ao salvar no localStorage:", error);
        toast({
         title: "Erro ao Salvar",
         description: error.message || "Não foi possível salvar o repertório para uso offline.",

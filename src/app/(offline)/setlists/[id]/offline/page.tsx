@@ -66,21 +66,26 @@ export default function OfflineSetlistPage() {
     try {
       const storageKey = `offline-setlist-${setlistId}`;
       const item = localStorage.getItem(storageKey);
+      console.log(`[DEBUG] Lendo do localStorage (chave: ${storageKey}):`, item);
+
       if (item) {
         const parsedData = JSON.parse(item) as OfflineSetlist;
+        console.log("[DEBUG] Dados do localStorage após JSON.parse:", parsedData);
         if (parsedData && parsedData.name && Array.isArray(parsedData.songs)) {
             setOfflineData(parsedData);
-            // Inicializa o estado de transposições com os valores do repertório
             setTranspositions(parsedData.songs.map(s => s.initialTranspose));
+             console.log("[DEBUG] Dados carregados com sucesso. Nome:", parsedData.name);
         } else {
+            console.error("[DEBUG] Erro de validação: Dados offline corrompidos ou em formato inesperado.");
             setError("Dados offline corrompidos ou vazios. Por favor, gere novamente.");
         }
       } else {
+        console.warn("[DEBUG] Nenhum dado encontrado no localStorage para esta chave.");
         setError("Dados offline não encontrados. Por favor, gere novamente.");
       }
     } catch (e) {
-      console.error("Erro ao ler do localStorage:", e);
-      setError("Não foi possível carregar os dados offline.");
+      console.error("[DEBUG] Erro ao ler ou analisar dados do localStorage:", e);
+      setError("Não foi possível carregar os dados offline. Ocorreu um erro na análise.");
     } finally {
         setLoading(false);
     }
@@ -357,5 +362,3 @@ export default function OfflineSetlistPage() {
     </div>
   );
 }
-
-    
