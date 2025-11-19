@@ -1,4 +1,3 @@
-
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -148,33 +147,29 @@ export default function SetlistPage() {
 
     const songsToProcess = setlist.songs || [];
     
+    // VERIFICAÇÃO: Garantir que todas as músicas existem no mapa antes de continuar.
+    const allSongsFound = songsToProcess.every(setlistSong => songMap.has(setlistSong.songId));
+    if (!allSongsFound) {
+      toast({
+        title: "Erro de Sincronização",
+        description: "Algumas músicas do repertório não foram encontradas. Tente recarregar a página e gerar novamente.",
+        variant: "destructive"
+      });
+      return; // Interrompe a execução se uma música não for encontrada.
+    }
+    
+    // MAPEAMENTO: Apenas executa se todas as músicas foram encontradas.
     const offlineSongs = songsToProcess.map(setlistSong => {
-      const song = songMap.get(setlistSong.songId);
-      if (!song) {
-        toast({
-          title: "Erro de Sincronização",
-          description: `A música com ID ${setlistSong.songId} não foi encontrada e será pulada.`,
-          variant: "destructive"
-        });
-        return null;
-      }
+      const song = songMap.get(setlistSong.songId)!; // O "!" é seguro por causa da verificação acima.
       
       return {
           title: song.title,
           artist: song.artist,
-          content: song.content, // Salva o conteúdo original
+          content: song.content,
           key: song.key,
-          initialTranspose: setlistSong.transpose // Salva a transposição inicial do repertório
+          initialTranspose: setlistSong.transpose
       };
-    }).filter(Boolean); // Remove músicas não encontradas
-
-    if (offlineSongs.length !== songsToProcess.length) {
-      toast({
-        title: "Atenção",
-        description: "Algumas músicas não puderam ser processadas para o modo offline.",
-        variant: "destructive"
-      });
-    }
+    });
 
     try {
       const storageKey = `offline-setlist-${setlistId}`;
@@ -182,7 +177,7 @@ export default function SetlistPage() {
         name: setlist.name,
         songs: offlineSongs
       }));
-      setHasOfflineVersion(true); // Update state to show the presentation button
+      setHasOfflineVersion(true);
       toast({
         title: "Repertório Salvo Offline!",
         description: "Você já pode acessar a página de apresentação.",
@@ -432,5 +427,3 @@ export default function SetlistPage() {
     </div>
   );
 }
-
-    
