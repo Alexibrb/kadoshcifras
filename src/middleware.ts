@@ -16,3 +16,4 @@ export const config = {
   matcher: ['/dashboard/:path*', '/songs/:path*', '/setlists/((?!offline).*)', '/tools/:path*', '/pending-approval'],
 }
 
+
