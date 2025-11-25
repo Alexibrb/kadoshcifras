@@ -1,7 +1,7 @@
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDKVX_Et75ezt-GlIl7uSMPNftGe3pAQe0",
@@ -16,19 +16,26 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Ativa a persistência offline do Firestore
+// Ativa a persistência offline do Firestore e a persistência de login local
 if (typeof window !== 'undefined') {
+  // Configura a persistência de autenticação para manter o usuário logado
+  setPersistence(auth, browserLocalPersistence)
+    .then(() => {
+      console.log("Persistência de autenticação configurada.");
+    })
+    .catch((error) => {
+      console.error("Erro ao configurar a persistência de autenticação:", error);
+    });
+
+  // Ativa a persistência de dados do Firestore para uso offline
   enableIndexedDbPersistence(db)
     .catch((err) => {
       if (err.code == 'failed-precondition') {
-        // Múltiplas abas abertas, a persistência só pode ser ativada em uma.
-        console.warn('Firebase: A persistência falhou porque múltiplas abas estão abertas.');
+        console.warn('Firebase: A persistência do Firestore falhou porque múltiplas abas estão abertas.');
       } else if (err.code == 'unimplemented') {
-        // O navegador não suporta a persistência.
-        console.warn('Firebase: O navegador não suporta a persistência offline.');
+        console.warn('Firebase: O navegador não suporta a persistência offline do Firestore.');
       }
     });
 }
-
 
 export { app, db, auth };
