@@ -39,6 +39,52 @@ interface Section {
     isLastSectionOfSetlist: boolean;
 }
 
+function SongPresenter({ 
+    section, 
+    transposeValue, 
+    fontSize, 
+    showChords, 
+    colorSettings 
+} : { 
+    section: Section | undefined, 
+    transposeValue: number, 
+    fontSize: number, 
+    showChords: boolean, 
+    colorSettings: ColorSettings | null 
+}) {
+    if (!section) return null;
+
+    const content = transposeContent(section.content, transposeValue);
+
+    return (
+        <Card className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none">
+            <CardContent className="flex-1 h-full p-0">
+                <ScrollArea className="h-full p-4 md:p-6 pt-0">
+                    <SongDisplay 
+                        style={{ 
+                            fontSize: `${fontSize}px`,
+                            '--lyrics-color': colorSettings?.lyricsColor,
+                            '--chords-color': colorSettings?.chordsColor,
+                        } as React.CSSProperties} 
+                        content={content} 
+                        showChords={showChords} 
+                    />
+                    {section.isLastSectionOfSong && !section.isLastSectionOfSetlist && (
+                        <div className="mt-8 text-center text-muted-foreground">
+                            <Separator className="my-4" />
+                            <div className="flex items-center justify-center gap-2 text-sm">
+                                <Music className="h-4 w-4" />
+                                <span>Fim da Música</span>
+                            </div>
+                        </div>
+                    )}
+                </ScrollArea>
+            </CardContent>
+        </Card>
+    );
+}
+
+
 export default function OfflineSetlistPage() {
   const params = useParams();
   const setlistId = params.id as string;
@@ -82,7 +128,11 @@ export default function OfflineSetlistPage() {
       
       const storedSettings = localStorage.getItem('user-color-settings');
       if (storedSettings) {
-           setFinalColorSettings(JSON.parse(storedSettings));
+           try {
+             setFinalColorSettings(JSON.parse(storedSettings));
+           } catch(e) {
+             setFinalColorSettings(defaultSettings);
+           }
       } else {
           setFinalColorSettings(defaultSettings);
       }
@@ -201,13 +251,49 @@ export default function OfflineSetlistPage() {
   const increaseFontSize = useCallback(() => setFontSize(s => Math.min(32, s + 1)), [setFontSize]);
   const decreaseFontSize = useCallback(() => setFontSize(s => Math.max(8, s - 1)), [setFontSize]);
 
-  const renderPanel = () => {
-    if (!offlineData || !currentSong) return null;
-
-    const displayedKey = currentSong.key ? transposeChord(currentSong.key, currentSongTranspose) : 'N/A';
-
+  if (loading || !isClient || !finalColorSettings) {
     return (
-        <Card className="mb-4 bg-accent/10 transition-all duration-300">
+      <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
+        <h2 className="text-2xl font-bold mb-4">Carregando Dados Offline...</h2>
+      </div>
+    );
+  }
+
+  if (error) {
+     return (
+      <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
+        <h2 className="text-2xl font-bold text-destructive mb-4">Erro ao Carregar</h2>
+        <p className="text-muted-foreground mb-6">{error}</p>
+        <Button asChild>
+          <Link href={`/setlists/${setlistId}`}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar para o Repertório
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+  
+  if (!offlineData || !currentSong) {
+     return (
+      <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
+        <h2 className="text-2xl font-bold mb-4">Dados Offline Não Encontrados ou Inválidos</h2>
+        <p className="text-muted-foreground">Gere os dados na página do repertório antes de acessar o modo de apresentação.</p>
+         <Button asChild className="mt-6">
+          <Link href={`/setlists/${setlistId}`}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar para o Repertório
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const displayedKey = currentSong.key ? transposeChord(currentSong.key, currentSongTranspose) : 'N/A';
+
+  return (
+    <div ref={containerRef} className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen outline-none bg-background" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
+      <Card className="mb-4 bg-accent/10 transition-all duration-300">
             <CardContent className="p-4 space-y-4">
               {isPanelVisible ? (
                 <>
@@ -268,50 +354,6 @@ export default function OfflineSetlistPage() {
               )}
             </CardContent>
           </Card>
-    );
-  }
-
-  if (loading || !isClient || !finalColorSettings) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
-        <h2 className="text-2xl font-bold mb-4">Carregando Dados Offline...</h2>
-      </div>
-    );
-  }
-
-  if (error) {
-     return (
-      <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
-        <h2 className="text-2xl font-bold text-destructive mb-4">Erro ao Carregar</h2>
-        <p className="text-muted-foreground mb-6">{error}</p>
-        <Button asChild>
-          <Link href={`/setlists/${setlistId}`}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar para o Repertório
-          </Link>
-        </Button>
-      </div>
-    );
-  }
-  
-  if (!offlineData || !currentSong) {
-     return (
-      <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
-        <h2 className="text-2xl font-bold mb-4">Dados Offline Não Encontrados ou Inválidos</h2>
-        <p className="text-muted-foreground">Gere os dados na página do repertório antes de acessar o modo de apresentação.</p>
-         <Button asChild className="mt-6">
-          <Link href={`/setlists/${setlistId}`}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar para o Repertório
-          </Link>
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div ref={containerRef} className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen outline-none bg-background" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
-      {renderPanel()}
       <div className="flex-1 flex flex-col min-h-0">
            <div className="text-center mb-4 text-sm text-muted-foreground font-semibold flex justify-center items-center gap-4 pt-0">
               <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-fit">
@@ -340,39 +382,17 @@ export default function OfflineSetlistPage() {
           </div>
          <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true, loop: false }}>
             <CarouselContent>
-              {allSections.map((section, index) => {
-                  const transposeValue = transpositions[section.songIndex] ?? 0;
-                  const content = transposeContent(section.content, transposeValue);
-                  
-                  return (
-                    <CarouselItem key={index} className="h-full">
-                      <Card className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none">
-                        <CardContent className="flex-1 h-full p-0">
-                          <ScrollArea className="h-full p-4 md:p-6 pt-0">
-                            <SongDisplay 
-                                style={{ 
-                                    fontSize: `${fontSize}px`,
-                                    '--lyrics-color': finalColorSettings.lyricsColor,
-                                    '--chords-color': finalColorSettings.chordsColor,
-                                } as React.CSSProperties} 
-                                content={content} 
-                                showChords={showChords} 
-                            />
-                            {section.isLastSectionOfSong && !section.isLastSectionOfSetlist && (
-                                <div className="mt-8 text-center text-muted-foreground">
-                                    <Separator className="my-4" />
-                                    <div className="flex items-center justify-center gap-2 text-sm">
-                                       <Music className="h-4 w-4" />
-                                       <span>Fim da Música</span>
-                                    </div>
-                                </div>
-                            )}
-                          </ScrollArea>
-                        </CardContent>
-                      </Card>
-                    </CarouselItem>
-                  )
-                })}
+              {allSections.map((section, index) => (
+                <CarouselItem key={index} className="h-full">
+                    <SongPresenter
+                        section={section}
+                        transposeValue={transpositions[section.songIndex] ?? 0}
+                        fontSize={fontSize}
+                        showChords={showChords}
+                        colorSettings={finalColorSettings}
+                    />
+                </CarouselItem>
+              ))}
             </CarouselContent>
             <div className="absolute -left-12 top-1/2 -translate-y-1/2 hidden md:block">
               <CarouselPrevious />
@@ -393,3 +413,5 @@ export default function OfflineSetlistPage() {
     </div>
   );
 }
+
+    
