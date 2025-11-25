@@ -167,6 +167,21 @@ export default function OfflineSetlistPage() {
     }
   }, [setlistId]);
   
+  // Adiciona um listener para prevenir atualizações acidentais
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      // Padrão para acionar o diálogo de confirmação do navegador.
+      event.preventDefault();
+      // Necessário para alguns navegadores mais antigos.
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   const allSections = useMemo((): Section[] => {
     if (!offlineData) return [];
@@ -401,3 +416,5 @@ export default function OfflineSetlistPage() {
     </div>
   );
 }
+
+    
