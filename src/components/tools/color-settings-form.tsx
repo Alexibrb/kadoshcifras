@@ -5,12 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useLocalStorage } from '@/hooks/use-local-storage';
 import type { ColorSettings } from '@/types';
 import { Check, Palette } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/use-auth';
+import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
+import { Skeleton } from '../ui/skeleton';
 
 export function ColorSettingsForm() {
+  const { appUser, loading: authLoading } = useAuth();
+  const { updateDocument } = useFirestoreCollection('users');
+
   const isDarkMode = useMemo(() => {
     if (typeof window !== 'undefined') {
       return document.documentElement.classList.contains('dark');
@@ -18,46 +22,76 @@ export function ColorSettingsForm() {
     return false;
   }, []);
 
-  const [settings, setSettings] = useLocalStorage<ColorSettings>('color-settings', {
+  const defaultSettings: ColorSettings = useMemo(() => ({
     lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
     chordsColor: isDarkMode ? '#F59E0B' : '#000000',
     backgroundColor: isDarkMode ? '#0a0a0a' : '#f7f2fa',
-  });
+  }), [isDarkMode]);
 
-  const [lyricsColor, setLyricsColor] = useState(settings.lyricsColor);
-  const [chordsColor, setChordsColor] = useState(settings.chordsColor);
-  const [backgroundColor, setBackgroundColor] = useState(settings.backgroundColor);
+  const [lyricsColor, setLyricsColor] = useState<string | undefined>();
+  const [chordsColor, setChordsColor] = useState<string | undefined>();
+  const [backgroundColor, setBackgroundColor] = useState<string | undefined>();
   const [saved, setSaved] = useState(false);
 
-  // Sincroniza o estado local se as configurações do localStorage mudarem (ex: outra aba)
   useEffect(() => {
-    setLyricsColor(settings.lyricsColor);
-    setChordsColor(settings.chordsColor);
-    setBackgroundColor(settings.backgroundColor);
-  }, [settings]);
+    if (appUser) {
+      const currentSettings = appUser.colorSettings || defaultSettings;
+      setLyricsColor(currentSettings.lyricsColor);
+      setChordsColor(currentSettings.chordsColor);
+      setBackgroundColor(currentSettings.backgroundColor);
+    }
+  }, [appUser, defaultSettings]);
 
-  const handleSave = () => {
-    setSettings({
+  const handleSave = async () => {
+    if (!appUser || !lyricsColor || !chordsColor || !backgroundColor) return;
+    
+    const newSettings: ColorSettings = {
       lyricsColor,
       chordsColor,
       backgroundColor,
-    });
+    };
+
+    await updateDocument(appUser.id, { colorSettings: newSettings });
+
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
   
-  const handleReset = () => {
+  const handleReset = async () => {
+    if (!appUser) return;
     // Detecta o tema atual para definir os padrões corretos
-    const isDarkMode = document.documentElement.classList.contains('dark');
-    const defaultSettings = {
-       lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
-       chordsColor: isDarkMode ? '#F59E0B' : '#000000', // Âmbar para modo escuro, preto para claro
-       backgroundColor: isDarkMode ? '#0a0a0a' : '#f7f2fa',
+    const isDarkModeNow = document.documentElement.classList.contains('dark');
+    const defaults: ColorSettings = {
+       lyricsColor: isDarkModeNow ? '#FFFFFF' : '#000000',
+       chordsColor: isDarkModeNow ? '#F59E0B' : '#000000',
+       backgroundColor: isDarkModeNow ? '#0a0a0a' : '#f7f2fa',
     }
-    setLyricsColor(defaultSettings.lyricsColor);
-    setChordsColor(defaultSettings.chordsColor);
-    setBackgroundColor(defaultSettings.backgroundColor);
-    setSettings(defaultSettings);
+    setLyricsColor(defaults.lyricsColor);
+    setChordsColor(defaults.chordsColor);
+    setBackgroundColor(defaults.backgroundColor);
+    await updateDocument(appUser.id, { colorSettings: defaults });
+  }
+
+  if (authLoading || typeof lyricsColor === 'undefined') {
+     return (
+        <Card>
+            <CardHeader>
+                <div className="flex items-center gap-2">
+                    <Palette className="w-6 h-6 text-primary" />
+                    <Skeleton className="h-6 w-48" />
+                </div>
+                <Skeleton className="h-4 w-full" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-24 w-full" />
+            </CardContent>
+            <CardFooter className="flex justify-between">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-32" />
+            </CardFooter>
+        </Card>
+     )
   }
 
   return (
@@ -68,7 +102,7 @@ export function ColorSettingsForm() {
           <CardTitle className="font-headline text-xl">Cores de Exibição</CardTitle>
         </div>
         <CardDescription>
-          Personalize as cores da letra, cifras e fundo para melhor visualização.
+          Personalize as cores da letra, cifras e fundo. Essas configurações são salvas na sua conta.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

@@ -38,6 +38,12 @@ export interface Setlist {
   createdAt?: AppTimestamp;
 }
 
+export interface ColorSettings {
+    lyricsColor: string;
+    chordsColor: string;
+    backgroundColor: string;
+}
+
 export interface User {
     id: string;
     displayName: string;
@@ -45,6 +51,7 @@ export interface User {
     isApproved: boolean;
     role: 'admin' | 'user';
     createdAt?: AppTimestamp;
+    colorSettings?: ColorSettings;
 }
 
 export interface MetadataItem {
@@ -60,8 +67,3 @@ export interface PedalSettings {
     nextSong: string;
 }
 
-export interface ColorSettings {
-    lyricsColor: string;
-    chordsColor: string;
-    backgroundColor: string;
-}

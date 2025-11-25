@@ -3,17 +3,13 @@
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider } from '@/hooks/use-auth';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { useEffect, useMemo } from 'react';
-import { ColorSettings } from '@/types';
+import type { ColorSettings } from '@/types';
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-
+function ThemedBody({ children }: { children: React.ReactNode }) {
+  const { appUser } = useAuth();
+  
   const isDarkMode = useMemo(() => {
     if (typeof window !== 'undefined') {
       return document.documentElement.classList.contains('dark');
@@ -21,16 +17,33 @@ export default function RootLayout({
     return false;
   }, []);
 
-  const [colorSettings] = useLocalStorage<ColorSettings>('color-settings', {
-    lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
-    chordsColor: isDarkMode ? '#F59E0B' : '#000000',
-    backgroundColor: isDarkMode ? '#0a0a0a' : '#f7f2fa',
-  });
+  const colorSettings: ColorSettings | undefined = useMemo(() => {
+    if (appUser?.colorSettings) {
+      return appUser.colorSettings;
+    }
+    // Retorna um padrão baseado no tema se não houver configurações salvas
+    return {
+      lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
+      chordsColor: isDarkMode ? '#F59E0B' : '#000000',
+      backgroundColor: isDarkMode ? '#0a0a0a' : '#f7f2fa',
+    };
+  }, [appUser, isDarkMode]);
 
   useEffect(() => {
-    document.body.style.backgroundColor = colorSettings.backgroundColor;
-  }, [colorSettings.backgroundColor]);
+    if (colorSettings?.backgroundColor) {
+        document.body.style.backgroundColor = colorSettings.backgroundColor;
+    }
+  }, [colorSettings]);
 
+  return <>{children}</>;
+}
+
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
 
   return (
     <html lang="pt" suppressHydrationWarning>
@@ -50,7 +63,9 @@ export default function RootLayout({
                 enableSystem={false}
                 disableTransitionOnChange
             >
-                {children}
+                <ThemedBody>
+                  {children}
+                </ThemedBody>
                 <Toaster />
             </ThemeProvider>
         </AuthProvider>

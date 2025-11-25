@@ -12,11 +12,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
-import { PedalSettings, ColorSettings } from '@/types';
+import { PedalSettings, ColorSettings, User } from '@/types';
 import { Carousel, CarouselApi, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { transposeChord, transposeContent } from '@/lib/music';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/hooks/use-auth';
 
 interface OfflineSong {
     title: string;
@@ -44,6 +45,7 @@ export default function OfflineSetlistPage() {
   const params = useParams();
   const setlistId = params.id as string;
   const containerRef = useRef<HTMLDivElement>(null);
+  const { appUser } = useAuth();
 
   const [offlineData, setOfflineData] = useState<OfflineSetlist | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -60,10 +62,16 @@ export default function OfflineSetlistPage() {
   });
   
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [colorSettings] = useLocalStorage<ColorSettings>('color-settings', {
-    lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
-    chordsColor: isDarkMode ? '#F59E0B' : '#000000',
-  });
+  
+  const colorSettings = useMemo(() => {
+    if (appUser?.colorSettings) {
+      return appUser.colorSettings;
+    }
+    return {
+      lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
+      chordsColor: isDarkMode ? '#F59E0B' : '#000000',
+    };
+  }, [appUser, isDarkMode]);
 
   const [api, setApi] = useState<CarouselApi>()
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);

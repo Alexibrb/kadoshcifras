@@ -25,6 +25,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
+import { useAuth } from '@/hooks/use-auth';
 
 
 const ALL_KEYS = [
@@ -39,7 +40,8 @@ export default function SongPage() {
   const songId = params.id as string;
   const fromSetlistId = searchParams.get('fromSetlist');
   const initialTranspose = parseInt(searchParams.get('transpose') || '0', 10);
-
+  
+  const { appUser } = useAuth();
   const { data: song, loading: loadingSong, updateDocument: updateSongDoc } = useFirestoreDocument<Song>('songs', songId);
   const { data: setlist, loading: loadingSetlist, updateDocument: updateSetlistDoc } = useFirestoreDocument<Setlist>('setlists', fromSetlistId || '');
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', { 
@@ -50,10 +52,6 @@ export default function SongPage() {
   });
   
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [colorSettings] = useLocalStorage<ColorSettings>('color-settings', {
-    lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
-    chordsColor: isDarkMode ? '#F59E0B' : '#000000',
-  });
 
   const [isClient, setIsClient] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -76,6 +74,16 @@ export default function SongPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   const initialKeyRef = useRef(song?.key);
+
+  const colorSettings = useMemo(() => {
+    if (appUser?.colorSettings) {
+      return appUser.colorSettings;
+    }
+    return {
+      lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
+      chordsColor: isDarkMode ? '#F59E0B' : '#000000',
+    };
+  }, [appUser, isDarkMode]);
 
   useEffect(() => {
     setIsClient(true);
