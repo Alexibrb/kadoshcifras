@@ -217,6 +217,19 @@ export default function OfflineSetlistPage() {
   }
 
   const displayedKey = currentSong.key ? transposeChord(currentSong.key, currentSongTranspose) : 'N/A';
+  
+  const fontControl = (
+    <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-fit">
+        <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
+        <Button variant="ghost" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-7 w-7 px-1">
+            <Minus className="h-4 w-4" />
+        </Button>
+        <span className="text-sm font-medium tabular-nums">{fontSize}px</span>
+        <Button variant="ghost" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-7 w-7 px-1">
+            <Plus className="h-4 w-4" />
+        </Button>
+    </div>
+  );
 
   return (
     <div ref={containerRef} className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen outline-none bg-background" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
@@ -233,8 +246,8 @@ export default function OfflineSetlistPage() {
                   </Button>
 
                   <div className="flex-1 space-y-1">
-                    <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{offlineData.name}</h1>
-                    <p className="text-muted-foreground text-sm">Modo de Apresentação Offline</p>
+                    <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{currentSong.title}</h1>
+                    <p className="text-muted-foreground text-sm">{offlineData.name} - Modo Offline</p>
                   </div>
                   
                   <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon" className="shrink-0">
@@ -256,16 +269,8 @@ export default function OfflineSetlistPage() {
                         </Button>
                     </div>
 
-                    <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-xs">
-                        <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
-                        <Button variant="ghost" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-7 w-7 px-1">
-                        <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="text-sm font-medium tabular-nums">{fontSize}px</span>
-                        <Button variant="ghost" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-7 w-7 px-1">
-                        <Plus className="h-4 w-4" />
-                        </Button>
-                    </div>
+                    {fontControl}
+
                     <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10">
                         <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
                         <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} className="ml-auto" />
@@ -281,7 +286,7 @@ export default function OfflineSetlistPage() {
                   </Link>
                 </Button>
                 <h1 className="text-lg font-bold font-headline tracking-tight truncate">
-                    {offlineData.name}
+                    {currentSong.title}
                 </h1>
                 <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0">
                   <PanelTopOpen className="h-5 w-5" />
@@ -302,12 +307,9 @@ export default function OfflineSetlistPage() {
                     <CarouselItem key={index} className="h-full">
                       <Card className="w-full h-full flex flex-col bg-background shadow-none border-none">
                          <CardContent className="flex-1 h-full p-0 flex flex-col">
-                            <div className="flex items-center justify-between gap-4 text-sm text-muted-foreground px-4 pt-2 pb-1 border-b">
-                                <span>{section.songTitle}</span>
-                                <div className="flex items-center gap-4">
+                            <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground px-4 pt-2 pb-1 border-b">
                                    <Badge variant="outline">Música {section.songIndex + 1} de {offlineData.songs.length}</Badge>
                                    <Badge variant="secondary">Página {section.partIndex + 1} de {section.songTotalParts}</Badge>
-                                </div>
                             </div>
                             <ScrollArea className="h-full p-4 md:p-6 flex-1">
                                 <SongDisplay 
@@ -350,3 +352,5 @@ export default function OfflineSetlistPage() {
     </div>
   );
 }
+
+    
