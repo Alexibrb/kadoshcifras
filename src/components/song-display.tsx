@@ -13,7 +13,6 @@ const Line = ({ text, isChord, showChords, style }: { text: string; isChord: boo
         return null;
     }
     
-    // Evita que uma linha em branco ocupe espaço desnecessário quando as cifras estão ocultas.
     if (text.trim() === '' && !showChords) {
        return <p className="mb-0">&nbsp;</p>;
     }
@@ -42,6 +41,7 @@ const Line = ({ text, isChord, showChords, style }: { text: string; isChord: boo
         );
     }
     
+    // Combina o estilo recebido (que inclui fontSize) com a cor apropriada.
     const finalStyle = isChord 
         ? { ...style, color: 'var(--chords-color, hsl(var(--primary)))' }
         : { ...style, color: 'var(--lyrics-color, hsl(var(--foreground)))' };
@@ -50,8 +50,8 @@ const Line = ({ text, isChord, showChords, style }: { text: string; isChord: boo
         <p
             style={finalStyle}
             className={cn(
-                'whitespace-pre-wrap', // Permite que o texto quebre a linha, mas preserva os espaços
-                'break-words', // Força a quebra de palavras longas
+                'whitespace-pre-wrap', 
+                'break-words', 
                 isChord ? 'font-bold mb-1' : 'mb-2'
             )}
         >
@@ -68,21 +68,14 @@ export function SongDisplay({ content, className, showChords, style, ...props }:
         className
     );
     
-    const textStyle = {
-      color: 'var(--custom-text-color)',
-      fontSize: style?.fontSize // Pega o fontSize do style passado
-    }
-
     return (
-        <div className={containerClasses} {...props}>
+        <div className={containerClasses} {...props} style={style}>
             {lines.map((line, lineIndex) => {
                 const isChord = isChordLine(line);
                 if (isChord && !showChords) {
                     return null;
                 }
                 
-                // Evita renderizar um espaço extra se a linha de letra estiver vazia
-                // e a linha de cifra acima dela foi ocultada.
                 if(line.trim() === '' && !showChords && lineIndex > 0 && isChordLine(lines[lineIndex - 1])) {
                     return null;
                 }
@@ -93,7 +86,7 @@ export function SongDisplay({ content, className, showChords, style, ...props }:
                         text={line}
                         isChord={isChord}
                         showChords={showChords}
-                        style={textStyle}
+                        style={style || {}} // Passa o objeto de estilo completo para cada linha
                     />
                 );
             })}
