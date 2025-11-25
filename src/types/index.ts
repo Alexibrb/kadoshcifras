@@ -63,4 +63,5 @@ export interface PedalSettings {
 export interface ColorSettings {
     lyricsColor: string;
     chordsColor: string;
+    backgroundColor: string;
 }
