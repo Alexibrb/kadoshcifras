@@ -314,17 +314,15 @@ export default function OfflineSetlistPage() {
                         <Card className="w-full h-full flex flex-col bg-background shadow-none border-none">
                           <CardContent className="flex-1 h-full p-0">
                             <ScrollArea className="h-full p-4 md:p-6">
-                              {section.partIndex === 0 && (
-                                <div className="text-center mb-4 text-sm text-muted-foreground font-semibold flex justify-center items-center gap-4">
-                                  <span>Música {songNumber} de {totalSongs}</span>
-                                  {totalPagesInSection > 1 && (
-                                    <>
-                                      <span>&bull;</span>
-                                      <span>Página {sectionPageNumber} de {totalPagesInSection}</span>
-                                    </>
-                                  )}
-                                </div>
-                              )}
+                              <div className="text-center mb-4 text-sm text-muted-foreground font-semibold flex justify-center items-center gap-4">
+                                <span>Música {songNumber} de {totalSongs}</span>
+                                {totalPagesInSection > 1 && (
+                                  <>
+                                    <span>&bull;</span>
+                                    <span>Página {sectionPageNumber} de {totalPagesInSection}</span>
+                                  </>
+                                )}
+                              </div>
                               <SongDisplay 
                                   style={{ fontSize: `${fontSize}px` }} 
                                   content={content} 
