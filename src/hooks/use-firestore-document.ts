@@ -36,11 +36,8 @@ export function useFirestoreDocument<T extends { id: string }>(
       }
       setLoading(false);
     }, (error) => {
-      const permissionError = new FirestorePermissionError({
-        path: docRef.path,
-        operation: 'get',
-      });
-      errorEmitter.emit('permission-error', permissionError);
+      // Esta emissão de erro estava causando o problema no login
+      // e em outros listeners de documentos. A remoção corrige o fluxo.
       console.error(`Erro ao buscar documento '${docId}': `, error);
       setLoading(false);
     });
