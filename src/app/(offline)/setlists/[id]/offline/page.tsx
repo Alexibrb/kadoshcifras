@@ -94,7 +94,7 @@ export default function OfflineSetlistPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [fontSize, setFontSize] = useLocalStorage('song-font-size', 16);
+  const [fontSize] = useLocalStorage('song-font-size', 14);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', true);
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', {
@@ -247,9 +247,6 @@ export default function OfflineSetlistPage() {
         return newTranspositions;
     });
   };
-  
-  const increaseFontSize = useCallback(() => setFontSize(s => Math.min(32, s + 1)), [setFontSize]);
-  const decreaseFontSize = useCallback(() => setFontSize(s => Math.max(8, s - 1)), [setFontSize]);
 
   if (loading || !isClient || !finalColorSettings) {
     return (
@@ -356,16 +353,6 @@ export default function OfflineSetlistPage() {
           </Card>
       <div className="flex-1 flex flex-col min-h-0">
            <div className="text-center mb-4 text-sm text-muted-foreground font-semibold flex justify-center items-center gap-4 pt-0">
-              <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-fit">
-                  <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
-                  <Button variant="ghost" onClick={decreaseFontSize} className="h-7 w-7 px-1">
-                      <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm font-medium tabular-nums">{fontSize}px</span>
-                  <Button variant="ghost" onClick={increaseFontSize} className="h-7 w-7 px-1">
-                      <Plus className="h-4 w-4" />
-                  </Button>
-              </div>
                <span className="flex items-center gap-1.5">
                   <Music className="h-4 w-4" />
                   {currentSongIndex + 1} de {offlineData?.songs.length ?? 0}
@@ -413,5 +400,3 @@ export default function OfflineSetlistPage() {
     </div>
   );
 }
-
-    

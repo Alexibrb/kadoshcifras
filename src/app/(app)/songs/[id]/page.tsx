@@ -56,7 +56,7 @@ export default function SongPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [transpose, setTranspose] = useState(initialTranspose);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
-  const [fontSize, setFontSize] = useLocalStorage('song-font-size', 16);
+  const [fontSize] = useLocalStorage('song-font-size', 14);
   const [api, setApi] = useState<CarouselApi>()
   const [current, setCurrent] = useState(0)
   const [count, setCount] = useState(0)
@@ -248,19 +248,6 @@ export default function SongPage() {
   };
 
   const backUrl = fromSetlistId ? `/setlists/${fromSetlistId}` : '/songs';
-
-  const fontControl = (
-    <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-fit">
-        <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
-        <Button variant="ghost" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-7 w-7 px-1">
-            <Minus className="h-4 w-4" />
-        </Button>
-        <span className="text-sm font-medium tabular-nums">{fontSize}px</span>
-        <Button variant="ghost" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-7 w-7 px-1">
-            <Plus className="h-4 w-4" />
-        </Button>
-    </div>
-  );
 
   return (
     <div 
@@ -464,7 +451,6 @@ export default function SongPage() {
                 </Alert>
                 <Textarea
                   id="content-editor"
-                  ref={textareaRef}
                   value={editedSong.content || ''}
                   onChange={(e) => {
                     if (editedSong) {
@@ -498,10 +484,8 @@ export default function SongPage() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    {fontControl}
                     {count > 1 && (
                         <>
-                        <span className="text-muted-foreground/50 mx-1">&bull;</span>
                         <span className="flex items-center gap-1.5"><File className="h-4 w-4" /> {current} de {count}</span>
                         </>
                     )}
@@ -570,7 +554,7 @@ export default function SongPage() {
                          ) : <div className="w-10"></div>}
                      </div>
                       <div className="flex items-center gap-4">
-                        {fontControl}
+                        {/* Font control removed */}
                       </div>
                       <div className="flex items-center gap-2">
                         {fromSetlistId && nextSongId ? (
