@@ -232,6 +232,19 @@ export default function SongPage() {
 
   const backUrl = fromSetlistId ? `/setlists/${fromSetlistId}` : '/songs';
 
+  const fontControl = (
+    <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-fit">
+        <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
+        <Button variant="ghost" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-7 w-7 px-1">
+            <Minus className="h-4 w-4" />
+        </Button>
+        <span className="text-sm font-medium tabular-nums">{fontSize}px</span>
+        <Button variant="ghost" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-7 w-7 px-1">
+            <Plus className="h-4 w-4" />
+        </Button>
+    </div>
+  );
+
   return (
     <div 
       ref={containerRef}
@@ -468,16 +481,7 @@ export default function SongPage() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-fit">
-                        <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
-                        <Button variant="ghost" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-7 w-7 px-1">
-                            <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="text-sm font-medium tabular-nums">{fontSize}px</span>
-                        <Button variant="ghost" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-7 w-7 px-1">
-                            <Plus className="h-4 w-4" />
-                        </Button>
-                    </div>
+                    {fontControl}
                     {count > 1 && <span>Página {current} de {count}</span>}
                 </div>
 
@@ -536,16 +540,7 @@ export default function SongPage() {
                          ) : <div className="w-10"></div>}
                      </div>
                       <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-fit">
-                            <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
-                            <Button variant="ghost" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-7 w-7 px-1">
-                                <Minus className="h-4 w-4" />
-                            </Button>
-                            <span className="text-sm font-medium tabular-nums">{fontSize}px</span>
-                            <Button variant="ghost" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-7 w-7 px-1">
-                                <Plus className="h-4 w-4" />
-                            </Button>
-                        </div>
+                        {fontControl}
                       </div>
                       <div className="flex items-center gap-2">
                         {fromSetlistId && nextSongId ? (

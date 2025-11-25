@@ -1,7 +1,5 @@
 
 'use client';
-import { KeyIdentifierForm } from "@/components/tools/key-identifier-form";
-import { ProgressionSuggesterForm } from "@/components/tools/progression-suggester-form";
 import { PedalSettingsForm } from "@/components/tools/pedal-settings-form";
 import { ColorSettingsForm } from "@/components/tools/color-settings-form";
 
@@ -13,8 +11,6 @@ export default function ToolsPage() {
       </div>
 
        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-         <KeyIdentifierForm />
-         <ProgressionSuggesterForm />
          <PedalSettingsForm />
          <ColorSettingsForm />
        </div>
