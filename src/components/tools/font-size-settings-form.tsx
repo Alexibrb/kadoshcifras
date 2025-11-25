@@ -25,10 +25,10 @@ export function FontSizeSettingsForm() {
     }
   }, [appUser]);
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!appUser) return;
     const newSize = parseInt(selectedSize, 10);
-    await updateDocument(appUser.id, { fontSize: newSize });
+    updateDocument(appUser.id, { fontSize: newSize });
     
     // Also update local storage for offline page
     localStorage.setItem('song-font-size', JSON.stringify(newSize));
@@ -37,11 +37,11 @@ export function FontSizeSettingsForm() {
     setTimeout(() => setSaved(false), 2000);
   };
   
-  const handleReset = async () => {
+  const handleReset = () => {
     if (!appUser) return;
     const defaultSize = 14;
     setSelectedSize(defaultSize.toString());
-    await updateDocument(appUser.id, { fontSize: defaultSize });
+    updateDocument(appUser.id, { fontSize: defaultSize });
      localStorage.setItem('song-font-size', JSON.stringify(defaultSize));
   }
 

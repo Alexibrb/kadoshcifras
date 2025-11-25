@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { db as firestoreDB } from '@/lib/firebase';
 import { doc, onSnapshot, updateDoc, DocumentData } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export function useFirestoreDocument<T extends { id: string }>(
     collectionName: string,
@@ -34,6 +36,11 @@ export function useFirestoreDocument<T extends { id: string }>(
       }
       setLoading(false);
     }, (error) => {
+      const permissionError = new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'get',
+      });
+      errorEmitter.emit('permission-error', permissionError);
       console.error(`Erro ao buscar documento '${docId}': `, error);
       setLoading(false);
     });
@@ -49,12 +56,16 @@ export function useFirestoreDocument<T extends { id: string }>(
       console.error("ID do documento não fornecido para atualização.");
       return;
     }
-    try {
-      const docRef = doc(firestoreDB, collectionName, docId);
-      await updateDoc(docRef, updatedData as DocumentData);
-    } catch (error) {
-      console.error(`Erro ao atualizar documento em '${collectionName}': `, error);
-    }
+    const docRef = doc(firestoreDB, collectionName, docId);
+    updateDoc(docRef, updatedData as DocumentData)
+      .catch((error) => {
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'update',
+          requestResourceData: updatedData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
 
   return {

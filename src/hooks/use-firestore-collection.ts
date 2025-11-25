@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { db as firestoreDB } from '@/lib/firebase';
 import { collection, onSnapshot, query, where, QueryConstraint, WhereFilterOp, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, orderBy, Query, Timestamp } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export type FirestoreQueryFilter = [string, WhereFilterOp, any];
 
@@ -52,6 +54,11 @@ export function useFirestoreCollection<T extends { id: string }>(
       setData(dataFromFirestore);
       setLoading(false); // Termina de carregar APÓS os dados serem definidos.
     }, (error) => {
+      const permissionError = new FirestorePermissionError({
+        path: collectionRef.path,
+        operation: 'list',
+      });
+      errorEmitter.emit('permission-error', permissionError);
       console.error(`Erro ao buscar coleção '${collectionName}': `, error);
       setData([]);
       setLoading(false);
@@ -63,33 +70,47 @@ export function useFirestoreCollection<T extends { id: string }>(
   }, [collectionName, initialSort, filtersJSON]);
 
   const addDocument = async (newData: Omit<T, 'id' | 'createdAt'>) => {
+      const collectionRef = collection(firestoreDB, collectionName);
       try {
-        const docRef = await addDoc(collection(firestoreDB, collectionName), {
+        const docRef = await addDoc(collectionRef, {
             ...newData,
             createdAt: serverTimestamp(),
         });
         return docRef.id;
-      } catch (error) {
-        console.error(`Erro ao adicionar documento a '${collectionName}': `, error);
+      } catch (error: any) {
+        const permissionError = new FirestorePermissionError({
+            path: collectionRef.path,
+            operation: 'create',
+            requestResourceData: newData
+        });
+        errorEmitter.emit('permission-error', permissionError);
         return null;
       }
   };
 
-  const updateDocument = async (id: string, updatedData: Partial<T>) => {
-      try {
-          const docRef = doc(firestoreDB, collectionName, id);
-          await updateDoc(docRef, updatedData);
-      } catch (error) {
-          console.error(`Erro ao atualizar documento em '${collectionName}': `, error);
-      }
+  const updateDocument = (id: string, updatedData: Partial<T>) => {
+      const docRef = doc(firestoreDB, collectionName, id);
+      updateDoc(docRef, updatedData)
+        .catch((error) => {
+             const permissionError = new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'update',
+                requestResourceData: updatedData
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
   };
 
   const deleteDocument = async (id: string) => {
+      const docRef = doc(firestoreDB, collectionName, id);
       try {
-          const docRef = doc(firestoreDB, collectionName, id);
           await deleteDoc(docRef);
       } catch (error) {
-          console.error(`Erro ao deletar documento de '${collectionName}': `, error);
+          const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
       }
   };
 
