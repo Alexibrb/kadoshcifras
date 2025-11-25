@@ -1,7 +1,6 @@
 
 'use client';
 import { PedalSettingsForm } from "@/components/tools/pedal-settings-form";
-import { ColorSettingsForm } from "@/components/tools/color-settings-form";
 
 export default function ToolsPage() {
   return (
@@ -12,7 +11,6 @@ export default function ToolsPage() {
 
        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
          <PedalSettingsForm />
-         <ColorSettingsForm />
        </div>
     </div>
   );

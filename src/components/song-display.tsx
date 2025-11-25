@@ -6,11 +6,9 @@ import { isChordLine } from '@/lib/music';
 interface SongDisplayProps extends React.HTMLAttributes<HTMLDivElement> {
   content: string;
   showChords: boolean;
-  lyricsColor?: string;
-  chordsColor?: string;
 }
 
-const Line = ({ text, isChord, showChords, lyricsColor, chordsColor }: { text: string; isChord: boolean, showChords: boolean, lyricsColor?: string, chordsColor?: string }) => {
+const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, showChords: boolean }) => {
     if (isChord && !showChords) {
         return null;
     }
@@ -45,17 +43,13 @@ const Line = ({ text, isChord, showChords, lyricsColor, chordsColor }: { text: s
         );
     }
     
-    const style = {
-        color: isChord ? chordsColor : lyricsColor
-    };
 
     return (
         <p
-            style={style}
             className={cn(
                 'whitespace-pre-wrap', // Permite que o texto quebre a linha, mas preserva os espaços
                 'break-words', // Força a quebra de palavras longas
-                isChord ? 'font-bold mb-1' : 'mb-2'
+                isChord ? 'font-bold mb-1 text-primary' : 'mb-2'
             )}
         >
             {text}
@@ -63,7 +57,7 @@ const Line = ({ text, isChord, showChords, lyricsColor, chordsColor }: { text: s
     );
 }
 
-export function SongDisplay({ content, className, showChords, lyricsColor, chordsColor, ...props }: SongDisplayProps) {
+export function SongDisplay({ content, className, showChords, ...props }: SongDisplayProps) {
     const lines = content.split('\n');
 
     const containerClasses = cn(
@@ -92,8 +86,6 @@ export function SongDisplay({ content, className, showChords, lyricsColor, chord
                         text={line}
                         isChord={isChord}
                         showChords={showChords}
-                        lyricsColor={lyricsColor}
-                        chordsColor={chordsColor}
                     />
                 );
             })}

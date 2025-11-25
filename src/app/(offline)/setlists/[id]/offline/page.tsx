@@ -12,12 +12,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
-import { PedalSettings, ColorSettings, User } from '@/types';
+import { PedalSettings } from '@/types';
 import { Carousel, CarouselApi, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { transposeChord, transposeContent } from '@/lib/music';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { useAuth } from '@/hooks/use-auth';
 
 interface OfflineSong {
     title: string;
@@ -45,7 +44,6 @@ export default function OfflineSetlistPage() {
   const params = useParams();
   const setlistId = params.id as string;
   const containerRef = useRef<HTMLDivElement>(null);
-  const { appUser } = useAuth();
 
   const [offlineData, setOfflineData] = useState<OfflineSetlist | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -61,18 +59,6 @@ export default function OfflineSetlistPage() {
     nextSong: ']',
   });
   
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  
-  const colorSettings = useMemo(() => {
-    if (appUser?.colorSettings) {
-      return appUser.colorSettings;
-    }
-    return {
-      lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
-      chordsColor: isDarkMode ? '#F59E0B' : '#000000',
-    };
-  }, [appUser, isDarkMode]);
-
   const [api, setApi] = useState<CarouselApi>()
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [transpositions, setTranspositions] = useState<number[]>([]);
@@ -81,7 +67,6 @@ export default function OfflineSetlistPage() {
     // Only run on the client
     if (typeof window !== 'undefined') {
       setLoading(true);
-      setIsDarkMode(document.documentElement.classList.contains('dark'));
       try {
         const storageKey = `offline-setlist-${setlistId}`;
         const item = localStorage.getItem(storageKey);
@@ -249,13 +234,8 @@ export default function OfflineSetlistPage() {
                     </Button>
 
                     <div className="flex-1 space-y-1">
-                      <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{offlineData.name}</h1>
+                      <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{currentSong.title}</h1>
                       <p className="text-muted-foreground text-sm">Modo de Apresentação Offline</p>
-                      <div className="flex items-center flex-wrap gap-2 pt-1">
-                         <Badge variant="outline" className="whitespace-nowrap text-sm">
-                            Música: {currentSong.title}
-                         </Badge>
-                      </div>
                     </div>
                     
                     <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon" className="shrink-0">
@@ -342,8 +322,6 @@ export default function OfflineSetlistPage() {
                                   style={{ fontSize: `${fontSize}px` }} 
                                   content={content} 
                                   showChords={showChords} 
-                                  lyricsColor={colorSettings.lyricsColor}
-                                  chordsColor={colorSettings.chordsColor}
                               />
                               {section.isLastSectionOfSong && !section.isLastSectionOfSetlist && (
                                   <div className="mt-8 text-center text-muted-foreground">

@@ -44,9 +44,9 @@ service cloud.firestore {
 
       // UPDATE:
       // - An admin can update anyone's `isApproved` or `role`.
-      // - A user can only update their own displayName and colorSettings.
+      // - A user can only update their own displayName.
       allow update: if isAdmin() 
-                    || (request.auth.uid == userId && request.resource.data.keys().hasAny(['displayName', 'colorSettings']));
+                    || (request.auth.uid == userId && request.resource.data.keys().hasAny(['displayName']));
       
       // DELETE: No one should delete user documents.
       allow delete: if false;

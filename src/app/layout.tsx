@@ -3,41 +3,7 @@
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider, useAuth } from '@/hooks/use-auth';
-import { useEffect, useMemo } from 'react';
-import type { ColorSettings } from '@/types';
-
-function ThemedBody({ children }: { children: React.ReactNode }) {
-  const { appUser } = useAuth();
-  
-  const isDarkMode = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return document.documentElement.classList.contains('dark');
-    }
-    return false;
-  }, []);
-
-  const colorSettings: ColorSettings | undefined = useMemo(() => {
-    if (appUser?.colorSettings) {
-      return appUser.colorSettings;
-    }
-    // Retorna um padrão baseado no tema se não houver configurações salvas
-    return {
-      lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
-      chordsColor: isDarkMode ? '#F59E0B' : '#000000',
-      backgroundColor: isDarkMode ? '#0a0a0a' : '#f7f2fa',
-    };
-  }, [appUser, isDarkMode]);
-
-  useEffect(() => {
-    if (colorSettings?.backgroundColor) {
-        document.body.style.backgroundColor = colorSettings.backgroundColor;
-    }
-  }, [colorSettings]);
-
-  return <>{children}</>;
-}
-
+import { AuthProvider } from '@/hooks/use-auth';
 
 export default function RootLayout({
   children,
@@ -63,9 +29,7 @@ export default function RootLayout({
                 enableSystem={false}
                 disableTransitionOnChange
             >
-                <ThemedBody>
-                  {children}
-                </ThemedBody>
+                {children}
                 <Toaster />
             </ThemeProvider>
         </AuthProvider>

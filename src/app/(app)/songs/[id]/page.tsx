@@ -2,7 +2,7 @@
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Song, type MetadataItem, Setlist, SetlistSong, PedalSettings, ColorSettings } from '@/types';
+import { Song, type MetadataItem, Setlist, SetlistSong, PedalSettings } from '@/types';
 import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, HardDriveDownload, Eye, EyeOff, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation';
@@ -25,7 +25,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
-import { useAuth } from '@/hooks/use-auth';
 
 
 const ALL_KEYS = [
@@ -41,7 +40,6 @@ export default function SongPage() {
   const fromSetlistId = searchParams.get('fromSetlist');
   const initialTranspose = parseInt(searchParams.get('transpose') || '0', 10);
   
-  const { appUser } = useAuth();
   const { data: song, loading: loadingSong, updateDocument: updateSongDoc } = useFirestoreDocument<Song>('songs', songId);
   const { data: setlist, loading: loadingSetlist, updateDocument: updateSetlistDoc } = useFirestoreDocument<Setlist>('setlists', fromSetlistId || '');
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', { 
@@ -51,8 +49,6 @@ export default function SongPage() {
     nextSong: ']',
   });
   
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
   const [isClient, setIsClient] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [transpose, setTranspose] = useState(initialTranspose);
@@ -75,19 +71,8 @@ export default function SongPage() {
   
   const initialKeyRef = useRef(song?.key);
 
-  const colorSettings = useMemo(() => {
-    if (appUser?.colorSettings) {
-      return appUser.colorSettings;
-    }
-    return {
-      lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
-      chordsColor: isDarkMode ? '#F59E0B' : '#000000',
-    };
-  }, [appUser, isDarkMode]);
-
   useEffect(() => {
     setIsClient(true);
-    setIsDarkMode(document.documentElement.classList.contains('dark'));
     setTranspose(initialTranspose);
     if (containerRef.current) {
         containerRef.current.focus();
@@ -517,8 +502,6 @@ export default function SongPage() {
                                 style={{ fontSize: `${fontSize}px` }} 
                                 content={part} 
                                 showChords={showChords}
-                                lyricsColor={colorSettings.lyricsColor}
-                                chordsColor={colorSettings.chordsColor}
                             />
                           </ScrollArea>
                         </CardContent>
@@ -583,8 +566,6 @@ export default function SongPage() {
                           style={{ fontSize: `${fontSize}px` }}
                           content={contentToDisplay.replace(/\n\s*\n\s*\n/g, '\n\n')}
                           showChords={false} 
-                          lyricsColor={colorSettings.lyricsColor}
-                          chordsColor={colorSettings.chordsColor}
                       />
                   </ScrollArea>
               </CardContent>
