@@ -63,24 +63,40 @@ export default function OfflineSetlistPage() {
   const [api, setApi] = useState<CarouselApi>()
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [transpositions, setTranspositions] = useState<number[]>([]);
+  const [isClient, setIsClient] = useState(false);
 
   const defaultColorSettings = useMemo(() => {
-    const isDarkMode = document.documentElement.classList.contains('dark');
+    // Return a default that doesn't depend on `document` initially
     return {
+        lyricsColor: '#000000',
+        chordsColor: '#D946EF',
+        backgroundColor: '#ffffff',
+    };
+  }, []);
+
+  const [finalColorSettings, setFinalColorSettings] = useState(appUser?.colorSettings || defaultColorSettings);
+
+  useEffect(() => {
+    setIsClient(true);
+    // Now that we are on the client, we can check the theme
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    const themeDefaults = {
         lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
         chordsColor: isDarkMode ? '#F59E0B' : '#D946EF',
         backgroundColor: isDarkMode ? '#0a0a0a' : '#ffffff',
     };
-  }, []);
+    // Use user settings if available, otherwise use the correct theme defaults
+    setFinalColorSettings(appUser?.colorSettings || themeDefaults);
+  }, [appUser?.colorSettings]);
 
-  const finalColorSettings = appUser?.colorSettings || defaultColorSettings;
 
   useEffect(() => {
+    if (!isClient) return;
     document.body.style.backgroundColor = finalColorSettings.backgroundColor;
     return () => {
         document.body.style.backgroundColor = '';
     }
-  }, [finalColorSettings.backgroundColor]);
+  }, [finalColorSettings.backgroundColor, isClient]);
 
   useEffect(() => {
     // Only run on the client
@@ -313,7 +329,7 @@ export default function OfflineSetlistPage() {
        <>
         {renderPanel()}
         <div className="flex-1 flex flex-col min-h-0">
-            <div className="text-center mb-4 text-sm text-muted-foreground font-semibold flex justify-center items-center gap-4 pt-0">
+             <div className="text-center mb-4 text-sm text-muted-foreground font-semibold flex justify-center items-center gap-4 pt-0">
                 <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-fit">
                     <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
                     <Button variant="ghost" onClick={decreaseFontSize} className="h-7 w-7 px-1">
