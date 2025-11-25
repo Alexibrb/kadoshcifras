@@ -155,14 +155,16 @@ export default function SetlistPage() {
     if (!allSongsFound) {
       toast({
         title: "Erro de Sincronização",
-        description: "Algumas músicas do repertório ainda estão carregando. Tente recarregar a página e gerar novamente.",
+        description: "Algumas músicas do repertório ainda estão carregando. Aguarde um instante e tente novamente.",
         variant: "destructive"
       });
       return;
     }
     
     const offlineSongs = songsToProcess.map(setlistSong => {
-      const song = songMap.get(setlistSong.songId)!;
+      const song = songMap.get(setlistSong.songId);
+      // Pula qualquer música que não foi encontrada no mapa para evitar erros
+      if (!song) return null;
       return {
           title: song.title,
           artist: song.artist,
@@ -170,7 +172,7 @@ export default function SetlistPage() {
           key: song.key,
           initialTranspose: setlistSong.transpose
       };
-    });
+    }).filter(Boolean); // Filtra quaisquer valores nulos resultantes de musicas não encontradas
 
     try {
       const storageKey = `offline-setlist-${setlistId}`;
@@ -439,3 +441,5 @@ export default function SetlistPage() {
     </div>
   );
 }
+
+    
