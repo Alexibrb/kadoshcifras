@@ -95,7 +95,7 @@ export default function OfflineSetlistPage() {
   const [loading, setLoading] = useState(true);
 
   // Lê do localStorage, com um valor padrão. A fonte da verdade virá do DB através do useAuth.
-  const [fontSize, setFontSize] = useLocalStorage('song-font-size', 14);
+  const [fontSize] = useLocalStorage('song-font-size', 14);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', true);
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', {
