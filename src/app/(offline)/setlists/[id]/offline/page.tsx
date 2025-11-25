@@ -45,9 +45,11 @@ const useAuth = () => {
     const [user, setUser] = useState<{ colorSettings?: ColorSettings } | null>(null);
     useEffect(() => {
         // Simula a obtenção das configurações do usuário a partir do localStorage
-        const settings = localStorage.getItem('user-color-settings');
-        if (settings) {
-            setUser({ colorSettings: JSON.parse(settings) });
+        if (typeof window !== 'undefined') {
+            const settings = localStorage.getItem('user-color-settings');
+            if (settings) {
+                setUser({ colorSettings: JSON.parse(settings) });
+            }
         }
     }, []);
     return { appUser: user };
@@ -85,26 +87,26 @@ export default function OfflineSetlistPage() {
     setIsClient(true);
   }, []);
 
-  useEffect(() => {
-    if (!isClient) return;
-
-    const isDarkMode = document.documentElement.classList.contains('dark');
-    const themeDefaults: ColorSettings = {
-        lyricsColor: '#000000',
-        chordsColor: '#000000',
-    };
-    
-    setFinalColorSettings(appUser?.colorSettings || themeDefaults);
-    
-  }, [isClient, appUser]);
-
-
-  useEffect(() => {
-    if (!isClient || !finalColorSettings) return;
-    return () => {
-        document.body.style.backgroundColor = '';
+  const defaultColorSettings = useMemo(() => {
+    if (!isClient) {
+        return {
+            lyricsColor: '#000000',
+            chordsColor: '#000000',
+        };
     }
-  }, [finalColorSettings, isClient]);
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    return {
+        lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
+        chordsColor: isDarkMode ? '#F59E0B' : '#000000',
+    };
+}, [isClient]);
+
+useEffect(() => {
+    if (isClient) {
+        setFinalColorSettings(appUser?.colorSettings || defaultColorSettings);
+    }
+}, [isClient, appUser, defaultColorSettings]);
+
 
   useEffect(() => {
     // Only run on the client
@@ -424,3 +426,5 @@ export default function OfflineSetlistPage() {
     </div>
   );
 }
+
+    
