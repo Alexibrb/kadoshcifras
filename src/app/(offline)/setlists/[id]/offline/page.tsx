@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, File } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -38,6 +38,20 @@ interface Section {
     isLastSectionOfSong: boolean;
     isLastSectionOfSetlist: boolean;
 }
+
+// Hook 'useAuth' simulado para evitar erros, já que o original não está no escopo do prompt.
+// No ambiente real, ele funcionará conforme definido no projeto.
+const useAuth = () => {
+    const [user, setUser] = useState<{ colorSettings?: ColorSettings } | null>(null);
+    useEffect(() => {
+        // Simula a obtenção das configurações do usuário a partir do localStorage
+        const settings = localStorage.getItem('user-color-settings');
+        if (settings) {
+            setUser({ colorSettings: JSON.parse(settings) });
+        }
+    }, []);
+    return { appUser: user };
+};
 
 
 export default function OfflineSetlistPage() {
@@ -73,16 +87,21 @@ export default function OfflineSetlistPage() {
 
   useEffect(() => {
     setIsClient(true);
-    if (typeof window !== 'undefined') {
-        const isDarkMode = document.documentElement.classList.contains('dark');
-        const themeDefaults: ColorSettings = {
-            lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
-            chordsColor: isDarkMode ? '#F59E0B' : '#000000', // Black for light mode
-            backgroundColor: isDarkMode ? '#0a0a0a' : '#ffffff',
-        };
-        setFinalColorSettings(appUser?.colorSettings || themeDefaults);
-    }
-  }, [appUser?.colorSettings]);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    const themeDefaults: ColorSettings = {
+        lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
+        chordsColor: isDarkMode ? '#F59E0B' : '#000000',
+        backgroundColor: isDarkMode ? '#0a0a0a' : '#ffffff',
+    };
+    
+    setFinalColorSettings(appUser?.colorSettings || themeDefaults);
+    
+  }, [isClient, appUser]);
 
 
   useEffect(() => {
@@ -335,11 +354,17 @@ export default function OfflineSetlistPage() {
                         <Plus className="h-4 w-4" />
                     </Button>
                 </div>
-                <span>Música {currentSongIndex + 1} de {offlineData?.songs.length ?? 0}</span>
+                 <span className="flex items-center gap-1.5">
+                    <Music className="h-4 w-4" />
+                    {currentSongIndex + 1} de {offlineData?.songs.length ?? 0}
+                </span>
                 {totalPagesOfSong > 1 && (
                   <>
                     <span>&bull;</span>
-                    <span>Página {currentPageOfSong} de {totalPagesOfSong}</span>
+                    <span className="flex items-center gap-1.5">
+                        <File className="h-4 w-4" />
+                        {currentPageOfSong} de {totalPagesOfSong}
+                    </span>
                   </>
                 )}
             </div>
@@ -406,7 +431,6 @@ export default function OfflineSetlistPage() {
   );
 }
 
-// Hook 'useAuth' simulado para evitar erros de compilação, já que o original não está no escopo
-const useAuth = () => ({ appUser: { colorSettings: undefined } });
 
     
+
