@@ -165,7 +165,7 @@ export default function SetlistPage() {
     
     const offlineSongs = songsToProcess.map(setlistSong => {
       const song = songMap.get(setlistSong.songId);
-      if (!song) return null; // Ignora músicas não encontradas
+      if (!song) return null;
       return {
           title: song.title,
           artist: song.artist,
@@ -192,11 +192,14 @@ export default function SetlistPage() {
       console.log('--- DADOS A SEREM SALVOS NO LOCALSTORAGE ---', jsonString);
       
       localStorage.setItem(storageKey, jsonString);
-      setHasOfflineVersion(true);
+      
       toast({
-        title: "Repertório Salvo Offline!",
-        description: "Você já pode acessar a página de apresentação.",
+        title: "Repertório Salvo!",
+        description: "Redirecionando para o modo de apresentação...",
       });
+      
+      router.push(`/setlists/${setlistId}/offline`);
+
     } catch (error) {
        console.error("Erro ao salvar no localStorage:", error);
        toast({
@@ -216,9 +219,6 @@ export default function SetlistPage() {
       }
   }
   
-  const handleOpenPresentationMode = () => {
-    window.open(`/setlists/${setlistId}/offline`, '_blank');
-  };
 
   if (isClient && !loading && !setlist) {
     notFound();
@@ -319,16 +319,10 @@ export default function SetlistPage() {
                   </div>
                 </div>
               )}
-               <Button onClick={handleGenerateOffline} variant="secondary">
-                    <HardDriveDownload className="mr-2 h-4 w-4" />
-                    Gerar Offline
-                </Button>
-                 {isClient && hasOfflineVersion && (
-                  <Button onClick={handleOpenPresentationMode} variant="default">
+               <Button onClick={handleGenerateOffline} variant="default">
                     <MonitorPlay className="mr-2 h-4 w-4" />
-                    Modo Apresentação
-                  </Button>
-                )}
+                    Abrir Apresentação
+                </Button>
             </div>
       </div>
       
