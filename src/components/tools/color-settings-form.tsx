@@ -15,10 +15,11 @@ export function ColorSettingsForm() {
   const { appUser, loading: authLoading } = useAuth();
   const { updateDocument } = useFirestoreCollection('users');
 
+  const [isClient, setIsClient] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-
-  // This effect runs only on the client-side
+  
   useEffect(() => {
+    setIsClient(true);
     setIsDarkMode(document.documentElement.classList.contains('dark'));
     
     const observer = new MutationObserver((mutations) => {
@@ -35,38 +36,33 @@ export function ColorSettingsForm() {
 
   const defaultSettings: ColorSettings = useMemo(() => ({
     lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
-    chordsColor: isDarkMode ? '#F59E0B' : '#000000', // Changed to black for light mode
-    backgroundColor: isDarkMode ? '#0a0a0a' : '#ffffff',
+    chordsColor: isDarkMode ? '#F59E0B' : '#000000',
   }), [isDarkMode]);
 
   const [lyricsColor, setLyricsColor] = useState(defaultSettings.lyricsColor);
   const [chordsColor, setChordsColor] = useState(defaultSettings.chordsColor);
-  const [backgroundColor, setBackgroundColor] = useState(defaultSettings.backgroundColor);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    if (!isClient) return;
+
     if (appUser) {
-      // Use user's settings if they exist, otherwise fall back to theme-based defaults
       const currentSettings = appUser.colorSettings;
       setLyricsColor(currentSettings?.lyricsColor ?? defaultSettings.lyricsColor);
       setChordsColor(currentSettings?.chordsColor ?? defaultSettings.chordsColor);
-      setBackgroundColor(currentSettings?.backgroundColor ?? defaultSettings.backgroundColor);
     } else if (!authLoading) {
-      // If no user and not loading, use defaults
       setLyricsColor(defaultSettings.lyricsColor);
       setChordsColor(defaultSettings.chordsColor);
-      setBackgroundColor(defaultSettings.backgroundColor);
     }
-  }, [appUser, authLoading, defaultSettings]);
+  }, [appUser, authLoading, defaultSettings, isClient]);
 
 
   const handleSave = async () => {
-    if (!appUser || !lyricsColor || !chordsColor || !backgroundColor) return;
+    if (!appUser || !lyricsColor || !chordsColor) return;
     
     const newSettings: ColorSettings = {
       lyricsColor,
       chordsColor,
-      backgroundColor,
     };
 
     await updateDocument(appUser.id, { colorSettings: newSettings });
@@ -77,14 +73,12 @@ export function ColorSettingsForm() {
   
   const handleReset = async () => {
     if (!appUser) return;
-    // Defaults are already calculated based on the current theme (isDarkMode)
     setLyricsColor(defaultSettings.lyricsColor);
     setChordsColor(defaultSettings.chordsColor);
-    setBackgroundColor(defaultSettings.backgroundColor);
     await updateDocument(appUser.id, { colorSettings: defaultSettings });
   }
 
-  if (authLoading) {
+  if (authLoading || !isClient) {
      return (
         <Card>
             <CardHeader>
@@ -114,7 +108,7 @@ export function ColorSettingsForm() {
           <CardTitle className="font-headline text-xl">Cores de Exibição</CardTitle>
         </div>
         <CardDescription>
-          Personalize as cores da letra, cifras e fundo. Essas configurações são salvas na sua conta.
+          Personalize as cores da letra e das cifras.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -145,21 +139,8 @@ export function ColorSettingsForm() {
                 <span className="font-mono text-sm">{chordsColor}</span>
             </div>
           </div>
-           <div className="space-y-2">
-            <Label htmlFor="backgroundColor">Cor do Fundo</Label>
-             <div className="flex items-center gap-2">
-                <Input
-                    id="backgroundColor"
-                    type="color"
-                    value={backgroundColor}
-                    onChange={(e) => setBackgroundColor(e.target.value)}
-                    className="p-1 h-10 w-14"
-                />
-                <span className="font-mono text-sm">{backgroundColor}</span>
-            </div>
-          </div>
         </div>
-        <div className="space-y-2 rounded-md border p-4" style={{ backgroundColor: backgroundColor }}>
+        <div className="space-y-2 rounded-md border p-4 bg-background">
             <Label className="text-sm text-muted-foreground">Pré-visualização</Label>
             <div className="p-2">
                 <p className="font-bold text-lg" style={{ color: chordsColor }}>G#m7 C#7</p>

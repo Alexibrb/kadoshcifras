@@ -90,9 +90,8 @@ export default function OfflineSetlistPage() {
 
     const isDarkMode = document.documentElement.classList.contains('dark');
     const themeDefaults: ColorSettings = {
-        lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
-        chordsColor: isDarkMode ? '#F59E0B' : '#000000',
-        backgroundColor: isDarkMode ? '#0a0a0a' : '#ffffff',
+        lyricsColor: '#000000',
+        chordsColor: '#000000',
     };
     
     setFinalColorSettings(appUser?.colorSettings || themeDefaults);
@@ -102,7 +101,6 @@ export default function OfflineSetlistPage() {
 
   useEffect(() => {
     if (!isClient || !finalColorSettings) return;
-    document.body.style.backgroundColor = finalColorSettings.backgroundColor;
     return () => {
         document.body.style.backgroundColor = '';
     }

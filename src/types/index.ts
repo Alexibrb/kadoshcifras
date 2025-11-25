@@ -41,7 +41,6 @@ export interface Setlist {
 export interface ColorSettings {
   lyricsColor: string;
   chordsColor: string;
-  backgroundColor: string;
 }
 
 export interface User {
