@@ -80,7 +80,7 @@ export default function OfflineSetlistPage() {
               setError("Dados offline corrompidos ou em formato inválido. Por favor, gere o repertório novamente.");
           }
         } else {
-          setError("Dados offline não encontrados. Por favor, volte e clique em 'Gerar Offline' na página do repertório.");
+          setError("Dados offline não encontrados. Por favor, volte e clique em 'Abrir Repertório' na página do repertório.");
         }
       } catch (e) {
         console.error("Erro ao ler do localStorage:", e);
@@ -368,3 +368,5 @@ export default function OfflineSetlistPage() {
     </div>
   );
 }
+
+    
