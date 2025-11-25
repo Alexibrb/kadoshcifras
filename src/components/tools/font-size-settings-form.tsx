@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Check, Type } from 'lucide-react';
 
-const FONT_SIZES = [12, 14, 16];
+const FONT_SIZES = [10, 12, 14];
 
 export function FontSizeSettingsForm() {
   const [fontSize, setFontSize] = useLocalStorage<number>('song-font-size', 14);
