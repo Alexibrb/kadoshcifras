@@ -300,11 +300,18 @@ export default function OfflineSetlistPage() {
                 {allSections.map((section, index) => {
                     const transposeValue = transpositions[section.songIndex] ?? 0;
                     const content = transposeContent(section.content, transposeValue);
+                    const songNumber = section.songIndex + 1;
+                    const totalSongs = offlineData?.songs.length ?? 0;
                     return (
                       <CarouselItem key={index} className="h-full">
                         <Card className="w-full h-full flex flex-col bg-background shadow-none border-none">
                           <CardContent className="flex-1 h-full p-0">
                             <ScrollArea className="h-full p-4 md:p-6">
+                              {section.partIndex === 0 && (
+                                <div className="text-center mb-4 text-sm text-muted-foreground font-semibold">
+                                  Música {songNumber} de {totalSongs}
+                                </div>
+                              )}
                               <SongDisplay 
                                   style={{ fontSize: `${fontSize}px` }} 
                                   content={content} 
