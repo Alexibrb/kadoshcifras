@@ -1,8 +1,4 @@
 
-<<<<<<< HEAD
-=======
-// src/app/(offline)/setlists/[id]/offline/page.tsx
->>>>>>> fb8ff31ef3948f74486e1a8e81dee5bc60bc1c8e
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -39,14 +35,8 @@ interface Section {
     songIndex: number;
     partIndex: number;
     content: string;
-<<<<<<< HEAD
     isLastSectionOfSong: boolean;
     isLastSectionOfSetlist: boolean;
-=======
-    isLastSection: boolean;
-    songTotalParts: number; // Total de partes da música
-    songTitle: string;
->>>>>>> fb8ff31ef3948f74486e1a8e81dee5bc60bc1c8e
 }
 
 // Hook 'useAuth' simulado para evitar erros, já que o original não está no escopo do prompt.
@@ -55,9 +45,11 @@ const useAuth = () => {
     const [user, setUser] = useState<{ colorSettings?: ColorSettings } | null>(null);
     useEffect(() => {
         // Simula a obtenção das configurações do usuário a partir do localStorage
-        const settings = localStorage.getItem('user-color-settings');
-        if (settings) {
-            setUser({ colorSettings: JSON.parse(settings) });
+        if (typeof window !== 'undefined') {
+            const settings = localStorage.getItem('user-color-settings');
+            if (settings) {
+                setUser({ colorSettings: JSON.parse(settings) });
+            }
         }
     }, []);
     return { appUser: user };
@@ -93,29 +85,28 @@ export default function OfflineSetlistPage() {
 
   useEffect(() => {
     setIsClient(true);
-<<<<<<< HEAD
   }, []);
 
-  useEffect(() => {
-    if (!isClient) return;
-
-    const isDarkMode = document.documentElement.classList.contains('dark');
-    const themeDefaults: ColorSettings = {
-        lyricsColor: '#000000',
-        chordsColor: '#000000',
-    };
-    
-    setFinalColorSettings(appUser?.colorSettings || themeDefaults);
-    
-  }, [isClient, appUser]);
-
-
-  useEffect(() => {
-    if (!isClient || !finalColorSettings) return;
-    return () => {
-        document.body.style.backgroundColor = '';
+  const defaultColorSettings = useMemo(() => {
+    if (!isClient) {
+        return {
+            lyricsColor: '#000000',
+            chordsColor: '#000000',
+        };
     }
-  }, [finalColorSettings, isClient]);
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    return {
+        lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
+        chordsColor: isDarkMode ? '#F59E0B' : '#000000',
+    };
+}, [isClient]);
+
+useEffect(() => {
+    if (isClient) {
+        setFinalColorSettings(appUser?.colorSettings || defaultColorSettings);
+    }
+}, [isClient, appUser, defaultColorSettings]);
+
 
   useEffect(() => {
     // Only run on the client
@@ -133,16 +124,6 @@ export default function OfflineSetlistPage() {
           } else {
               setError("Dados offline corrompidos ou em formato inválido. Por favor, gere o repertório novamente.");
           }
-=======
-    try {
-      const storageKey = `offline-setlist-${setlistId}`;
-      const item = localStorage.getItem(storageKey);
-      if (item) {
-        const parsedData = JSON.parse(item) as OfflineSetlist;
-        if (parsedData && parsedData.name && Array.isArray(parsedData.songs)) {
-            setOfflineData(parsedData);
-            setTranspositions(parsedData.songs.map(s => s.initialTranspose));
->>>>>>> fb8ff31ef3948f74486e1a8e81dee5bc60bc1c8e
         } else {
           setError("Dados offline não encontrados. Por favor, volte e clique em 'Abrir Repertório' na página do repertório.");
         }
@@ -172,14 +153,8 @@ export default function OfflineSetlistPage() {
                 songIndex: songIndex,
                 partIndex: partIndex,
                 content: part,
-<<<<<<< HEAD
                 isLastSectionOfSong: partIndex === parts.length - 1,
                 isLastSectionOfSetlist: partIndex === parts.length - 1 && songIndex === offlineData.songs.length - 1,
-=======
-                isLastSection: partIndex === parts.length - 1,
-                songTotalParts: parts.length,
-                songTitle: song.title
->>>>>>> fb8ff31ef3948f74486e1a8e81dee5bc60bc1c8e
             });
         });
     });
@@ -199,7 +174,6 @@ export default function OfflineSetlistPage() {
   const currentSong = typeof currentSongIndex === 'number' ? offlineData?.songs[currentSongIndex] : undefined;
   const currentSongTranspose = typeof currentSongIndex === 'number' ? (transpositions[currentSongIndex] ?? 0) : 0;
 
-<<<<<<< HEAD
   const totalPagesOfSong = useMemo(() => {
     if (typeof currentSongIndex !== 'number') return 0;
     return allSections.filter(s => s.songIndex === currentSongIndex).length;
@@ -208,9 +182,6 @@ export default function OfflineSetlistPage() {
   const currentPageOfSong = currentSection ? currentSection.partIndex + 1 : 0;
 
   const goToSong = useCallback((direction: 'next' | 'prev') => {
-=======
-  const goToSong = (direction: 'next' | 'prev') => {
->>>>>>> fb8ff31ef3948f74486e1a8e81dee5bc60bc1c8e
       if (typeof currentSongIndex !== 'number') return;
       
       const nextSongIndex = direction === 'next' ? currentSongIndex + 1 : currentSongIndex - 1;
@@ -255,25 +226,8 @@ export default function OfflineSetlistPage() {
   const increaseFontSize = () => setFontSize(s => Math.min(32, s + 1));
   const decreaseFontSize = () => setFontSize(s => Math.max(8, s - 1));
 
-<<<<<<< HEAD
   const renderPanel = () => {
     if (!offlineData || !currentSong) return null;
-=======
-  const displayedKey = currentSong.key ? transposeChord(currentSong.key, currentSongTranspose) : 'N/A';
-  
-  const fontControl = (
-    <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-fit">
-        <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
-        <Button variant="ghost" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-7 w-7 px-1">
-            <Minus className="h-4 w-4" />
-        </Button>
-        <span className="text-sm font-medium tabular-nums">{fontSize}px</span>
-        <Button variant="ghost" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-7 w-7 px-1">
-            <Plus className="h-4 w-4" />
-        </Button>
-    </div>
-  );
->>>>>>> fb8ff31ef3948f74486e1a8e81dee5bc60bc1c8e
 
     const displayedKey = currentSong.key ? transposeChord(currentSong.key, currentSongTranspose) : 'N/A';
 
@@ -328,24 +282,12 @@ export default function OfflineSetlistPage() {
                       <span className="sr-only">Voltar</span>
                     </Link>
                   </Button>
-<<<<<<< HEAD
                   <h1 className="text-lg font-bold font-headline tracking-tight truncate">
                      {currentSong.title}
                   </h1>
                   <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0">
                     <PanelTopOpen className="h-5 w-5" />
                     <span className="sr-only">Mostrar Controles</span>
-=======
-
-                  <div className="flex-1 space-y-1">
-                    <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{currentSong.title}</h1>
-                    <p className="text-muted-foreground text-sm">{offlineData.name} - Modo Offline</p>
-                  </div>
-                  
-                  <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon" className="shrink-0">
-                    <PanelTopClose className="h-5 w-5" />
-                    <span className="sr-only">Ocultar Controles</span>
->>>>>>> fb8ff31ef3948f74486e1a8e81dee5bc60bc1c8e
                   </Button>
                 </div>
               )}
@@ -354,7 +296,6 @@ export default function OfflineSetlistPage() {
     );
   }
 
-<<<<<<< HEAD
   const renderContent = () => {
     if (loading || !finalColorSettings) {
       return (
@@ -482,88 +423,6 @@ export default function OfflineSetlistPage() {
   return (
     <div ref={containerRef} className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen outline-none bg-background" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
       {renderContent()}
-=======
-                    {fontControl}
-
-                    <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10">
-                        <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
-                        <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} className="ml-auto" />
-                    </div>
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center justify-between gap-4">
-                <Button asChild variant="outline" size="icon" className="shrink-0">
-                  <Link href={`/setlists/${setlistId}`}>
-                    <ArrowLeft className="h-4 w-4" />
-                    <span className="sr-only">Voltar</span>
-                  </Link>
-                </Button>
-                <h1 className="text-lg font-bold font-headline tracking-tight truncate">
-                    {currentSong.title}
-                </h1>
-                <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0">
-                  <PanelTopOpen className="h-5 w-5" />
-                  <span className="sr-only">Mostrar Controles</span>
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        
-      <div className="flex-1 flex flex-col min-h-0">
-         <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
-            <CarouselContent>
-              {allSections.map((section, index) => {
-                  const transposeValue = transpositions[section.songIndex];
-                  const content = transposeContent(section.content, transposeValue);
-                  return (
-                    <CarouselItem key={index} className="h-full">
-                      <Card className="w-full h-full flex flex-col bg-background shadow-none border-none">
-                         <CardContent className="flex-1 h-full p-0 flex flex-col">
-                            <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground px-4 pt-2 pb-1 border-b">
-                                   <Badge variant="outline">Música {section.songIndex + 1} de {offlineData.songs.length}</Badge>
-                                   <Badge variant="secondary">Página {section.partIndex + 1} de {section.songTotalParts}</Badge>
-                            </div>
-                            <ScrollArea className="h-full p-4 md:p-6 flex-1">
-                                <SongDisplay 
-                                    style={{ fontSize: `${fontSize}px` }} 
-                                    content={content} 
-                                    showChords={showChords} 
-                                />
-                                {section.isLastSection && (
-                                    <div className="mt-8 text-center text-muted-foreground">
-                                        <Separator className="my-4" />
-                                        <div className="flex items-center justify-center gap-2 text-sm">
-                                           <Music className="h-4 w-4" />
-                                           <span>Fim da Música</span>
-                                        </div>
-                                    </div>
-                                )}
-                            </ScrollArea>
-                        </CardContent>
-                      </Card>
-                    </CarouselItem>
-                  )
-                })}
-            </CarouselContent>
-            <div className="absolute -left-12 top-1/2 -translate-y-1/2 hidden md:block">
-              <CarouselPrevious />
-            </div>
-            <div className="absolute -right-12 top-1/2 -translate-y-1/2 hidden md:block">
-              <CarouselNext />
-            </div>
-            <div 
-                className="absolute left-0 top-0 h-full w-1/3 z-10" 
-                onClick={() => api?.scrollPrev()} 
-            />
-            <div 
-                className="absolute right-0 top-0 h-full w-1/3 z-10" 
-                onClick={() => api?.scrollNext()} 
-            />
-          </Carousel>
-      </div>
->>>>>>> fb8ff31ef3948f74486e1a8e81dee5bc60bc1c8e
     </div>
   );
 }

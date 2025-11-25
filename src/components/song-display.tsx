@@ -13,10 +13,7 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
         return null;
     }
     
-<<<<<<< HEAD
     // Evita que uma linha em branco ocupe espaço desnecessário quando as cifras estão ocultas.
-=======
->>>>>>> fb8ff31ef3948f74486e1a8e81dee5bc60bc1c8e
     if (text.trim() === '' && !showChords) {
        return <p className="mb-0">&nbsp;</p>;
     }
@@ -45,7 +42,6 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
         );
     }
     
-<<<<<<< HEAD
     const style = isChord 
         ? { color: 'var(--chords-color, hsl(var(--primary)))' }
         : { color: 'var(--lyrics-color, hsl(var(--foreground)))' };
@@ -56,18 +52,6 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
             className={cn(
                 'whitespace-pre-wrap', // Permite que o texto quebre a linha, mas preserva os espaços
                 'break-words', // Força a quebra de palavras longas
-=======
-    const chordStyle = { 
-        color: isChord ? 'var(--custom-chord-color)' : 'var(--custom-text-color)' 
-    };
-
-    return (
-        <p
-            style={chordStyle}
-            className={cn(
-                'whitespace-pre-wrap', 
-                'break-words', 
->>>>>>> fb8ff31ef3948f74486e1a8e81dee5bc60bc1c8e
                 isChord ? 'font-bold mb-1' : 'mb-2'
             )}
         >
@@ -96,11 +80,8 @@ export function SongDisplay({ content, className, showChords, ...props }: SongDi
                     return null;
                 }
                 
-<<<<<<< HEAD
                 // Evita renderizar um espaço extra se a linha de letra estiver vazia
                 // e a linha de cifra acima dela foi ocultada.
-=======
->>>>>>> fb8ff31ef3948f74486e1a8e81dee5bc60bc1c8e
                 if(line.trim() === '' && !showChords && lineIndex > 0 && isChordLine(lines[lineIndex - 1])) {
                     return null;
                 }
