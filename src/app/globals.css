@@ -8,15 +8,15 @@ body {
 
 @layer base {
   :root {
-    --background: 276 60% 95%;
+    --background: 0 0% 100%;
     --foreground: 262 30% 25%;
-    --card: 300 100% 100%;
+    --card: 0 13% 91%;
     --card-foreground: 262 30% 25%;
     --popover: 300 100% 100%;
     --popover-foreground: 262 30% 25%;
     --primary: 262 52% 47%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 276 60% 90%;
+    --secondary: 150 60% 90%;
     --secondary-foreground: 262 52% 20%;
     --muted: 276 60% 90%;
     --muted-foreground: 262 30% 55%;

@@ -39,8 +39,14 @@ export interface Setlist {
 }
 
 export interface ColorSettings {
+<<<<<<< HEAD
   lyricsColor: string;
   chordsColor: string;
+=======
+  textColor: string;
+  chordColor: string;
+  backgroundColor: string;
+>>>>>>> fb8ff31ef3948f74486e1a8e81dee5bc60bc1c8e
 }
 
 export interface User {

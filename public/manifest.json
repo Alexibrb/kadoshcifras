@@ -3,9 +3,15 @@
   "short_name": "CifrasKadosh",
   "description": "Seu app de cifras e repertórios.",
   "start_url": "/",
+<<<<<<< HEAD
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#9f50e5",
+=======
+  "display": "fullscreen",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+>>>>>>> fb8ff31ef3948f74486e1a8e81dee5bc60bc1c8e
   "icons": [
     {
       "src": "/icon-192x192.png",
