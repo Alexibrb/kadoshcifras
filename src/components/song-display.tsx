@@ -8,7 +8,7 @@ interface SongDisplayProps extends React.HTMLAttributes<HTMLDivElement> {
   showChords: boolean;
 }
 
-const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, showChords: boolean }) => {
+const Line = ({ text, isChord, showChords, style }: { text: string; isChord: boolean, showChords: boolean, style: React.CSSProperties }) => {
     if (isChord && !showChords) {
         return null;
     }
@@ -42,13 +42,13 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
         );
     }
     
-    const style = isChord 
-        ? { color: 'var(--chords-color, hsl(var(--primary)))' }
-        : { color: 'var(--lyrics-color, hsl(var(--foreground)))' };
+    const finalStyle = isChord 
+        ? { ...style, color: 'var(--chords-color, hsl(var(--primary)))' }
+        : { ...style, color: 'var(--lyrics-color, hsl(var(--foreground)))' };
 
     return (
         <p
-            style={style}
+            style={finalStyle}
             className={cn(
                 'whitespace-pre-wrap', // Permite que o texto quebre a linha, mas preserva os espaços
                 'break-words', // Força a quebra de palavras longas
@@ -60,7 +60,7 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
     );
 }
 
-export function SongDisplay({ content, className, showChords, ...props }: SongDisplayProps) {
+export function SongDisplay({ content, className, showChords, style, ...props }: SongDisplayProps) {
     const lines = content.split('\n');
 
     const containerClasses = cn(
@@ -69,11 +69,12 @@ export function SongDisplay({ content, className, showChords, ...props }: SongDi
     );
     
     const textStyle = {
-      color: 'var(--custom-text-color)'
+      color: 'var(--custom-text-color)',
+      fontSize: style?.fontSize // Pega o fontSize do style passado
     }
 
     return (
-        <div className={containerClasses} {...props} style={textStyle}>
+        <div className={containerClasses} {...props}>
             {lines.map((line, lineIndex) => {
                 const isChord = isChordLine(line);
                 if (isChord && !showChords) {
@@ -92,6 +93,7 @@ export function SongDisplay({ content, className, showChords, ...props }: SongDi
                         text={line}
                         isChord={isChord}
                         showChords={showChords}
+                        style={textStyle}
                     />
                 );
             })}
