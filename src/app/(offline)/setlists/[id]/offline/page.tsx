@@ -87,12 +87,9 @@ export default function OfflineSetlistPage() {
     setIsClient(true);
   }, []);
 
-  const defaultColorSettings = useMemo(() => {
+  const defaultColorSettings: ColorSettings = useMemo(() => {
     if (!isClient) {
-        return {
-            lyricsColor: '#000000',
-            chordsColor: '#000000',
-        };
+        return { lyricsColor: '#000000', chordsColor: '#000000' };
     }
     const isDarkMode = document.documentElement.classList.contains('dark');
     return {
@@ -103,7 +100,13 @@ export default function OfflineSetlistPage() {
 
 useEffect(() => {
     if (isClient) {
-        setFinalColorSettings(appUser?.colorSettings || defaultColorSettings);
+        // Use appUser settings if they exist, otherwise use defaults based on theme
+        const userSettings = appUser?.colorSettings;
+        if (userSettings && userSettings.lyricsColor && userSettings.chordsColor) {
+            setFinalColorSettings(userSettings);
+        } else {
+            setFinalColorSettings(defaultColorSettings);
+        }
     }
 }, [isClient, appUser, defaultColorSettings]);
 
@@ -356,7 +359,7 @@ useEffect(() => {
                 </span>
                 {totalPagesOfSong > 1 && (
                   <>
-                    <span>&bull;</span>
+                    <span className="text-muted-foreground/50 mx-1">&bull;</span>
                     <span className="flex items-center gap-1.5">
                         <File className="h-4 w-4" />
                         {currentPageOfSong} de {totalPagesOfSong}
@@ -426,5 +429,3 @@ useEffect(() => {
     </div>
   );
 }
-
-    

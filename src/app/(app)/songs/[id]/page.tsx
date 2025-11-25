@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Song, type MetadataItem, Setlist, SetlistSong, PedalSettings, ColorSettings } from '@/types';
-import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, HardDriveDownload, Eye, EyeOff, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, HardDriveDownload, Eye, EyeOff, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Check, File, Music } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -70,19 +70,23 @@ export default function SongPage() {
   const { data: categories, loading: loadingCategories } = useFirestoreCollection<MetadataItem>('categories', 'name');
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   const initialKeyRef = useRef(song?.key);
 
-  const colorSettings = useMemo(() => {
+  const finalColorSettings: ColorSettings | null = useMemo(() => {
+    if (!isClient) return null;
     const isDarkMode = document.documentElement.classList.contains('dark');
     const defaultSettings: ColorSettings = {
         lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
-        chordsColor: isDarkMode ? '#F59E0B' : '#D946EF',
-        backgroundColor: isDarkMode ? '#0a0a0a' : '#ffffff',
+        chordsColor: isDarkMode ? '#F59E0B' : '#000000',
     };
-    return appUser?.colorSettings || defaultSettings;
-  }, [appUser]);
+    // Use appUser settings if they exist, otherwise use defaults
+    const userSettings = appUser?.colorSettings;
+    if (userSettings && userSettings.lyricsColor && userSettings.chordsColor) {
+        return userSettings;
+    }
+    return defaultSettings;
+}, [appUser, isClient]);
 
   useEffect(() => {
     setIsClient(true);
@@ -222,7 +226,7 @@ export default function SongPage() {
     notFound();
   }
   
-  if (!isClient || authLoading || loadingSong || !song || loadingArtists || loadingGenres || loadingCategories || (fromSetlistId && loadingSetlist)) {
+  if (!isClient || authLoading || loadingSong || !song || !finalColorSettings || loadingArtists || loadingGenres || loadingCategories || (fromSetlistId && loadingSetlist)) {
     return (
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
             <div className="flex items-center gap-4">
@@ -482,7 +486,7 @@ export default function SongPage() {
           </Card>
         ) : showChords ? (
           <div className="relative flex-1 flex flex-col">
-             <div className="absolute top-0 left-0 right-0 z-20 flex justify-between items-center w-full px-4 text-center text-sm text-muted-foreground pb-2 pt-2">
+             <div className="flex justify-center items-center gap-4 text-center text-sm text-muted-foreground pt-2 pb-4">
                  <div className="flex items-center gap-2">
                     {fromSetlistId && prevSongId ? (
                        <Button asChild variant="ghost" size="icon">
@@ -495,7 +499,12 @@ export default function SongPage() {
 
                 <div className="flex items-center gap-4">
                     {fontControl}
-                    {count > 1 && <span>Página {current} de {count}</span>}
+                    {count > 1 && (
+                        <>
+                        <span className="text-muted-foreground/50 mx-1">&bull;</span>
+                        <span className="flex items-center gap-1.5"><File className="h-4 w-4" /> {current} de {count}</span>
+                        </>
+                    )}
                 </div>
 
                  <div className="flex items-center gap-2">
@@ -508,7 +517,7 @@ export default function SongPage() {
                     ) : <div className="w-10"></div>}
                 </div>
              </div>
-             <Carousel className="w-full flex-1 pt-12" setApi={setApi} opts={{ watchDrag: true }}>
+             <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
                 <CarouselContent>
                   {songParts.map((part, index) => (
                     <CarouselItem key={index} className="h-full">
@@ -518,8 +527,8 @@ export default function SongPage() {
                             <SongDisplay 
                                 style={{ 
                                   fontSize: `${fontSize}px`, 
-                                  '--lyrics-color': colorSettings.lyricsColor,
-                                  '--chords-color': colorSettings.chordsColor,
+                                  '--lyrics-color': finalColorSettings.lyricsColor,
+                                  '--chords-color': finalColorSettings.chordsColor,
                                 } as React.CSSProperties}
                                 content={part} 
                                 showChords={showChords}
@@ -577,7 +586,7 @@ export default function SongPage() {
                       <SongDisplay 
                           style={{ 
                             fontSize: `${fontSize}px`,
-                            '--lyrics-color': colorSettings.lyricsColor,
+                            '--lyrics-color': finalColorSettings.lyricsColor,
                            }}
                           content={contentToDisplay.replace(/\n\s*\n\s*\n/g, '\n\n')}
                           showChords={false} 
