@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useFirestoreDocument } from '@/hooks/use-firestore-document';
 import { type Setlist, type Song, type SetlistSong } from '@/types';
-import { ArrowLeft, Music, Plus, Minus, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff, HardDriveDownload, MonitorPlay } from 'lucide-react';
+import { ArrowLeft, Music, Plus, Minus, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff, HardDriveDownload, MonitorPlay, Bug } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
@@ -19,6 +19,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { transposeChord } from '@/lib/music';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function SetlistPage() {
   const params = useParams();
@@ -36,6 +37,7 @@ export default function SetlistPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
+  const [debugData, setDebugData] = useState<string | null>(null);
   
   // Estado de carregamento combinado
   const loading = loadingSetlist || loadingSongs || !appUser;
@@ -146,8 +148,8 @@ export default function SetlistPage() {
     updateSetlistDoc({ songs: items }); // Envia a atualização para o Firestore
   };
 
-  const handleGenerateOffline = () => {
-    if (loading || !setlist || !songMap) return;
+  const generateOfflineData = () => {
+    if (loading || !setlist || !songMap) return null;
 
     const songsToProcess = setlist.songs || [];
     
@@ -158,12 +160,11 @@ export default function SetlistPage() {
         description: "Algumas músicas do repertório ainda estão carregando. Aguarde um instante e tente novamente.",
         variant: "destructive"
       });
-      return;
+      return null;
     }
     
     const offlineSongs = songsToProcess.map(setlistSong => {
       const song = songMap.get(setlistSong.songId);
-      // Pula qualquer música que não foi encontrada no mapa para evitar erros
       if (!song) return null;
       return {
           title: song.title,
@@ -172,14 +173,26 @@ export default function SetlistPage() {
           key: song.key,
           initialTranspose: setlistSong.transpose
       };
-    }).filter(Boolean); // Filtra quaisquer valores nulos resultantes de musicas não encontradas
+    }).filter((song): song is NonNullable<typeof song> => song !== null);
+
+    return {
+      name: setlist.name,
+      songs: offlineSongs
+    };
+  }
+
+  const handleGenerateOffline = () => {
+    const dataToSave = generateOfflineData();
+    if (!dataToSave) return;
 
     try {
       const storageKey = `offline-setlist-${setlistId}`;
-      localStorage.setItem(storageKey, JSON.stringify({
-        name: setlist.name,
-        songs: offlineSongs
-      }));
+      const jsonString = JSON.stringify(dataToSave, null, 2);
+      
+      console.log('--- DEBUG: DADOS A SEREM SALVOS NO LOCALSTORAGE ---');
+      console.log(jsonString);
+      
+      localStorage.setItem(storageKey, jsonString);
       setHasOfflineVersion(true);
       toast({
         title: "Repertório Salvo Offline!",
@@ -194,6 +207,15 @@ export default function SetlistPage() {
       });
     }
   };
+
+  const handleDebugClick = () => {
+      const data = generateOfflineData();
+      if (data) {
+          setDebugData(JSON.stringify(data, null, 2));
+      } else {
+          setDebugData("Não foi possível gerar os dados. Verifique se todas as músicas estão carregadas.");
+      }
+  }
   
   const handleOpenPresentationMode = () => {
     window.open(`/setlists/${setlistId}/offline`, '_blank');
@@ -298,6 +320,10 @@ export default function SetlistPage() {
                   </div>
                 </div>
               )}
+               <Button onClick={handleDebugClick} variant="outline">
+                    <Bug className="mr-2 h-4 w-4" />
+                    Debug
+               </Button>
                <Button onClick={handleGenerateOffline} variant="secondary">
                     <HardDriveDownload className="mr-2 h-4 w-4" />
                     Gerar Offline
@@ -310,6 +336,19 @@ export default function SetlistPage() {
                 )}
             </div>
       </div>
+      
+      {debugData && (
+        <Alert className="mb-4">
+          <Bug className="h-4 w-4" />
+          <AlertTitle>Dados de Depuração Offline</AlertTitle>
+          <AlertDescription>
+            <ScrollArea className="h-48 mt-2">
+                <pre className="text-xs whitespace-pre-wrap">{debugData}</pre>
+            </ScrollArea>
+            <Button variant="ghost" size="sm" onClick={() => setDebugData(null)} className="mt-2">Fechar</Button>
+          </AlertDescription>
+        </Alert>
+      )}
       
       <div className="flex flex-col gap-8 lg:grid lg:grid-cols-2">
         <div className="flex flex-col order-1 lg:order-1">
@@ -442,4 +481,3 @@ export default function SetlistPage() {
   );
 }
 
-    
