@@ -12,7 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
-import { PedalSettings } from '@/types';
+import { PedalSettings, ColorSettings } from '@/types';
 import { Carousel, CarouselApi, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { transposeChord, transposeContent } from '@/lib/music';
 import { Badge } from '@/components/ui/badge';
@@ -58,6 +58,12 @@ export default function OfflineSetlistPage() {
     prevSong: '[',
     nextSong: ']',
   });
+  
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [colorSettings] = useLocalStorage<ColorSettings>('color-settings', {
+    lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
+    chordsColor: isDarkMode ? '#F59E0B' : '#000000',
+  });
 
   const [api, setApi] = useState<CarouselApi>()
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
@@ -67,6 +73,7 @@ export default function OfflineSetlistPage() {
     // Only run on the client
     if (typeof window !== 'undefined') {
       setLoading(true);
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
       try {
         const storageKey = `offline-setlist-${setlistId}`;
         const item = localStorage.getItem(storageKey);
@@ -327,6 +334,8 @@ export default function OfflineSetlistPage() {
                                   style={{ fontSize: `${fontSize}px` }} 
                                   content={content} 
                                   showChords={showChords} 
+                                  lyricsColor={colorSettings.lyricsColor}
+                                  chordsColor={colorSettings.chordsColor}
                               />
                               {section.isLastSectionOfSong && !section.isLastSectionOfSetlist && (
                                   <div className="mt-8 text-center text-muted-foreground">

@@ -2,7 +2,7 @@
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Song, type MetadataItem, Setlist, SetlistSong, PedalSettings } from '@/types';
+import { Song, type MetadataItem, Setlist, SetlistSong, PedalSettings, ColorSettings } from '@/types';
 import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, HardDriveDownload, Eye, EyeOff, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation';
@@ -48,6 +48,12 @@ export default function SongPage() {
     prevSong: '[',
     nextSong: ']',
   });
+  
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [colorSettings] = useLocalStorage<ColorSettings>('color-settings', {
+    lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
+    chordsColor: isDarkMode ? '#F59E0B' : '#000000',
+  });
 
   const [isClient, setIsClient] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -73,6 +79,7 @@ export default function SongPage() {
 
   useEffect(() => {
     setIsClient(true);
+    setIsDarkMode(document.documentElement.classList.contains('dark'));
     setTranspose(initialTranspose);
     if (containerRef.current) {
         containerRef.current.focus();
@@ -498,7 +505,13 @@ export default function SongPage() {
                       <Card className="w-full h-full flex flex-col bg-background shadow-none border-none">
                         <CardContent className="flex-1 h-full p-0">
                           <ScrollArea className="h-full p-4 md:p-6">
-                            <SongDisplay style={{ fontSize: `${fontSize}px` }} content={part} showChords={showChords} />
+                            <SongDisplay 
+                                style={{ fontSize: `${fontSize}px` }} 
+                                content={part} 
+                                showChords={showChords}
+                                lyricsColor={colorSettings.lyricsColor}
+                                chordsColor={colorSettings.chordsColor}
+                            />
                           </ScrollArea>
                         </CardContent>
                       </Card>
@@ -562,6 +575,8 @@ export default function SongPage() {
                           style={{ fontSize: `${fontSize}px` }}
                           content={contentToDisplay.replace(/\n\s*\n\s*\n/g, '\n\n')}
                           showChords={false} 
+                          lyricsColor={colorSettings.lyricsColor}
+                          chordsColor={colorSettings.chordsColor}
                       />
                   </ScrollArea>
               </CardContent>

@@ -6,15 +6,16 @@ import { isChordLine } from '@/lib/music';
 interface SongDisplayProps extends React.HTMLAttributes<HTMLDivElement> {
   content: string;
   showChords: boolean;
+  lyricsColor?: string;
+  chordsColor?: string;
 }
 
-const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, showChords: boolean }) => {
+const Line = ({ text, isChord, showChords, lyricsColor, chordsColor }: { text: string; isChord: boolean, showChords: boolean, lyricsColor?: string, chordsColor?: string }) => {
     if (isChord && !showChords) {
         return null;
     }
     
     // Evita que uma linha em branco ocupe espaço desnecessário quando as cifras estão ocultas.
-    // e a proxima linha também está vazia
     if (text.trim() === '' && !showChords) {
        return <p className="mb-0">&nbsp;</p>;
     }
@@ -43,13 +44,18 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
             </div>
         );
     }
+    
+    const style = {
+        color: isChord ? chordsColor : lyricsColor
+    };
 
     return (
         <p
+            style={style}
             className={cn(
                 'whitespace-pre-wrap', // Permite que o texto quebre a linha, mas preserva os espaços
                 'break-words', // Força a quebra de palavras longas
-                isChord ? 'font-bold text-foreground dark:text-primary mb-1' : 'mb-2'
+                isChord ? 'font-bold mb-1' : 'mb-2'
             )}
         >
             {text}
@@ -57,7 +63,7 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
     );
 }
 
-export function SongDisplay({ content, className, showChords, ...props }: SongDisplayProps) {
+export function SongDisplay({ content, className, showChords, lyricsColor, chordsColor, ...props }: SongDisplayProps) {
     const lines = content.split('\n');
 
     const containerClasses = cn(
@@ -76,7 +82,7 @@ export function SongDisplay({ content, className, showChords, ...props }: SongDi
                 
                 // Evita renderizar um espaço extra se a linha de letra estiver vazia
                 // e a linha de cifra acima dela foi ocultada.
-                if(line.trim() === '' && !showChords && lineIndex > 0 && isChordLine(lines[lineIndex -1])) {
+                if(line.trim() === '' && !showChords && lineIndex > 0 && isChordLine(lines[lineIndex - 1])) {
                     return null;
                 }
 
@@ -86,11 +92,11 @@ export function SongDisplay({ content, className, showChords, ...props }: SongDi
                         text={line}
                         isChord={isChord}
                         showChords={showChords}
+                        lyricsColor={lyricsColor}
+                        chordsColor={chordsColor}
                     />
                 );
             })}
         </div>
     );
 }
-
-    
