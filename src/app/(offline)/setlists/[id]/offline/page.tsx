@@ -90,7 +90,6 @@ export default function OfflineSetlistPage() {
 }, [isClient]);
 
   useEffect(() => {
-    // Only run on the client
     if (typeof window !== 'undefined') {
       setLoading(true);
       try {
@@ -272,133 +271,125 @@ export default function OfflineSetlistPage() {
     );
   }
 
-  const renderContent = () => {
-    if (loading || !finalColorSettings) {
-      return (
-        <div className="flex flex-col items-center justify-center h-screen text-center p-4">
-          <h2 className="text-2xl font-bold mb-4">Carregando Dados Offline...</h2>
-        </div>
-      );
-    }
-
-    if (error) {
-       return (
-        <div className="flex flex-col items-center justify-center h-screen text-center p-4">
-          <h2 className="text-2xl font-bold text-destructive mb-4">Erro ao Carregar</h2>
-          <p className="text-muted-foreground mb-6">{error}</p>
-          <Button asChild>
-            <Link href={`/setlists/${setlistId}`}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar para o Repertório
-            </Link>
-          </Button>
-        </div>
-      );
-    }
-    
-    if (!offlineData || !currentSong) {
-       return (
-        <div className="flex flex-col items-center justify-center h-screen text-center p-4">
-          <h2 className="text-2xl font-bold mb-4">Dados Offline Não Encontrados ou Inválidos</h2>
-          <p className="text-muted-foreground">Gere os dados na página do repertório antes de acessar o modo de apresentação.</p>
-           <Button asChild className="mt-6">
-            <Link href={`/setlists/${setlistId}`}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar para o Repertório
-            </Link>
-          </Button>
-        </div>
-      );
-    }
-    
+  if (loading || !isClient || !finalColorSettings) {
     return (
-       <>
-        {renderPanel()}
-        <div className="flex-1 flex flex-col min-h-0">
-             <div className="text-center mb-4 text-sm text-muted-foreground font-semibold flex justify-center items-center gap-4 pt-0">
-                <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-fit">
-                    <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
-                    <Button variant="ghost" onClick={decreaseFontSize} className="h-7 w-7 px-1">
-                        <Minus className="h-4 w-4" />
-                    </Button>
-                    <span className="text-sm font-medium tabular-nums">{fontSize}px</span>
-                    <Button variant="ghost" onClick={increaseFontSize} className="h-7 w-7 px-1">
-                        <Plus className="h-4 w-4" />
-                    </Button>
-                </div>
-                 <span className="flex items-center gap-1.5">
-                    <Music className="h-4 w-4" />
-                    {currentSongIndex + 1} de {offlineData?.songs.length ?? 0}
-                </span>
-                {totalPagesOfSong > 1 && (
-                  <>
-                    <span className="text-muted-foreground/50 mx-1">&bull;</span>
-                    <span className="flex items-center gap-1.5">
-                        <File className="h-4 w-4" />
-                        {currentPageOfSong} de {totalPagesOfSong}
-                    </span>
-                  </>
-                )}
-            </div>
-           <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true, loop: false }}>
-              <CarouselContent>
-                {allSections.map((section, index) => {
-                    const transposeValue = transpositions[section.songIndex] ?? 0;
-                    const content = transposeContent(section.content, transposeValue);
-                    
-                    return (
-                      <CarouselItem key={index} className="h-full">
-                        <Card className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none">
-                          <CardContent className="flex-1 h-full p-0">
-                            <ScrollArea className="h-full p-4 md:p-6 pt-0">
-                              <SongDisplay 
-                                  style={{ 
-                                      fontSize: `${fontSize}px`,
-                                      '--lyrics-color': finalColorSettings.lyricsColor,
-                                      '--chords-color': finalColorSettings.chordsColor,
-                                  } as React.CSSProperties} 
-                                  content={content} 
-                                  showChords={showChords} 
-                              />
-                              {section.isLastSectionOfSong && !section.isLastSectionOfSetlist && (
-                                  <div className="mt-8 text-center text-muted-foreground">
-                                      <Separator className="my-4" />
-                                      <div className="flex items-center justify-center gap-2 text-sm">
-                                         <Music className="h-4 w-4" />
-                                         <span>Fim da Música</span>
-                                      </div>
-                                  </div>
-                              )}
-                            </ScrollArea>
-                          </CardContent>
-                        </Card>
-                      </CarouselItem>
-                    )
-                  })}
-              </CarouselContent>
-              <div className="absolute -left-12 top-1/2 -translate-y-1/2 hidden md:block">
-                <CarouselPrevious />
-              </div>
-              <div className="absolute -right-12 top-1/2 -translate-y-1/2 hidden md:block">
-                <CarouselNext />
-              </div>
-              <div 
-                  className="absolute left-0 top-0 h-full w-1/3 z-10" 
-                  onClick={() => api?.scrollPrev()} 
-              />
-              <div 
-                  className="absolute right-0 top-0 h-full w-1/3 z-10" 
-                  onClick={() => api?.scrollNext()} 
-              />
-            </Carousel>
-        </div>
-       </>
+      <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
+        <h2 className="text-2xl font-bold mb-4">Carregando Dados Offline...</h2>
+      </div>
+    );
+  }
+
+  if (error) {
+     return (
+      <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
+        <h2 className="text-2xl font-bold text-destructive mb-4">Erro ao Carregar</h2>
+        <p className="text-muted-foreground mb-6">{error}</p>
+        <Button asChild>
+          <Link href={`/setlists/${setlistId}`}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar para o Repertório
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+  
+  if (!offlineData || !currentSong) {
+     return (
+      <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
+        <h2 className="text-2xl font-bold mb-4">Dados Offline Não Encontrados ou Inválidos</h2>
+        <p className="text-muted-foreground">Gere os dados na página do repertório antes de acessar o modo de apresentação.</p>
+         <Button asChild className="mt-6">
+          <Link href={`/setlists/${setlistId}`}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar para o Repertório
+          </Link>
+        </Button>
+      </div>
     );
   }
 
   return (
     <div ref={containerRef} className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen outline-none bg-background" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
-      {renderContent()}
+      {renderPanel()}
+      <div className="flex-1 flex flex-col min-h-0">
+           <div className="text-center mb-4 text-sm text-muted-foreground font-semibold flex justify-center items-center gap-4 pt-0">
+              <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-fit">
+                  <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
+                  <Button variant="ghost" onClick={decreaseFontSize} className="h-7 w-7 px-1">
+                      <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-medium tabular-nums">{fontSize}px</span>
+                  <Button variant="ghost" onClick={increaseFontSize} className="h-7 w-7 px-1">
+                      <Plus className="h-4 w-4" />
+                  </Button>
+              </div>
+               <span className="flex items-center gap-1.5">
+                  <Music className="h-4 w-4" />
+                  {currentSongIndex + 1} de {offlineData?.songs.length ?? 0}
+              </span>
+              {totalPagesOfSong > 1 && (
+                <>
+                  <span className="text-muted-foreground/50 mx-1">&bull;</span>
+                  <span className="flex items-center gap-1.5">
+                      <File className="h-4 w-4" />
+                      {currentPageOfSong} de {totalPagesOfSong}
+                  </span>
+                </>
+              )}
+          </div>
+         <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true, loop: false }}>
+            <CarouselContent>
+              {allSections.map((section, index) => {
+                  const transposeValue = transpositions[section.songIndex] ?? 0;
+                  const content = transposeContent(section.content, transposeValue);
+                  
+                  return (
+                    <CarouselItem key={index} className="h-full">
+                      <Card className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none">
+                        <CardContent className="flex-1 h-full p-0">
+                          <ScrollArea className="h-full p-4 md:p-6 pt-0">
+                            <SongDisplay 
+                                style={{ 
+                                    fontSize: `${fontSize}px`,
+                                    '--lyrics-color': finalColorSettings.lyricsColor,
+                                    '--chords-color': finalColorSettings.chordsColor,
+                                } as React.CSSProperties} 
+                                content={content} 
+                                showChords={showChords} 
+                            />
+                            {section.isLastSectionOfSong && !section.isLastSectionOfSetlist && (
+                                <div className="mt-8 text-center text-muted-foreground">
+                                    <Separator className="my-4" />
+                                    <div className="flex items-center justify-center gap-2 text-sm">
+                                       <Music className="h-4 w-4" />
+                                       <span>Fim da Música</span>
+                                    </div>
+                                </div>
+                            )}
+                          </ScrollArea>
+                        </CardContent>
+                      </Card>
+                    </CarouselItem>
+                  )
+                })}
+            </CarouselContent>
+            <div className="absolute -left-12 top-1/2 -translate-y-1/2 hidden md:block">
+              <CarouselPrevious />
+            </div>
+            <div className="absolute -right-12 top-1/2 -translate-y-1/2 hidden md:block">
+              <CarouselNext />
+            </div>
+            <div 
+                className="absolute left-0 top-0 h-full w-1/3 z-10" 
+                onClick={() => api?.scrollPrev()} 
+            />
+            <div 
+                className="absolute right-0 top-0 h-full w-1/3 z-10" 
+                onClick={() => api?.scrollNext()} 
+            />
+          </Carousel>
+      </div>
     </div>
   );
 }
