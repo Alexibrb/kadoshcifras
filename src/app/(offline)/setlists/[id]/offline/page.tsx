@@ -199,8 +199,8 @@ export default function OfflineSetlistPage() {
     });
   };
   
-  const increaseFontSize = () => setFontSize(s => Math.min(32, s + 1));
-  const decreaseFontSize = () => setFontSize(s => Math.max(8, s - 1));
+  const increaseFontSize = useCallback(() => setFontSize(s => Math.min(32, s + 1)), [setFontSize]);
+  const decreaseFontSize = useCallback(() => setFontSize(s => Math.max(8, s - 1)), [setFontSize]);
 
   const renderPanel = () => {
     if (!offlineData || !currentSong) return null;
@@ -402,7 +402,3 @@ export default function OfflineSetlistPage() {
     </div>
   );
 }
-
-    
-
-    
