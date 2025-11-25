@@ -56,7 +56,6 @@ export default function SongPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [transpose, setTranspose] = useState(initialTranspose);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
-  const [fontSize] = useLocalStorage('song-font-size', 14);
   const [api, setApi] = useState<CarouselApi>()
   const [current, setCurrent] = useState(0)
   const [count, setCount] = useState(0)
@@ -72,6 +71,8 @@ export default function SongPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   
   const initialKeyRef = useRef(song?.key);
+
+  const finalFontSize = useMemo(() => appUser?.fontSize ?? 14, [appUser]);
 
   const finalColorSettings: ColorSettings | null = useMemo(() => {
     if (!isClient) return null;
@@ -510,7 +511,7 @@ export default function SongPage() {
                           <ScrollArea className="h-full p-4 md:p-6">
                             <SongDisplay 
                                 style={{ 
-                                  fontSize: `${fontSize}px`, 
+                                  fontSize: `${finalFontSize}px`, 
                                   '--lyrics-color': finalColorSettings.lyricsColor,
                                   '--chords-color': finalColorSettings.chordsColor,
                                 } as React.CSSProperties}
@@ -569,7 +570,7 @@ export default function SongPage() {
                   <ScrollArea className="h-full p-4 md:p-6 flex-1">
                       <SongDisplay 
                           style={{ 
-                            fontSize: `${fontSize}px`,
+                            fontSize: `${finalFontSize}px`,
                             '--lyrics-color': finalColorSettings.lyricsColor,
                            }}
                           content={contentToDisplay.replace(/\n\s*\n\s*\n/g, '\n\n')}

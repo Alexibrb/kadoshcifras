@@ -44,16 +44,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const unsubscribeFirestore = onSnapshot(userDocRef, (docSnap) => {
           if (docSnap.exists()) {
             const userData = docSnap.data();
+            
+            // Sincroniza as configurações com o localStorage para uso offline
             if (userData.colorSettings) {
                 localStorage.setItem('user-color-settings', JSON.stringify(userData.colorSettings));
             } else {
                 localStorage.removeItem('user-color-settings');
             }
+            if (userData.fontSize) {
+                localStorage.setItem('song-font-size', JSON.stringify(userData.fontSize));
+            } else {
+                localStorage.setItem('song-font-size', '14'); // Padrão
+            }
+
             const convertedData = convertTimestampsInObject(userData);
             setAppUser({ id: docSnap.id, ...convertedData } as AppUser);
           } else {
             setAppUser(null);
+            // Limpa o localStorage se o usuário não for encontrado no Firestore
             localStorage.removeItem('user-color-settings');
+            localStorage.removeItem('song-font-size');
           }
           setLoading(false);
         }, (error) => {
@@ -65,7 +75,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setUser(null);
         setAppUser(null);
+        // Limpa o localStorage no logout
         localStorage.removeItem('user-color-settings');
+        localStorage.removeItem('song-font-size');
         setLoading(false);
       }
     });

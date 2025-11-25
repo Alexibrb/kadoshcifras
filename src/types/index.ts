@@ -51,6 +51,7 @@ export interface User {
     role: 'admin' | 'user';
     createdAt?: AppTimestamp;
     colorSettings?: ColorSettings;
+    fontSize?: number;
 }
 
 export interface MetadataItem {
