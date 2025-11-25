@@ -67,30 +67,27 @@ export default function OfflineSetlistPage() {
 
   useEffect(() => {
     setIsClient(true);
+    if (containerRef.current) {
+        containerRef.current.focus();
+    }
   }, []);
 
-  const defaultColorSettings: ColorSettings = useMemo(() => {
-    if (!isClient) {
-        return { lyricsColor: '#000000', chordsColor: '#000000' };
-    }
-    const isDarkMode = document.documentElement.classList.contains('dark');
-    return {
-        lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
-        chordsColor: isDarkMode ? '#F59E0B' : '#000000',
-    };
-}, [isClient]);
-
-useEffect(() => {
+  useEffect(() => {
     if (isClient) {
-        const storedSettings = localStorage.getItem('user-color-settings');
-        if (storedSettings) {
-             setFinalColorSettings(JSON.parse(storedSettings));
-        } else {
-            setFinalColorSettings(defaultColorSettings);
-        }
+      const isDarkMode = document.documentElement.classList.contains('dark');
+      const defaultSettings: ColorSettings = {
+          lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
+          chordsColor: isDarkMode ? '#F59E0B' : '#000000',
+      };
+      
+      const storedSettings = localStorage.getItem('user-color-settings');
+      if (storedSettings) {
+           setFinalColorSettings(JSON.parse(storedSettings));
+      } else {
+          setFinalColorSettings(defaultSettings);
+      }
     }
-}, [isClient, defaultColorSettings]);
-
+}, [isClient]);
 
   useEffect(() => {
     // Only run on the client
@@ -120,11 +117,6 @@ useEffect(() => {
     }
   }, [setlistId]);
   
-  useEffect(() => {
-    if(containerRef.current) {
-        containerRef.current.focus();
-    }
-  }, []);
 
   const allSections = useMemo((): Section[] => {
     if (!offlineData) return [];
@@ -410,3 +402,5 @@ useEffect(() => {
     </div>
   );
 }
+
+    
