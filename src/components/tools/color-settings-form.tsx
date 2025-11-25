@@ -79,7 +79,7 @@ export function ColorSettingsForm() {
               <Input
                 id="lyricsColor"
                 type="color"
-                value={lyricsColor}
+                value={lyricsColor || ''}
                 onChange={(e) => setLyricsColor(e.target.value)}
                 className="p-1 h-10 w-14"
               />
@@ -92,7 +92,7 @@ export function ColorSettingsForm() {
                 <Input
                     id="chordsColor"
                     type="color"
-                    value={chordsColor}
+                    value={chordsColor || ''}
                     onChange={(e) => setChordsColor(e.target.value)}
                     className="p-1 h-10 w-14"
                 />
@@ -105,7 +105,7 @@ export function ColorSettingsForm() {
                 <Input
                     id="backgroundColor"
                     type="color"
-                    value={backgroundColor}
+                    value={backgroundColor || ''}
                     onChange={(e) => setBackgroundColor(e.target.value)}
                     className="p-1 h-10 w-14"
                 />
