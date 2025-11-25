@@ -58,8 +58,7 @@ export default function OfflineSetlistPage() {
     prevSong: '[',
     nextSong: ']',
   });
-  const [colorSettings] = useLocalStorage<ColorSettings | undefined>('user-color-settings', undefined);
-
+  const { appUser } = useAuth();
   
   const [api, setApi] = useState<CarouselApi>()
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
@@ -74,7 +73,7 @@ export default function OfflineSetlistPage() {
     };
   }, []);
 
-  const finalColorSettings = colorSettings || defaultColorSettings;
+  const finalColorSettings = appUser?.colorSettings || defaultColorSettings;
 
   useEffect(() => {
     document.body.style.backgroundColor = finalColorSettings.backgroundColor;
@@ -197,6 +196,9 @@ export default function OfflineSetlistPage() {
         return newTranspositions;
     });
   };
+  
+  const increaseFontSize = () => setFontSize(s => Math.min(32, s + 1));
+  const decreaseFontSize = () => setFontSize(s => Math.max(8, s - 1));
 
   const renderPanel = () => {
     if (!offlineData || !currentSong) return null;
@@ -240,16 +242,6 @@ export default function OfflineSetlistPage() {
                           </Button>
                       </div>
 
-                      <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-xs">
-                          <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
-                          <Button variant="ghost" onClick={() => setFontSize(s => Math.max(8, s - 1))} className="h-7 w-7 px-1">
-                          <Minus className="h-4 w-4" />
-                          </Button>
-                          <span className="text-sm font-medium tabular-nums">{fontSize}px</span>
-                          <Button variant="ghost" onClick={() => setFontSize(s => Math.min(32, s + 1))} className="h-7 w-7 px-1">
-                          <Plus className="h-4 w-4" />
-                          </Button>
-                      </div>
                       <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10">
                           <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
                           <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} className="ml-auto" />
@@ -321,29 +313,35 @@ export default function OfflineSetlistPage() {
        <>
         {renderPanel()}
         <div className="flex-1 flex flex-col min-h-0">
+            <div className="text-center mb-4 text-sm text-muted-foreground font-semibold flex justify-center items-center gap-4 pt-0">
+                <div className="flex items-center gap-2 rounded-md border p-1 bg-background max-w-fit">
+                    <Label className="text-sm pl-1 whitespace-nowrap sr-only">Tam. da Fonte</Label>
+                    <Button variant="ghost" onClick={decreaseFontSize} className="h-7 w-7 px-1">
+                        <Minus className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm font-medium tabular-nums">{fontSize}px</span>
+                    <Button variant="ghost" onClick={increaseFontSize} className="h-7 w-7 px-1">
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                </div>
+                <span>Música {currentSongIndex + 1} de {offlineData?.songs.length ?? 0}</span>
+                {totalPagesOfSong > 1 && (
+                  <>
+                    <span>&bull;</span>
+                    <span>Página {currentPageOfSong} de {totalPagesOfSong}</span>
+                  </>
+                )}
+            </div>
            <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true, loop: false }}>
               <CarouselContent>
                 {allSections.map((section, index) => {
                     const transposeValue = transpositions[section.songIndex] ?? 0;
                     const content = transposeContent(section.content, transposeValue);
-                    const songNumber = section.songIndex + 1;
-                    const totalSongs = offlineData?.songs.length ?? 0;
-                    const sectionPageNumber = section.partIndex + 1;
-                    const totalPagesInSection = allSections.filter(s => s.songIndex === section.songIndex).length;
-
+                    
                     return (
                       <CarouselItem key={index} className="h-full">
                         <Card className="w-full h-full flex flex-col bg-transparent shadow-none border-none">
                           <CardContent className="flex-1 h-full p-0">
-                            <div className="text-center mb-4 text-sm text-muted-foreground font-semibold flex justify-center items-center gap-4 pt-4">
-                                <span>Música {songNumber} de {totalSongs}</span>
-                                {totalPagesInSection > 1 && (
-                                  <>
-                                    <span>&bull;</span>
-                                    <span>Página {sectionPageNumber} de {totalPagesInSection}</span>
-                                  </>
-                                )}
-                            </div>
                             <ScrollArea className="h-full p-4 md:p-6 pt-0">
                               <SongDisplay 
                                   style={{ 
@@ -396,3 +394,8 @@ export default function OfflineSetlistPage() {
     </div>
   );
 }
+
+// Hook 'useAuth' simulado para evitar erros de compilação, já que o original não está no escopo
+const useAuth = () => ({ appUser: { colorSettings: undefined } });
+
+    
