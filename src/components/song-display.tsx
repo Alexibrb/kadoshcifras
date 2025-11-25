@@ -43,13 +43,17 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
         );
     }
     
+    const style = isChord 
+        ? { color: 'var(--chords-color, hsl(var(--primary)))' }
+        : { color: 'var(--lyrics-color, hsl(var(--foreground)))' };
 
     return (
         <p
+            style={style}
             className={cn(
                 'whitespace-pre-wrap', // Permite que o texto quebre a linha, mas preserva os espaços
                 'break-words', // Força a quebra de palavras longas
-                isChord ? 'font-bold mb-1 text-primary' : 'mb-2'
+                isChord ? 'font-bold mb-1' : 'mb-2'
             )}
         >
             {text}

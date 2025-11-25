@@ -1,3 +1,4 @@
+
 // src/hooks/use-auth.tsx
 'use client';
 
@@ -6,7 +7,7 @@ import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User as FirebaseAuthUser } from 'firebase/auth';
 import { doc, onSnapshot, getDoc, Timestamp } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
-import type { User as AppUser } from '@/types';
+import type { User as AppUser, ColorSettings } from '@/types';
 
 interface AuthContextType {
   user: FirebaseAuthUser | null;
@@ -43,10 +44,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const unsubscribeFirestore = onSnapshot(userDocRef, (docSnap) => {
           if (docSnap.exists()) {
             const userData = docSnap.data();
+            if (userData.colorSettings) {
+                localStorage.setItem('user-color-settings', JSON.stringify(userData.colorSettings));
+            } else {
+                localStorage.removeItem('user-color-settings');
+            }
             const convertedData = convertTimestampsInObject(userData);
             setAppUser({ id: docSnap.id, ...convertedData } as AppUser);
           } else {
             setAppUser(null);
+            localStorage.removeItem('user-color-settings');
           }
           setLoading(false);
         }, (error) => {
@@ -58,6 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setUser(null);
         setAppUser(null);
+        localStorage.removeItem('user-color-settings');
         setLoading(false);
       }
     });
@@ -127,5 +135,5 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
         }
     }, [user, appUser, loading, router, redirectUrl, pathname]);
 
-    return { loading, isAdmin: appUser?.role === 'admin' };
+    return { loading, isAdmin: appUser?.role === 'admin', appUser };
 }

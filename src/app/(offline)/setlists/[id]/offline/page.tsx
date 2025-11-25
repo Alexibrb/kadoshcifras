@@ -12,7 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
-import { PedalSettings } from '@/types';
+import { PedalSettings, ColorSettings } from '@/types';
 import { Carousel, CarouselApi, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { transposeChord, transposeContent } from '@/lib/music';
 import { Badge } from '@/components/ui/badge';
@@ -58,10 +58,30 @@ export default function OfflineSetlistPage() {
     prevSong: '[',
     nextSong: ']',
   });
+  const [colorSettings] = useLocalStorage<ColorSettings | undefined>('user-color-settings', undefined);
+
   
   const [api, setApi] = useState<CarouselApi>()
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [transpositions, setTranspositions] = useState<number[]>([]);
+
+  const defaultColorSettings = useMemo(() => {
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    return {
+        lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
+        chordsColor: isDarkMode ? '#F59E0B' : '#D946EF',
+        backgroundColor: isDarkMode ? '#0a0a0a' : '#ffffff',
+    };
+  }, []);
+
+  const finalColorSettings = colorSettings || defaultColorSettings;
+
+  useEffect(() => {
+    document.body.style.backgroundColor = finalColorSettings.backgroundColor;
+    return () => {
+        document.body.style.backgroundColor = '';
+    }
+  }, [finalColorSettings.backgroundColor]);
 
   useEffect(() => {
     // Only run on the client
@@ -178,49 +198,12 @@ export default function OfflineSetlistPage() {
     });
   };
 
-  const renderContent = () => {
-    if (loading) {
-      return (
-        <div className="flex flex-col items-center justify-center h-screen text-center p-4">
-          <h2 className="text-2xl font-bold mb-4">Carregando Dados Offline...</h2>
-        </div>
-      );
-    }
+  const renderPanel = () => {
+    if (!offlineData || !currentSong) return null;
 
-    if (error) {
-       return (
-        <div className="flex flex-col items-center justify-center h-screen text-center p-4">
-          <h2 className="text-2xl font-bold text-destructive mb-4">Erro ao Carregar</h2>
-          <p className="text-muted-foreground mb-6">{error}</p>
-          <Button asChild>
-            <Link href={`/setlists/${setlistId}`}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar para o Repertório
-            </Link>
-          </Button>
-        </div>
-      );
-    }
-    
-    if (!offlineData || !currentSong) {
-       return (
-        <div className="flex flex-col items-center justify-center h-screen text-center p-4">
-          <h2 className="text-2xl font-bold mb-4">Dados Offline Não Encontrados ou Inválidos</h2>
-          <p className="text-muted-foreground">Gere os dados na página do repertório antes de acessar o modo de apresentação.</p>
-           <Button asChild className="mt-6">
-            <Link href={`/setlists/${setlistId}`}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar para o Repertório
-            </Link>
-          </Button>
-        </div>
-      );
-    }
-    
     const displayedKey = currentSong.key ? transposeChord(currentSong.key, currentSongTranspose) : 'N/A';
-    
+
     return (
-       <>
         <Card className="mb-4 bg-accent/10 transition-all duration-300">
             <CardContent className="p-4 space-y-4">
               {isPanelVisible ? (
@@ -292,7 +275,51 @@ export default function OfflineSetlistPage() {
               )}
             </CardContent>
           </Card>
-          
+    );
+  }
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="flex flex-col items-center justify-center h-screen text-center p-4">
+          <h2 className="text-2xl font-bold mb-4">Carregando Dados Offline...</h2>
+        </div>
+      );
+    }
+
+    if (error) {
+       return (
+        <div className="flex flex-col items-center justify-center h-screen text-center p-4">
+          <h2 className="text-2xl font-bold text-destructive mb-4">Erro ao Carregar</h2>
+          <p className="text-muted-foreground mb-6">{error}</p>
+          <Button asChild>
+            <Link href={`/setlists/${setlistId}`}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar para o Repertório
+            </Link>
+          </Button>
+        </div>
+      );
+    }
+    
+    if (!offlineData || !currentSong) {
+       return (
+        <div className="flex flex-col items-center justify-center h-screen text-center p-4">
+          <h2 className="text-2xl font-bold mb-4">Dados Offline Não Encontrados ou Inválidos</h2>
+          <p className="text-muted-foreground">Gere os dados na página do repertório antes de acessar o modo de apresentação.</p>
+           <Button asChild className="mt-6">
+            <Link href={`/setlists/${setlistId}`}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar para o Repertório
+            </Link>
+          </Button>
+        </div>
+      );
+    }
+    
+    return (
+       <>
+        {renderPanel()}
         <div className="flex-1 flex flex-col min-h-0">
            <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true, loop: false }}>
               <CarouselContent>
@@ -306,10 +333,9 @@ export default function OfflineSetlistPage() {
 
                     return (
                       <CarouselItem key={index} className="h-full">
-                        <Card className="w-full h-full flex flex-col bg-background shadow-none border-none">
+                        <Card className="w-full h-full flex flex-col bg-transparent shadow-none border-none">
                           <CardContent className="flex-1 h-full p-0">
-                            <ScrollArea className="h-full p-4 md:p-6">
-                              <div className="text-center mb-4 text-sm text-muted-foreground font-semibold flex justify-center items-center gap-4">
+                            <div className="text-center mb-4 text-sm text-muted-foreground font-semibold flex justify-center items-center gap-4 pt-4">
                                 <span>Música {songNumber} de {totalSongs}</span>
                                 {totalPagesInSection > 1 && (
                                   <>
@@ -317,9 +343,14 @@ export default function OfflineSetlistPage() {
                                     <span>Página {sectionPageNumber} de {totalPagesInSection}</span>
                                   </>
                                 )}
-                              </div>
+                            </div>
+                            <ScrollArea className="h-full p-4 md:p-6 pt-0">
                               <SongDisplay 
-                                  style={{ fontSize: `${fontSize}px` }} 
+                                  style={{ 
+                                      fontSize: `${fontSize}px`,
+                                      '--lyrics-color': finalColorSettings.lyricsColor,
+                                      '--chords-color': finalColorSettings.chordsColor,
+                                  } as React.CSSProperties} 
                                   content={content} 
                                   showChords={showChords} 
                               />

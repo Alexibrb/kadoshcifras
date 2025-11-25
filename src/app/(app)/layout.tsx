@@ -21,6 +21,7 @@ import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect } from 'react';
 
 
 const navLinks = [
@@ -137,12 +138,25 @@ function Footer() {
 
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-    const { loading } = useRequireAuth();
+    const { loading, appUser } = useRequireAuth();
     const pathname = usePathname();
 
     // Regex to check if the path is /songs/[id]
     const isSongDisplayPage = /^\/songs\/[^/]+$/.test(pathname);
 
+    useEffect(() => {
+        if (appUser?.colorSettings?.backgroundColor && (isSongDisplayPage || pathname.includes('/offline'))) {
+            document.body.style.backgroundColor = appUser.colorSettings.backgroundColor;
+        } else {
+            // Revert to default background color when not on a song page
+             document.body.style.backgroundColor = '';
+        }
+
+        // Cleanup function to remove style when component unmounts or path changes
+        return () => {
+            document.body.style.backgroundColor = '';
+        };
+    }, [appUser, pathname, isSongDisplayPage]);
 
     if (loading) {
         return (
