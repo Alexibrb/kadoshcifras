@@ -13,8 +13,6 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
         return null;
     }
     
-    // Evita que uma linha em branco ocupe espaço desnecessário quando as cifras estão ocultas.
-    // e a proxima linha também está vazia
     if (text.trim() === '' && !showChords) {
        return <p className="mb-0">&nbsp;</p>;
     }
@@ -23,7 +21,6 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
         return <p className="mb-2">&nbsp;</p>;
     }
 
-    // Verifica se a linha é um título de música formatado
     if (text.startsWith('[title]')) {
         const fullTitle = text.replace('[title]', '').trim();
         const artistMatch = fullTitle.match(/\[artist\](.*)/);
@@ -32,7 +29,7 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
 
         return (
             <div className="mb-4 mt-6 first:mt-0">
-                <h2 className="text-2xl font-bold text-primary leading-tight">
+                <h2 className="text-2xl font-bold text-primary leading-tight" style={{ color: 'var(--custom-chord-color)' }}>
                     {title}
                 </h2>
                 {artist && (
@@ -43,13 +40,18 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
             </div>
         );
     }
+    
+    const chordStyle = { 
+        color: isChord ? 'var(--custom-chord-color)' : 'var(--custom-text-color)' 
+    };
 
     return (
         <p
+            style={chordStyle}
             className={cn(
-                'whitespace-pre-wrap', // Permite que o texto quebre a linha, mas preserva os espaços
-                'break-words', // Força a quebra de palavras longas
-                isChord ? 'font-bold text-primary mb-1' : 'mb-2'
+                'whitespace-pre-wrap', 
+                'break-words', 
+                isChord ? 'font-bold mb-1' : 'mb-2'
             )}
         >
             {text}
@@ -64,19 +66,20 @@ export function SongDisplay({ content, className, showChords, ...props }: SongDi
         "font-code text-base leading-tight w-full",
         className
     );
+    
+    const textStyle = {
+      color: 'var(--custom-text-color)'
+    }
 
     return (
-        <div className={containerClasses} {...props}>
+        <div className={containerClasses} {...props} style={textStyle}>
             {lines.map((line, lineIndex) => {
                 const isChord = isChordLine(line);
-                // Quando as cifras estão ocultas, não renderize a linha de acordes.
                 if (isChord && !showChords) {
                     return null;
                 }
                 
-                // Evita renderizar um espaço extra se a linha de letra estiver vazia
-                // e a linha de cifra acima dela foi ocultada.
-                if(line.trim() === '' && !showChords && lineIndex > 0 && isChordLine(lines[lineIndex -1])) {
+                if(line.trim() === '' && !showChords && lineIndex > 0 && isChordLine(lines[lineIndex - 1])) {
                     return null;
                 }
 
@@ -92,5 +95,3 @@ export function SongDisplay({ content, className, showChords, ...props }: SongDi
         </div>
     );
 }
-
-    

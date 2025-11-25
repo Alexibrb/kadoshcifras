@@ -9,6 +9,7 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 import type { PedalSettings } from '@/types';
 import { Check, Settings, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { ColorSettingsForm } from './color-settings-form';
 
 export function PedalSettingsForm() {
   const [settings, setSettings] = useLocalStorage<PedalSettings>('pedal-settings', {

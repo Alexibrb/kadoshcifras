@@ -1,3 +1,4 @@
+
 // src/app/(offline)/setlists/[id]/offline/page.tsx
 'use client';
 
@@ -32,6 +33,8 @@ interface Section {
     partIndex: number;
     content: string;
     isLastSection: boolean;
+    songTotalParts: number; // Total de partes da música
+    songTitle: string;
 }
 
 
@@ -57,10 +60,8 @@ export default function OfflineSetlistPage() {
 
   const [api, setApi] = useState<CarouselApi>()
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
-  // Estado para armazenar as transposições de cada música individualmente
   const [transpositions, setTranspositions] = useState<number[]>([]);
 
-  // Carrega os dados e inicializa as transposições
   useEffect(() => {
     setIsClient(true);
     try {
@@ -70,7 +71,6 @@ export default function OfflineSetlistPage() {
         const parsedData = JSON.parse(item) as OfflineSetlist;
         if (parsedData && parsedData.name && Array.isArray(parsedData.songs)) {
             setOfflineData(parsedData);
-            // Inicializa o estado de transposições com os valores do repertório
             setTranspositions(parsedData.songs.map(s => s.initialTranspose));
         } else {
             setError("Dados offline corrompidos ou vazios. Por favor, gere novamente.");
@@ -86,14 +86,12 @@ export default function OfflineSetlistPage() {
     }
   }, [setlistId]);
   
-  // Foca o container para capturar eventos de teclado
   useEffect(() => {
       if(containerRef.current) {
           containerRef.current.focus();
       }
   }, []);
 
-  // Gera uma lista plana de todas as seções de todas as músicas
   const allSections = useMemo((): Section[] => {
     if (!offlineData) return [];
     
@@ -105,14 +103,15 @@ export default function OfflineSetlistPage() {
                 songIndex: songIndex,
                 partIndex: partIndex,
                 content: part,
-                isLastSection: partIndex === parts.length - 1
+                isLastSection: partIndex === parts.length - 1,
+                songTotalParts: parts.length,
+                songTitle: song.title
             });
         });
     });
     return sections;
   }, [offlineData]);
 
-  // Atualiza o índice da seção atual quando o carrossel muda
    useEffect(() => {
     if (!api) return;
     const handleSelect = () => setCurrentSectionIndex(api.selectedScrollSnap());
@@ -127,7 +126,6 @@ export default function OfflineSetlistPage() {
   const currentSong = typeof currentSongIndex === 'number' ? offlineData?.songs[currentSongIndex] : undefined;
   const currentSongTranspose = typeof currentSongIndex === 'number' ? (transpositions[currentSongIndex] ?? 0) : 0;
 
-  // Navegação entre MÚSICAS (usado pelo pedal)
   const goToSong = (direction: 'next' | 'prev') => {
       if (typeof currentSongIndex !== 'number') return;
       
@@ -135,7 +133,6 @@ export default function OfflineSetlistPage() {
       
       if (nextSongIndex < 0 || nextSongIndex >= (offlineData?.songs.length ?? 0)) return;
 
-      // Encontra a primeira seção da próxima/anterior música
       const targetSectionIndex = allSections.findIndex(s => s.songIndex === nextSongIndex);
       if (targetSectionIndex !== -1) {
           api?.scrollTo(targetSectionIndex);
@@ -144,7 +141,6 @@ export default function OfflineSetlistPage() {
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
         const key = event.key;
-        // Navegação de PÁGINA/SEÇÃO
         if (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prevPage) {
           event.preventDefault();
           api?.scrollPrev();
@@ -152,7 +148,6 @@ export default function OfflineSetlistPage() {
           event.preventDefault();
           api?.scrollNext();
         }
-        // Navegação de MÚSICA
         else if (key === pedalSettings.prevSong) {
           event.preventDefault();
           goToSong('prev');
@@ -222,8 +217,6 @@ export default function OfflineSetlistPage() {
   }
 
   const displayedKey = currentSong.key ? transposeChord(currentSong.key, currentSongTranspose) : 'N/A';
-  const count = allSections.length;
-  const current = currentSectionIndex + 1;
 
   return (
     <div ref={containerRef} className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen outline-none bg-background" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
@@ -242,12 +235,6 @@ export default function OfflineSetlistPage() {
                   <div className="flex-1 space-y-1">
                     <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{offlineData.name}</h1>
                     <p className="text-muted-foreground text-sm">Modo de Apresentação Offline</p>
-                    <div className="flex items-center flex-wrap gap-2 pt-1">
-                       <Badge variant="outline" className="whitespace-nowrap text-sm">
-                          Música: {currentSong?.title}
-                       </Badge>
-                       {count > 1 && <Badge variant="secondary">Página {current} de {count}</Badge>}
-                    </div>
                   </div>
                   
                   <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon" className="shrink-0">
@@ -294,7 +281,7 @@ export default function OfflineSetlistPage() {
                   </Link>
                 </Button>
                 <h1 className="text-lg font-bold font-headline tracking-tight truncate">
-                    {offlineData.name} - <span className="font-normal">{currentSong?.title}</span>
+                    {offlineData.name}
                 </h1>
                 <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0">
                   <PanelTopOpen className="h-5 w-5" />
@@ -309,29 +296,35 @@ export default function OfflineSetlistPage() {
          <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
             <CarouselContent>
               {allSections.map((section, index) => {
-                  // A transposição é aplicada com base na música à qual a seção pertence
                   const transposeValue = transpositions[section.songIndex];
                   const content = transposeContent(section.content, transposeValue);
                   return (
                     <CarouselItem key={index} className="h-full">
                       <Card className="w-full h-full flex flex-col bg-background shadow-none border-none">
-                        <CardContent className="flex-1 h-full p-0">
-                          <ScrollArea className="h-full p-4 md:p-6">
-                            <SongDisplay 
-                                style={{ fontSize: `${fontSize}px` }} 
-                                content={content} 
-                                showChords={showChords} 
-                            />
-                            {section.isLastSection && (
-                                <div className="mt-8 text-center text-muted-foreground">
-                                    <Separator className="my-4" />
-                                    <div className="flex items-center justify-center gap-2 text-sm">
-                                       <Music className="h-4 w-4" />
-                                       <span>Fim da Música</span>
-                                    </div>
+                         <CardContent className="flex-1 h-full p-0 flex flex-col">
+                            <div className="flex items-center justify-between gap-4 text-sm text-muted-foreground px-4 pt-2 pb-1 border-b">
+                                <span>{section.songTitle}</span>
+                                <div className="flex items-center gap-4">
+                                   <Badge variant="outline">Música {section.songIndex + 1} de {offlineData.songs.length}</Badge>
+                                   <Badge variant="secondary">Página {section.partIndex + 1} de {section.songTotalParts}</Badge>
                                 </div>
-                            )}
-                          </ScrollArea>
+                            </div>
+                            <ScrollArea className="h-full p-4 md:p-6 flex-1">
+                                <SongDisplay 
+                                    style={{ fontSize: `${fontSize}px` }} 
+                                    content={content} 
+                                    showChords={showChords} 
+                                />
+                                {section.isLastSection && (
+                                    <div className="mt-8 text-center text-muted-foreground">
+                                        <Separator className="my-4" />
+                                        <div className="flex items-center justify-center gap-2 text-sm">
+                                           <Music className="h-4 w-4" />
+                                           <span>Fim da Música</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </ScrollArea>
                         </CardContent>
                       </Card>
                     </CarouselItem>
