@@ -49,7 +49,7 @@ const Line = ({ text, isChord, showChords }: { text: string; isChord: boolean, s
             className={cn(
                 'whitespace-pre-wrap', // Permite que o texto quebre a linha, mas preserva os espaços
                 'break-words', // Força a quebra de palavras longas
-                isChord ? 'font-bold text-primary mb-1' : 'mb-2'
+                isChord ? 'font-bold text-foreground dark:text-primary mb-1' : 'mb-2'
             )}
         >
             {text}
