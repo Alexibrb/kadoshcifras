@@ -37,7 +37,6 @@ export default function SetlistPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
-  const [debugData, setDebugData] = useState<string | null>(null);
   
   // Estado de carregamento combinado
   const loading = loadingSetlist || loadingSongs || !appUser;
@@ -165,7 +164,7 @@ export default function SetlistPage() {
     
     const offlineSongs = songsToProcess.map(setlistSong => {
       const song = songMap.get(setlistSong.songId);
-      if (!song) return null;
+      if (!song) return null; // Ignora se a música não for encontrada, em vez de quebrar
       return {
           title: song.title,
           artist: song.artist,
@@ -189,8 +188,6 @@ export default function SetlistPage() {
       const storageKey = `offline-setlist-${setlistId}`;
       const jsonString = JSON.stringify(dataToSave, null, 2);
       
-      console.log('--- DADOS A SEREM SALVOS NO LOCALSTORAGE ---', jsonString);
-      
       localStorage.setItem(storageKey, jsonString);
       
       toast({
@@ -209,17 +206,7 @@ export default function SetlistPage() {
       });
     }
   };
-
-  const handleDebugClick = () => {
-      const data = generateOfflineData();
-      if (data) {
-          setDebugData(JSON.stringify(data, null, 2));
-      } else {
-          setDebugData("Não foi possível gerar os dados. Verifique se todas as músicas estão carregadas.");
-      }
-  }
   
-
   if (isClient && !loading && !setlist) {
     notFound();
   }
