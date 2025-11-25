@@ -17,35 +17,48 @@ export function ColorSettingsForm() {
 
   const [isDarkMode, setIsDarkMode] = useState(false);
 
+  // This effect runs only on the client-side
   useEffect(() => {
-    // Garante que o código só rode no cliente
     setIsDarkMode(document.documentElement.classList.contains('dark'));
+    
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          setIsDarkMode(document.documentElement.classList.contains('dark'));
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, { attributes: true });
+    return () => observer.disconnect();
   }, []);
 
   const defaultSettings: ColorSettings = useMemo(() => ({
     lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
-    chordsColor: isDarkMode ? '#F59E0B' : '#000000',
-    backgroundColor: isDarkMode ? '#0a0a0a' : '#f7f2fa',
+    chordsColor: isDarkMode ? '#F59E0B' : '#D946EF', // Default to a more visible color in light mode
+    backgroundColor: isDarkMode ? '#0a0a0a' : '#ffffff',
   }), [isDarkMode]);
 
-  const [lyricsColor, setLyricsColor] = useState('');
-  const [chordsColor, setChordsColor] = useState('');
-  const [backgroundColor, setBackgroundColor] = useState('');
+  const [lyricsColor, setLyricsColor] = useState(defaultSettings.lyricsColor);
+  const [chordsColor, setChordsColor] = useState(defaultSettings.chordsColor);
+  const [backgroundColor, setBackgroundColor] = useState(defaultSettings.backgroundColor);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (appUser) {
-      const currentSettings = appUser.colorSettings || defaultSettings;
-      setLyricsColor(currentSettings.lyricsColor);
-      setChordsColor(currentSettings.chordsColor);
-      setBackgroundColor(currentSettings.backgroundColor);
+      // Use user's settings if they exist, otherwise fall back to theme-based defaults
+      const currentSettings = appUser.colorSettings;
+      setLyricsColor(currentSettings?.lyricsColor ?? defaultSettings.lyricsColor);
+      setChordsColor(currentSettings?.chordsColor ?? defaultSettings.chordsColor);
+      setBackgroundColor(currentSettings?.backgroundColor ?? defaultSettings.backgroundColor);
     } else if (!authLoading) {
-      // Se não há usuário e não está carregando, usa o padrão.
+      // If no user and not loading, use defaults
       setLyricsColor(defaultSettings.lyricsColor);
       setChordsColor(defaultSettings.chordsColor);
       setBackgroundColor(defaultSettings.backgroundColor);
     }
-  }, [appUser, defaultSettings, authLoading]);
+  }, [appUser, authLoading, defaultSettings]);
+
 
   const handleSave = async () => {
     if (!appUser || !lyricsColor || !chordsColor || !backgroundColor) return;
@@ -64,21 +77,14 @@ export function ColorSettingsForm() {
   
   const handleReset = async () => {
     if (!appUser) return;
-    // Detecta o tema atual para definir os padrões corretos
-    const isDarkModeNow = document.documentElement.classList.contains('dark');
-    const defaults: ColorSettings = {
-       lyricsColor: isDarkModeNow ? '#FFFFFF' : '#000000',
-       chordsColor: isDarkModeNow ? '#F59E0B' : '#000000',
-       backgroundColor: isDarkModeNow ? '#0a0a0a' : '#f7f2fa',
-    }
-    setLyricsColor(defaults.lyricsColor);
-    setChordsColor(defaults.chordsColor);
-    setBackgroundColor(defaults.backgroundColor);
-    await updateDocument(appUser.id, { colorSettings: defaults });
+    // Defaults are already calculated based on the current theme (isDarkMode)
+    setLyricsColor(defaultSettings.lyricsColor);
+    setChordsColor(defaultSettings.chordsColor);
+    setBackgroundColor(defaultSettings.backgroundColor);
+    await updateDocument(appUser.id, { colorSettings: defaultSettings });
   }
 
-  // A condição de carregamento agora verifica se auth está carregando OU se as cores ainda não foram setadas
-  if (authLoading || !appUser) {
+  if (authLoading) {
      return (
         <Card>
             <CardHeader>
@@ -119,7 +125,7 @@ export function ColorSettingsForm() {
               <Input
                 id="lyricsColor"
                 type="color"
-                value={lyricsColor || '#000000'}
+                value={lyricsColor}
                 onChange={(e) => setLyricsColor(e.target.value)}
                 className="p-1 h-10 w-14"
               />
@@ -132,7 +138,7 @@ export function ColorSettingsForm() {
                 <Input
                     id="chordsColor"
                     type="color"
-                    value={chordsColor || '#000000'}
+                    value={chordsColor}
                     onChange={(e) => setChordsColor(e.target.value)}
                     className="p-1 h-10 w-14"
                 />
@@ -145,7 +151,7 @@ export function ColorSettingsForm() {
                 <Input
                     id="backgroundColor"
                     type="color"
-                    value={backgroundColor || '#ffffff'}
+                    value={backgroundColor}
                     onChange={(e) => setBackgroundColor(e.target.value)}
                     className="p-1 h-10 w-14"
                 />
