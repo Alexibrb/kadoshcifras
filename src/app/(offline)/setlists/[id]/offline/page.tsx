@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Music, CircleCheck } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Music, Separator } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,9 +16,12 @@ import { PedalSettings, Song } from '@/types';
 import { Carousel, CarouselApi, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { transposeChord, transposeContent } from '@/lib/music';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 
-interface OfflineSong extends Omit<Song, 'id' | 'createdAt'> {
+interface OfflineSong {
+    title: string;
+    artist: string;
+    content: string;
+    key?: string;
     initialTranspose: number;
 }
 
@@ -62,27 +65,28 @@ export default function OfflineSetlistPage() {
   useEffect(() => {
     setIsClient(true);
     setLoading(true);
-    try {
-      const storageKey = `offline-setlist-${setlistId}`;
-      const item = localStorage.getItem(storageKey);
-      if (item) {
-        const parsedData = JSON.parse(item) as OfflineSetlist;
-        // Validação mais robusta dos dados
-        if (parsedData && typeof parsedData.name === 'string' && Array.isArray(parsedData.songs)) {
-            setOfflineData(parsedData);
-            setTranspositions(parsedData.songs.map(s => s.initialTranspose || 0));
-            setError(null);
-        } else {
-            setError("Dados offline corrompidos. Por favor, gere o repertório novamente.");
+    if (typeof window !== 'undefined') {
+        try {
+            const storageKey = `offline-setlist-${setlistId}`;
+            const item = localStorage.getItem(storageKey);
+            if (item) {
+                const parsedData = JSON.parse(item) as OfflineSetlist;
+                if (parsedData && typeof parsedData.name === 'string' && Array.isArray(parsedData.songs)) {
+                    setOfflineData(parsedData);
+                    setTranspositions(parsedData.songs.map(s => s.initialTranspose || 0));
+                    setError(null);
+                } else {
+                    setError("Dados offline corrompidos. Por favor, gere o repertório novamente.");
+                }
+            } else {
+                setError("Dados offline não encontrados. Por favor, gere o repertório novamente.");
+            }
+        } catch (e) {
+            console.error("Erro ao ler do localStorage:", e);
+            setError("Não foi possível carregar os dados offline. Tente gerar novamente.");
+        } finally {
+            setLoading(false);
         }
-      } else {
-        setError("Dados offline não encontrados. Por favor, gere o repertório novamente.");
-      }
-    } catch (e) {
-      console.error("Erro ao ler do localStorage:", e);
-      setError("Não foi possível carregar os dados offline. Tente gerar novamente.");
-    } finally {
-        setLoading(false);
     }
   }, [setlistId]);
   
@@ -135,7 +139,7 @@ export default function OfflineSetlistPage() {
       if (targetSectionIndex !== -1) {
           api?.scrollTo(targetSectionIndex);
       }
-  }, [currentSongIndex, offlineData, allSections, api]);
+  }, [currentSongIndex, offlineData?.songs.length, allSections, api]);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
         const key = event.key;
@@ -167,9 +171,7 @@ export default function OfflineSetlistPage() {
     });
   };
 
-  if (!isClient) return null;
-
-  if (loading) {
+  if (!isClient || loading) {
     return (
      <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
        <h2 className="text-2xl font-bold mb-4">Carregando Dados Offline...</h2>
@@ -302,7 +304,7 @@ export default function OfflineSetlistPage() {
          <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true, loop: false }}>
             <CarouselContent>
               {allSections.map((section, index) => {
-                  const transposeValue = transpositions[section.songIndex];
+                  const transposeValue = transpositions[section.songIndex] ?? 0;
                   const content = transposeContent(section.content, transposeValue);
                   return (
                     <CarouselItem key={index} className="h-full">
