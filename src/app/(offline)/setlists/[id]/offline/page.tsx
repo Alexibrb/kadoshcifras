@@ -35,7 +35,8 @@ interface Section {
     songIndex: number;
     partIndex: number;
     content: string;
-    isLastSection: boolean;
+    isLastSectionOfSong: boolean;
+    isLastSectionOfSetlist: boolean;
 }
 
 
@@ -107,7 +108,8 @@ export default function OfflineSetlistPage() {
                 songIndex: songIndex,
                 partIndex: partIndex,
                 content: part,
-                isLastSection: partIndex === parts.length - 1 && songIndex === offlineData.songs.length - 1,
+                isLastSectionOfSong: partIndex === parts.length - 1,
+                isLastSectionOfSetlist: partIndex === parts.length - 1 && songIndex === offlineData.songs.length - 1,
             });
         });
     });
@@ -194,7 +196,6 @@ export default function OfflineSetlistPage() {
     }
     
     if (!offlineData || !currentSong) {
-      // This state can happen if data is empty or corrupted in a way that error state doesn't catch
        return (
         <div className="flex flex-col items-center justify-center h-screen text-center p-4">
           <h2 className="text-2xl font-bold mb-4">Dados Offline Não Encontrados ou Inválidos</h2>
@@ -309,7 +310,7 @@ export default function OfflineSetlistPage() {
                                   content={content} 
                                   showChords={showChords} 
                               />
-                              {section.isLastSection && index < allSections.length - 1 && (
+                              {section.isLastSectionOfSong && !section.isLastSectionOfSetlist && (
                                   <div className="mt-8 text-center text-muted-foreground">
                                       <Separator className="my-4" />
                                       <div className="flex items-center justify-center gap-2 text-sm">
