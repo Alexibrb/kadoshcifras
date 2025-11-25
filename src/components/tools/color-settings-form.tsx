@@ -15,11 +15,11 @@ export function ColorSettingsForm() {
   const { appUser, loading: authLoading } = useAuth();
   const { updateDocument } = useFirestoreCollection('users');
 
-  const isDarkMode = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return document.documentElement.classList.contains('dark');
-    }
-    return false;
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Garante que o código só rode no cliente
+    setIsDarkMode(document.documentElement.classList.contains('dark'));
   }, []);
 
   const defaultSettings: ColorSettings = useMemo(() => ({
@@ -28,9 +28,9 @@ export function ColorSettingsForm() {
     backgroundColor: isDarkMode ? '#0a0a0a' : '#f7f2fa',
   }), [isDarkMode]);
 
-  const [lyricsColor, setLyricsColor] = useState<string | undefined>();
-  const [chordsColor, setChordsColor] = useState<string | undefined>();
-  const [backgroundColor, setBackgroundColor] = useState<string | undefined>();
+  const [lyricsColor, setLyricsColor] = useState('');
+  const [chordsColor, setChordsColor] = useState('');
+  const [backgroundColor, setBackgroundColor] = useState('');
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -39,8 +39,13 @@ export function ColorSettingsForm() {
       setLyricsColor(currentSettings.lyricsColor);
       setChordsColor(currentSettings.chordsColor);
       setBackgroundColor(currentSettings.backgroundColor);
+    } else if (!authLoading) {
+      // Se não há usuário e não está carregando, usa o padrão.
+      setLyricsColor(defaultSettings.lyricsColor);
+      setChordsColor(defaultSettings.chordsColor);
+      setBackgroundColor(defaultSettings.backgroundColor);
     }
-  }, [appUser, defaultSettings]);
+  }, [appUser, defaultSettings, authLoading]);
 
   const handleSave = async () => {
     if (!appUser || !lyricsColor || !chordsColor || !backgroundColor) return;
@@ -72,7 +77,8 @@ export function ColorSettingsForm() {
     await updateDocument(appUser.id, { colorSettings: defaults });
   }
 
-  if (authLoading || typeof lyricsColor === 'undefined') {
+  // A condição de carregamento agora verifica se auth está carregando OU se as cores ainda não foram setadas
+  if (authLoading || !lyricsColor || !chordsColor || !backgroundColor) {
      return (
         <Card>
             <CardHeader>
@@ -113,7 +119,7 @@ export function ColorSettingsForm() {
               <Input
                 id="lyricsColor"
                 type="color"
-                value={lyricsColor || ''}
+                value={lyricsColor}
                 onChange={(e) => setLyricsColor(e.target.value)}
                 className="p-1 h-10 w-14"
               />
@@ -126,7 +132,7 @@ export function ColorSettingsForm() {
                 <Input
                     id="chordsColor"
                     type="color"
-                    value={chordsColor || ''}
+                    value={chordsColor}
                     onChange={(e) => setChordsColor(e.target.value)}
                     className="p-1 h-10 w-14"
                 />
@@ -139,7 +145,7 @@ export function ColorSettingsForm() {
                 <Input
                     id="backgroundColor"
                     type="color"
-                    value={backgroundColor || ''}
+                    value={backgroundColor}
                     onChange={(e) => setBackgroundColor(e.target.value)}
                     className="p-1 h-10 w-14"
                 />
@@ -156,7 +162,7 @@ export function ColorSettingsForm() {
         </div>
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button onClick={handleSave}>
+        <Button onClick={handleSave} disabled={!appUser}>
           {saved ? (
             <>
               <Check className="mr-2 h-4 w-4" /> Salvo!
@@ -165,7 +171,7 @@ export function ColorSettingsForm() {
             'Salvar Cores'
           )}
         </Button>
-         <Button variant="ghost" onClick={handleReset}>Restaurar Padrão</Button>
+         <Button variant="ghost" onClick={handleReset} disabled={!appUser}>Restaurar Padrão</Button>
       </CardFooter>
     </Card>
   );
