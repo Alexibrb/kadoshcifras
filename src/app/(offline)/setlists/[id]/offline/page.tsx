@@ -282,7 +282,7 @@ export default function OfflineSetlistPage() {
                     </Link>
                   </Button>
                   <h1 className="text-lg font-bold font-headline tracking-tight truncate">
-                      {offlineData.name} - <span className="font-normal">{currentSong.title}</span>
+                     {currentSong.title}
                   </h1>
                   <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0">
                     <PanelTopOpen className="h-5 w-5" />
