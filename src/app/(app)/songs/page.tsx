@@ -229,7 +229,7 @@ export default function SongsPage() {
                   <div className="flex-grow overflow-hidden">
                     <Button asChild variant="link" className="p-0 h-auto justify-start">
                         <Link href={`/songs/${song.id}`} className="truncate">
-                            <p className="font-semibold text-base truncate">{song.title}</p>
+                            <p className="font-semibold text-base truncate text-foreground hover:underline">{song.title}</p>
                         </Link>
                     </Button>
                      <p className="text-sm text-muted-foreground truncate">{song.artist}</p>
