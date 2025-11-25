@@ -78,7 +78,7 @@ export function ColorSettingsForm() {
   }
 
   // A condição de carregamento agora verifica se auth está carregando OU se as cores ainda não foram setadas
-  if (authLoading || !lyricsColor || !chordsColor || !backgroundColor) {
+  if (authLoading || !appUser) {
      return (
         <Card>
             <CardHeader>
@@ -119,7 +119,7 @@ export function ColorSettingsForm() {
               <Input
                 id="lyricsColor"
                 type="color"
-                value={lyricsColor}
+                value={lyricsColor || '#000000'}
                 onChange={(e) => setLyricsColor(e.target.value)}
                 className="p-1 h-10 w-14"
               />
@@ -132,7 +132,7 @@ export function ColorSettingsForm() {
                 <Input
                     id="chordsColor"
                     type="color"
-                    value={chordsColor}
+                    value={chordsColor || '#000000'}
                     onChange={(e) => setChordsColor(e.target.value)}
                     className="p-1 h-10 w-14"
                 />
@@ -145,7 +145,7 @@ export function ColorSettingsForm() {
                 <Input
                     id="backgroundColor"
                     type="color"
-                    value={backgroundColor}
+                    value={backgroundColor || '#ffffff'}
                     onChange={(e) => setBackgroundColor(e.target.value)}
                     className="p-1 h-10 w-14"
                 />
