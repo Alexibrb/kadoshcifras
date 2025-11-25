@@ -39,23 +39,6 @@ interface Section {
     isLastSectionOfSetlist: boolean;
 }
 
-// Hook 'useAuth' simulado para evitar erros, já que o original não está no escopo do prompt.
-// No ambiente real, ele funcionará conforme definido no projeto.
-const useAuth = () => {
-    const [user, setUser] = useState<{ colorSettings?: ColorSettings } | null>(null);
-    useEffect(() => {
-        // Simula a obtenção das configurações do usuário a partir do localStorage
-        if (typeof window !== 'undefined') {
-            const settings = localStorage.getItem('user-color-settings');
-            if (settings) {
-                setUser({ colorSettings: JSON.parse(settings) });
-            }
-        }
-    }, []);
-    return { appUser: user };
-};
-
-
 export default function OfflineSetlistPage() {
   const params = useParams();
   const setlistId = params.id as string;
@@ -74,7 +57,6 @@ export default function OfflineSetlistPage() {
     prevSong: '[',
     nextSong: ']',
   });
-  const { appUser } = useAuth();
   
   const [api, setApi] = useState<CarouselApi>()
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
@@ -100,15 +82,14 @@ export default function OfflineSetlistPage() {
 
 useEffect(() => {
     if (isClient) {
-        // Use appUser settings if they exist, otherwise use defaults based on theme
-        const userSettings = appUser?.colorSettings;
-        if (userSettings && userSettings.lyricsColor && userSettings.chordsColor) {
-            setFinalColorSettings(userSettings);
+        const storedSettings = localStorage.getItem('user-color-settings');
+        if (storedSettings) {
+             setFinalColorSettings(JSON.parse(storedSettings));
         } else {
             setFinalColorSettings(defaultColorSettings);
         }
     }
-}, [isClient, appUser, defaultColorSettings]);
+}, [isClient, defaultColorSettings]);
 
 
   useEffect(() => {
