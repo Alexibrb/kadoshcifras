@@ -191,8 +191,8 @@ export default function SetlistPage() {
       localStorage.setItem(storageKey, jsonString);
       
       toast({
-        title: "Repertório Salvo!",
-        description: "Redirecionando para o modo de apresentação...",
+        title: "Repertório Salvo para uso Offline!",
+        description: "Redirecionando... Não atualize ou saia da próxima página se estiver sem internet.",
       });
       
       router.push(`/setlists/${setlistId}/offline`);
