@@ -508,7 +508,7 @@ export default function SongPage() {
                 <CarouselContent>
                   {songParts.map((part, index) => (
                     <CarouselItem key={index} className="h-full">
-                      <Card className="w-full h-full flex flex-col bg-background shadow-none border-none">
+                      <Card className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none">
                         <CardContent className="flex-1 h-full p-0">
                           <ScrollArea className="h-full p-4 md:p-6">
                             <SongDisplay 
@@ -544,7 +544,7 @@ export default function SongPage() {
               </Carousel>
           </div>
         ) : (
-          <Card className="flex-1 flex flex-col bg-background shadow-none border-none">
+          <Card className="flex-1 flex flex-col bg-white dark:bg-black shadow-none border-none">
               <CardContent className="h-full flex flex-col p-0">
                   <div className="flex justify-between items-center w-full px-4 text-center text-sm text-muted-foreground pt-2 pb-2">
                      <div className="flex items-center gap-2">

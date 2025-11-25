@@ -79,11 +79,7 @@ export default function OfflineSetlistPage() {
   const [transpositions, setTranspositions] = useState<number[]>([]);
   const [isClient, setIsClient] = useState(false);
 
-  const [finalColorSettings, setFinalColorSettings] = useState<ColorSettings>({
-      lyricsColor: '#000000',
-      chordsColor: '#000000',
-      backgroundColor: '#ffffff',
-  });
+  const [finalColorSettings, setFinalColorSettings] = useState<ColorSettings | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -105,12 +101,12 @@ export default function OfflineSetlistPage() {
 
 
   useEffect(() => {
-    if (!isClient) return;
+    if (!isClient || !finalColorSettings) return;
     document.body.style.backgroundColor = finalColorSettings.backgroundColor;
     return () => {
         document.body.style.backgroundColor = '';
     }
-  }, [finalColorSettings.backgroundColor, isClient]);
+  }, [finalColorSettings, isClient]);
 
   useEffect(() => {
     // Only run on the client
@@ -301,7 +297,7 @@ export default function OfflineSetlistPage() {
   }
 
   const renderContent = () => {
-    if (loading) {
+    if (loading || !finalColorSettings) {
       return (
         <div className="flex flex-col items-center justify-center h-screen text-center p-4">
           <h2 className="text-2xl font-bold mb-4">Carregando Dados Offline...</h2>
@@ -376,7 +372,7 @@ export default function OfflineSetlistPage() {
                     
                     return (
                       <CarouselItem key={index} className="h-full">
-                        <Card className="w-full h-full flex flex-col bg-transparent shadow-none border-none">
+                        <Card className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none">
                           <CardContent className="flex-1 h-full p-0">
                             <ScrollArea className="h-full p-4 md:p-6 pt-0">
                               <SongDisplay 
@@ -430,7 +426,3 @@ export default function OfflineSetlistPage() {
     </div>
   );
 }
-
-
-    
-
