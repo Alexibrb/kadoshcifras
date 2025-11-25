@@ -308,7 +308,7 @@ export default function SetlistPage() {
               )}
                <Button onClick={handleGenerateOffline} variant="default">
                     <MonitorPlay className="mr-2 h-4 w-4" />
-                    Abrir Apresentação
+                    Abrir Repertório
                 </Button>
             </div>
       </div>
