@@ -165,7 +165,7 @@ export default function SetlistPage() {
     
     const offlineSongs = songsToProcess.map(setlistSong => {
       const song = songMap.get(setlistSong.songId);
-      if (!song) return null;
+      if (!song) return null; // Ignora músicas não encontradas
       return {
           title: song.title,
           artist: song.artist,
@@ -189,8 +189,7 @@ export default function SetlistPage() {
       const storageKey = `offline-setlist-${setlistId}`;
       const jsonString = JSON.stringify(dataToSave, null, 2);
       
-      console.log('--- DEBUG: DADOS A SEREM SALVOS NO LOCALSTORAGE ---');
-      console.log(jsonString);
+      console.log('--- DADOS A SEREM SALVOS NO LOCALSTORAGE ---', jsonString);
       
       localStorage.setItem(storageKey, jsonString);
       setHasOfflineVersion(true);
@@ -320,10 +319,6 @@ export default function SetlistPage() {
                   </div>
                 </div>
               )}
-               <Button onClick={handleDebugClick} variant="outline">
-                    <Bug className="mr-2 h-4 w-4" />
-                    Debug
-               </Button>
                <Button onClick={handleGenerateOffline} variant="secondary">
                     <HardDriveDownload className="mr-2 h-4 w-4" />
                     Gerar Offline
@@ -336,19 +331,6 @@ export default function SetlistPage() {
                 )}
             </div>
       </div>
-      
-      {debugData && (
-        <Alert className="mb-4">
-          <Bug className="h-4 w-4" />
-          <AlertTitle>Dados de Depuração Offline</AlertTitle>
-          <AlertDescription>
-            <ScrollArea className="h-48 mt-2">
-                <pre className="text-xs whitespace-pre-wrap">{debugData}</pre>
-            </ScrollArea>
-            <Button variant="ghost" size="sm" onClick={() => setDebugData(null)} className="mt-2">Fechar</Button>
-          </AlertDescription>
-        </Alert>
-      )}
       
       <div className="flex flex-col gap-8 lg:grid lg:grid-cols-2">
         <div className="flex flex-col order-1 lg:order-1">
@@ -480,4 +462,3 @@ export default function SetlistPage() {
     </div>
   );
 }
-
