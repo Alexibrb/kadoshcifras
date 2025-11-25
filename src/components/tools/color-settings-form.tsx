@@ -35,7 +35,7 @@ export function ColorSettingsForm() {
 
   const defaultSettings: ColorSettings = useMemo(() => ({
     lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
-    chordsColor: isDarkMode ? '#F59E0B' : '#D946EF', // Default to a more visible color in light mode
+    chordsColor: isDarkMode ? '#F59E0B' : '#000000', // Changed to black for light mode
     backgroundColor: isDarkMode ? '#0a0a0a' : '#ffffff',
   }), [isDarkMode]);
 

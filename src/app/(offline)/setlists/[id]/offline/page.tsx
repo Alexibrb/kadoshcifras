@@ -65,28 +65,23 @@ export default function OfflineSetlistPage() {
   const [transpositions, setTranspositions] = useState<number[]>([]);
   const [isClient, setIsClient] = useState(false);
 
-  const defaultColorSettings = useMemo(() => {
-    // Return a default that doesn't depend on `document` initially
-    return {
-        lyricsColor: '#000000',
-        chordsColor: '#D946EF',
-        backgroundColor: '#ffffff',
-    };
-  }, []);
-
-  const [finalColorSettings, setFinalColorSettings] = useState(appUser?.colorSettings || defaultColorSettings);
+  const [finalColorSettings, setFinalColorSettings] = useState<ColorSettings>({
+      lyricsColor: '#000000',
+      chordsColor: '#000000',
+      backgroundColor: '#ffffff',
+  });
 
   useEffect(() => {
     setIsClient(true);
-    // Now that we are on the client, we can check the theme
-    const isDarkMode = document.documentElement.classList.contains('dark');
-    const themeDefaults = {
-        lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
-        chordsColor: isDarkMode ? '#F59E0B' : '#D946EF',
-        backgroundColor: isDarkMode ? '#0a0a0a' : '#ffffff',
-    };
-    // Use user settings if available, otherwise use the correct theme defaults
-    setFinalColorSettings(appUser?.colorSettings || themeDefaults);
+    if (typeof window !== 'undefined') {
+        const isDarkMode = document.documentElement.classList.contains('dark');
+        const themeDefaults: ColorSettings = {
+            lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
+            chordsColor: isDarkMode ? '#F59E0B' : '#000000', // Black for light mode
+            backgroundColor: isDarkMode ? '#0a0a0a' : '#ffffff',
+        };
+        setFinalColorSettings(appUser?.colorSettings || themeDefaults);
+    }
   }, [appUser?.colorSettings]);
 
 
