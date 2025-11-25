@@ -64,7 +64,7 @@ export function SongDisplay({ content, className, showChords, ...props }: SongDi
     const lines = content.split('\n');
 
     const containerClasses = cn(
-        "font-code text-base leading-tight w-full",
+        "font-code leading-tight w-full",
         className
     );
     
