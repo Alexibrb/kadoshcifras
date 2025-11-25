@@ -129,6 +129,13 @@ export default function OfflineSetlistPage() {
   const currentSong = typeof currentSongIndex === 'number' ? offlineData?.songs[currentSongIndex] : undefined;
   const currentSongTranspose = typeof currentSongIndex === 'number' ? (transpositions[currentSongIndex] ?? 0) : 0;
 
+  const totalPagesOfSong = useMemo(() => {
+    if (typeof currentSongIndex !== 'number') return 0;
+    return allSections.filter(s => s.songIndex === currentSongIndex).length;
+  }, [allSections, currentSongIndex]);
+
+  const currentPageOfSong = currentSection ? currentSection.partIndex + 1 : 0;
+
   const goToSong = useCallback((direction: 'next' | 'prev') => {
       if (typeof currentSongIndex !== 'number') return;
       
@@ -211,9 +218,7 @@ export default function OfflineSetlistPage() {
     }
     
     const displayedKey = currentSong.key ? transposeChord(currentSong.key, currentSongTranspose) : 'N/A';
-    const count = allSections.length;
-    const current = currentSectionIndex + 1;
-
+    
     return (
        <>
         <Card className="mb-4 bg-accent/10 transition-all duration-300">
@@ -235,7 +240,11 @@ export default function OfflineSetlistPage() {
                          <Badge variant="outline" className="whitespace-nowrap text-sm">
                             Música: {currentSong.title}
                          </Badge>
-                         {count > 1 && <Badge variant="secondary">Página {current} de {count}</Badge>}
+                          {totalPagesOfSong > 1 && (
+                            <Badge variant="secondary">
+                                Página {currentPageOfSong} de {totalPagesOfSong}
+                            </Badge>
+                          )}
                       </div>
                     </div>
                     
