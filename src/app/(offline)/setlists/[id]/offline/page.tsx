@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Music } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -76,14 +76,14 @@ export default function OfflineSetlistPage() {
               setTranspositions(parsedData.songs.map(s => s.initialTranspose || 0));
               setError(null);
           } else {
-              setError("Dados offline corrompidos. Por favor, gere o repertório novamente.");
+              setError("Dados offline corrompidos ou em formato inválido. Por favor, gere o repertório novamente.");
           }
         } else {
-          setError("Dados offline não encontrados. Por favor, gere o repertório novamente.");
+          setError("Dados offline não encontrados. Por favor, volte e clique em 'Gerar Offline' na página do repertório.");
         }
       } catch (e) {
         console.error("Erro ao ler do localStorage:", e);
-        setError("Não foi possível carregar os dados offline. Tente gerar novamente.");
+        setError("Não foi possível carregar os dados offline. O formato pode ser inválido. Tente gerar novamente.");
       } finally {
         setLoading(false);
       }
@@ -107,7 +107,7 @@ export default function OfflineSetlistPage() {
                 songIndex: songIndex,
                 partIndex: partIndex,
                 content: part,
-                isLastSection: partIndex === parts.length - 1
+                isLastSection: partIndex === parts.length - 1 && songIndex === offlineData.songs.length - 1,
             });
         });
     });
@@ -169,22 +169,11 @@ export default function OfflineSetlistPage() {
     });
   };
 
-  const displayedKey = currentSong?.key ? transposeChord(currentSong.key, currentSongTranspose) : 'N/A';
-  const count = allSections.length;
-  const current = currentSectionIndex + 1;
-
   const renderContent = () => {
     if (loading) {
       return (
         <div className="flex flex-col items-center justify-center h-screen text-center p-4">
           <h2 className="text-2xl font-bold mb-4">Carregando Dados Offline...</h2>
-          <p className="text-muted-foreground">Se esta mensagem persistir, tente voltar e gerar os dados novamente.</p>
-           <Button asChild className="mt-6">
-            <Link href={`/setlists/${setlistId}`}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar para o Repertório
-            </Link>
-          </Button>
         </div>
       );
     }
@@ -204,10 +193,11 @@ export default function OfflineSetlistPage() {
       );
     }
     
-    if (!offlineData) {
+    if (!offlineData || !currentSong) {
+      // This state can happen if data is empty or corrupted in a way that error state doesn't catch
        return (
         <div className="flex flex-col items-center justify-center h-screen text-center p-4">
-          <h2 className="text-2xl font-bold mb-4">Dados Offline Não Encontrados</h2>
+          <h2 className="text-2xl font-bold mb-4">Dados Offline Não Encontrados ou Inválidos</h2>
           <p className="text-muted-foreground">Gere os dados na página do repertório antes de acessar o modo de apresentação.</p>
            <Button asChild className="mt-6">
             <Link href={`/setlists/${setlistId}`}>
@@ -219,14 +209,9 @@ export default function OfflineSetlistPage() {
       );
     }
     
-    if (!currentSong) {
-      // This can happen briefly while state is syncing. Show a loading state.
-      return (
-         <div className="flex flex-col items-center justify-center h-screen text-center p-4">
-           <h2 className="text-2xl font-bold mb-4">Inicializando...</h2>
-         </div>
-      );
-    }
+    const displayedKey = currentSong.key ? transposeChord(currentSong.key, currentSongTranspose) : 'N/A';
+    const count = allSections.length;
+    const current = currentSectionIndex + 1;
 
     return (
        <>
@@ -324,7 +309,7 @@ export default function OfflineSetlistPage() {
                                   content={content} 
                                   showChords={showChords} 
                               />
-                              {section.isLastSection && (
+                              {section.isLastSection && index < allSections.length - 1 && (
                                   <div className="mt-8 text-center text-muted-foreground">
                                       <Separator className="my-4" />
                                       <div className="flex items-center justify-center gap-2 text-sm">
