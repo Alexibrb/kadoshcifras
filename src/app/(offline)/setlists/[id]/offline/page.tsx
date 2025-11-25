@@ -240,11 +240,6 @@ export default function OfflineSetlistPage() {
                          <Badge variant="outline" className="whitespace-nowrap text-sm">
                             Música: {currentSong.title}
                          </Badge>
-                          {totalPagesOfSong > 1 && (
-                            <Badge variant="secondary">
-                                Página {currentPageOfSong} de {totalPagesOfSong}
-                            </Badge>
-                          )}
                       </div>
                     </div>
                     
@@ -311,14 +306,23 @@ export default function OfflineSetlistPage() {
                     const content = transposeContent(section.content, transposeValue);
                     const songNumber = section.songIndex + 1;
                     const totalSongs = offlineData?.songs.length ?? 0;
+                    const sectionPageNumber = section.partIndex + 1;
+                    const totalPagesInSection = allSections.filter(s => s.songIndex === section.songIndex).length;
+
                     return (
                       <CarouselItem key={index} className="h-full">
                         <Card className="w-full h-full flex flex-col bg-background shadow-none border-none">
                           <CardContent className="flex-1 h-full p-0">
                             <ScrollArea className="h-full p-4 md:p-6">
                               {section.partIndex === 0 && (
-                                <div className="text-center mb-4 text-sm text-muted-foreground font-semibold">
-                                  Música {songNumber} de {totalSongs}
+                                <div className="text-center mb-4 text-sm text-muted-foreground font-semibold flex justify-center items-center gap-4">
+                                  <span>Música {songNumber} de {totalSongs}</span>
+                                  {totalPagesInSection > 1 && (
+                                    <>
+                                      <span>&bull;</span>
+                                      <span>Página {sectionPageNumber} de {totalPagesInSection}</span>
+                                    </>
+                                  )}
                                 </div>
                               )}
                               <SongDisplay 
@@ -368,5 +372,3 @@ export default function OfflineSetlistPage() {
     </div>
   );
 }
-
-    
