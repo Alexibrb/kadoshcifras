@@ -32,7 +32,7 @@ export default function DashboardPage() {
           Bem-vindo, {user?.displayName ?? 'Músico'}!
         </h2>
 
-        <Button asChild size="lg" className="h-20 text-lg justify-between">
+        <Button asChild size="lg" className="h-20 text-lg justify-between bg-green-600 hover:bg-green-700 text-white">
           <Link href="/songs">
             <div className="flex items-center">
               <Music className="mr-4 h-6 w-6" />
@@ -46,7 +46,7 @@ export default function DashboardPage() {
           </Link>
         </Button>
 
-        <Button asChild size="lg" className="h-20 text-lg justify-between">
+        <Button asChild size="lg" className="h-20 text-lg justify-between bg-green-600 hover:bg-green-700 text-white">
           <Link href="/setlists">
              <div className="flex items-center">
               <ListMusic className="mr-4 h-6 w-6" />
