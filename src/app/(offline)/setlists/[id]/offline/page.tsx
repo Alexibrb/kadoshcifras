@@ -381,20 +381,22 @@ export default function OfflineSetlistPage() {
       <div className="flex-1 flex flex-col min-h-0">
         {showChords ? (
           <>
-            <div className="text-center mb-4 text-sm text-muted-foreground font-semibold flex justify-center items-center gap-4 pt-0">
-                <span className="flex items-center gap-1.5">
-                    <Music className="h-4 w-4" />
-                    {currentSongIndex + 1} de {offlineData?.songs.length ?? 0}
-                </span>
-                {totalPagesOfSong > 1 && (
-                  <>
-                    <span className="text-muted-foreground/50 mx-1">&bull;</span>
-                    <span className="flex items-center gap-1.5">
-                        <File className="h-4 w-4" />
-                        {currentPageOfSong} de {totalPagesOfSong}
-                    </span>
-                  </>
-                )}
+            <div className="flex justify-start mb-4">
+              <div className="text-sm text-muted-foreground font-semibold flex items-center gap-4 p-2 rounded-lg bg-muted/50 border">
+                  <span className="flex items-center gap-1.5">
+                      <Music className="h-4 w-4" />
+                      {currentSongIndex + 1} de {offlineData?.songs.length ?? 0}
+                  </span>
+                  {totalPagesOfSong > 1 && (
+                    <>
+                      <Separator orientation="vertical" className="h-4" />
+                      <span className="flex items-center gap-1.5">
+                          <File className="h-4 w-4" />
+                          {currentPageOfSong} de {totalPagesOfSong}
+                      </span>
+                    </>
+                  )}
+              </div>
             </div>
             <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true, loop: false }}>
               <CarouselContent>
@@ -446,5 +448,3 @@ export default function OfflineSetlistPage() {
     </div>
   );
 }
-
-  
