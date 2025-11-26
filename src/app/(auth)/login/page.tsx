@@ -60,8 +60,8 @@ export default function LoginPage() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
                 <Label htmlFor="password">Senha</Label>
-                <Link href="/forgot-password" passHref legacyBehavior>
-                    <a className="text-sm font-medium text-primary hover:underline">Esqueceu a senha?</a>
+                <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+                    Esqueceu a senha?
                 </Link>
             </div>
             <div className="relative">
