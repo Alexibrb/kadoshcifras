@@ -214,6 +214,15 @@ export default function OfflineSetlistPage() {
   const currentSongIndex = currentSection?.songIndex;
   const currentSong = typeof currentSongIndex === 'number' ? offlineData?.songs[currentSongIndex] : undefined;
   const currentSongTranspose = typeof currentSongIndex === 'number' ? (transpositions[currentSongIndex] ?? 0) : 0;
+  
+  const fullContentWithoutChords = useMemo(() => {
+    if (!offlineData) return '';
+    return offlineData.songs
+        .map(song => transposeContent(song.content, transpositions[offlineData.songs.indexOf(song)] ?? 0))
+        .join('\n\n---\n\n') // Separador entre músicas
+        .replace(/\n\s*\n\s*\n/g, '\n\n'); // Junta as partes da música
+  }, [offlineData, transpositions]);
+
 
   const totalPagesOfSong = useMemo(() => {
     if (typeof currentSongIndex !== 'number') return 0;
@@ -237,21 +246,23 @@ export default function OfflineSetlistPage() {
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
         const key = event.key;
-        if (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prevPage) {
-          event.preventDefault();
-          api?.scrollPrev();
-        } else if (key === "ArrowRight" || key === 'PageDown' || key === pedalSettings.nextPage) {
-          event.preventDefault();
-          api?.scrollNext();
+        if (showChords) {
+            if (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prevPage) {
+            event.preventDefault();
+            api?.scrollPrev();
+            } else if (key === "ArrowRight" || key === 'PageDown' || key === pedalSettings.nextPage) {
+            event.preventDefault();
+            api?.scrollNext();
+            }
+            else if (key === pedalSettings.prevSong) {
+            event.preventDefault();
+            goToSong('prev');
+            } else if (key === pedalSettings.nextSong) {
+            event.preventDefault();
+            goToSong('next');
+            }
         }
-        else if (key === pedalSettings.prevSong) {
-          event.preventDefault();
-          goToSong('prev');
-        } else if (key === pedalSettings.nextSong) {
-          event.preventDefault();
-          goToSong('next');
-        }
-  }, [api, pedalSettings, goToSong]);
+  }, [api, pedalSettings, goToSong, showChords]);
   
   const changeTranspose = (change: number) => {
     if (typeof currentSongIndex !== 'number') return;
@@ -319,7 +330,7 @@ export default function OfflineSetlistPage() {
                     </Button>
 
                     <div className="flex-1 space-y-1">
-                      <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{currentSong.title}</h1>
+                      <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{showChords ? currentSong.title : offlineData.name}</h1>
                       <p className="text-muted-foreground text-sm">Modo de Apresentação Offline</p>
                     </div>
                     
@@ -357,7 +368,7 @@ export default function OfflineSetlistPage() {
                     </Link>
                   </Button>
                   <h1 className="text-lg font-bold font-headline tracking-tight truncate">
-                     {currentSong.title}
+                     {showChords ? currentSong.title : offlineData.name}
                   </h1>
                   <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0">
                     <PanelTopOpen className="h-5 w-5" />
@@ -368,53 +379,72 @@ export default function OfflineSetlistPage() {
             </CardContent>
           </Card>
       <div className="flex-1 flex flex-col min-h-0">
-           <div className="text-center mb-4 text-sm text-muted-foreground font-semibold flex justify-center items-center gap-4 pt-0">
-               <span className="flex items-center gap-1.5">
-                  <Music className="h-4 w-4" />
-                  {currentSongIndex + 1} de {offlineData?.songs.length ?? 0}
-              </span>
-              {totalPagesOfSong > 1 && (
-                <>
-                  <span className="text-muted-foreground/50 mx-1">&bull;</span>
-                  <span className="flex items-center gap-1.5">
-                      <File className="h-4 w-4" />
-                      {currentPageOfSong} de {totalPagesOfSong}
-                  </span>
-                </>
-              )}
-          </div>
-         <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true, loop: false }}>
-            <CarouselContent>
-              {allSections.map((section, index) => (
-                <CarouselItem key={index} className="h-full">
-                    <SongPresenter
-                        section={section}
-                        transposeValue={transpositions[section.songIndex] ?? 0}
-                        fontSize={fontSize}
-                        showChords={showChords}
-                        colorSettings={finalColorSettings}
-                    />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <div className="absolute -left-12 top-1/2 -translate-y-1/2 hidden md:block">
-              <CarouselPrevious />
+        {showChords ? (
+          <>
+            <div className="text-center mb-4 text-sm text-muted-foreground font-semibold flex justify-center items-center gap-4 pt-0">
+                <span className="flex items-center gap-1.5">
+                    <Music className="h-4 w-4" />
+                    {currentSongIndex + 1} de {offlineData?.songs.length ?? 0}
+                </span>
+                {totalPagesOfSong > 1 && (
+                  <>
+                    <span className="text-muted-foreground/50 mx-1">&bull;</span>
+                    <span className="flex items-center gap-1.5">
+                        <File className="h-4 w-4" />
+                        {currentPageOfSong} de {totalPagesOfSong}
+                    </span>
+                  </>
+                )}
             </div>
-            <div className="absolute -right-12 top-1/2 -translate-y-1/2 hidden md:block">
-              <CarouselNext />
-            </div>
-            <div 
-                className="absolute left-0 top-0 h-full w-1/3 z-10" 
-                onClick={() => api?.scrollPrev()} 
-            />
-            <div 
-                className="absolute right-0 top-0 h-full w-1/3 z-10" 
-                onClick={() => api?.scrollNext()} 
-            />
-          </Carousel>
+            <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true, loop: false }}>
+              <CarouselContent>
+                {allSections.map((section, index) => (
+                  <CarouselItem key={index} className="h-full">
+                      <SongPresenter
+                          section={section}
+                          transposeValue={transpositions[section.songIndex] ?? 0}
+                          fontSize={fontSize}
+                          showChords={showChords}
+                          colorSettings={finalColorSettings}
+                      />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <div className="absolute -left-12 top-1/2 -translate-y-1/2 hidden md:block">
+                <CarouselPrevious />
+              </div>
+              <div className="absolute -right-12 top-1/2 -translate-y-1/2 hidden md:block">
+                <CarouselNext />
+              </div>
+              <div 
+                  className="absolute left-0 top-0 h-full w-1/3 z-10" 
+                  onClick={() => api?.scrollPrev()} 
+              />
+              <div 
+                  className="absolute right-0 top-0 h-full w-1/3 z-10" 
+                  onClick={() => api?.scrollNext()} 
+              />
+            </Carousel>
+          </>
+        ) : (
+          <Card className="flex-1 flex flex-col bg-white dark:bg-black shadow-none border-none">
+              <CardContent className="h-full flex flex-col p-0">
+                  <ScrollArea className="h-full p-4 md:p-6 flex-1">
+                      <SongDisplay 
+                          style={{ 
+                            fontSize: `${fontSize}px`,
+                            '--lyrics-color': finalColorSettings.lyricsColor,
+                           }}
+                          content={fullContentWithoutChords}
+                          showChords={false} 
+                      />
+                  </ScrollArea>
+              </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
 }
 
-    
+  
