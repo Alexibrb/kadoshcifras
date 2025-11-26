@@ -58,7 +58,12 @@ export default function LoginPage() {
             <Input id="email" type="email" placeholder="voce@exemplo.com" required value={email} onChange={e => setEmail(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
+            <div className="flex items-center justify-between">
+                <Label htmlFor="password">Senha</Label>
+                <Link href="/forgot-password" passHref legacyBehavior>
+                    <a className="text-sm font-medium text-primary hover:underline">Esqueceu a senha?</a>
+                </Link>
+            </div>
             <div className="relative">
                  <Input 
                     id="password" 
