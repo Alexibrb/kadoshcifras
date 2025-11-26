@@ -21,8 +21,6 @@ export function useFirestoreDocument<T extends { id: string }>(
         return;
     }
 
-    console.log(`[Firestore] Montando listener para documento: ${collectionName}/${docId}`);
-    
     const docRef = doc(firestoreDB, collectionName, docId);
 
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
@@ -32,18 +30,20 @@ export function useFirestoreDocument<T extends { id: string }>(
         setData(finalData);
       } else {
         setData(null);
-        console.warn(`[Firestore] Documento não encontrado: ${collectionName}/${docId}`);
       }
       setLoading(false);
     }, (error) => {
-      // Esta emissão de erro estava causando o problema no login
-      // e em outros listeners de documentos. A remoção corrige o fluxo.
+      const permissionError = new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'get',
+      });
+      errorEmitter.emit('permission-error', permissionError);
       console.error(`Erro ao buscar documento '${docId}': `, error);
+      setData(null);
       setLoading(false);
     });
 
     return () => {
-      console.log(`[Firestore] Desmontando listener para documento: ${collectionName}/${docId}`);
       unsubscribe();
     }
   }, [collectionName, docId]);
