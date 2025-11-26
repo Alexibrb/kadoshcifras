@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { Skeleton } from '../ui/skeleton';
 
-const FONT_SIZES = [10, 12, 14];
+const FONT_SIZES = [10, 12, 14, 16, 18, 20];
 
 export function FontSizeSettingsForm() {
   const { appUser, loading: authLoading } = useAuth();
@@ -81,16 +81,17 @@ export function FontSizeSettingsForm() {
         <RadioGroup
           value={selectedSize}
           onValueChange={setSelectedSize}
-          className="grid grid-cols-3 gap-4"
+          className="grid grid-cols-3 gap-2"
         >
           {FONT_SIZES.map(size => (
             <div key={size}>
               <RadioGroupItem value={size.toString()} id={`fs-${size}`} className="sr-only" />
               <Label
                 htmlFor={`fs-${size}`}
-                className={`flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer ${selectedSize === size.toString() ? 'border-primary' : ''}`}
+                className={`flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer h-24 ${selectedSize === size.toString() ? 'border-primary' : ''}`}
               >
-                <span className="text-2xl font-bold">{size}px</span>
+                <span style={{ fontSize: `${size}px` }} className="font-bold">Aa</span>
+                <span className="mt-2 text-xs text-muted-foreground">{size}px</span>
               </Label>
             </div>
           ))}
