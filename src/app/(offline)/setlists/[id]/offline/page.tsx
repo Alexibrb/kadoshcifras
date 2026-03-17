@@ -357,11 +357,13 @@ export default function OfflineSetlistPage() {
         tempContainer.style.position = 'fixed';
         tempContainer.style.left = '-9999px';
         tempContainer.style.top = '0';
-        tempContainer.style.width = '210mm'; // Largura A4
+        tempContainer.style.width = '210mm';
         tempContainer.style.backgroundColor = 'white';
         document.body.appendChild(tempContainer);
 
-        for (let i = 0; i < allSections.length; i++) {
+        const totalPdfPages = allSections.length;
+
+        for (let i = 0; i < totalPdfPages; i++) {
             const section = allSections[i];
             const song = offlineData.songs[section.songIndex];
             const transpose = transpositions[section.songIndex] ?? 0;
@@ -370,11 +372,13 @@ export default function OfflineSetlistPage() {
             pageDiv.style.width = '210mm';
             pageDiv.style.minHeight = '297mm';
             pageDiv.style.padding = '20mm';
+            pageDiv.style.paddingBottom = '30mm'; // Espaço para o rodapé
             pageDiv.style.boxSizing = 'border-box';
             pageDiv.style.backgroundColor = 'white';
             pageDiv.style.color = 'black';
+            pageDiv.style.position = 'relative';
 
-            // Header da página no PDF
+            // Header
             const header = document.createElement('div');
             header.style.marginBottom = '10mm';
             header.style.borderBottom = '1px solid #eee';
@@ -382,16 +386,16 @@ export default function OfflineSetlistPage() {
             header.innerHTML = `
                 <div style="font-family: serif; font-size: 20pt; font-weight: bold; color: #9f50e5;">${song.title}</div>
                 <div style="font-family: serif; font-size: 12pt; color: #666;">${song.artist} | Tom: ${song.key ? transposeChord(song.key, transpose) : 'N/A'}</div>
-                <div style="font-size: 9pt; color: #999; margin-top: 5px;">Página ${section.partIndex + 1} de ${allSections.filter(s => s.songIndex === section.songIndex).length}</div>
+                <div style="font-size: 9pt; color: #999; margin-top: 5px;">Seção ${section.partIndex + 1} de ${allSections.filter(s => s.songIndex === section.songIndex).length}</div>
             `;
             pageDiv.appendChild(header);
 
+            // Conteúdo
             const contentDiv = document.createElement('div');
             contentDiv.style.whiteSpace = 'pre-wrap';
             contentDiv.style.fontFamily = 'monospace';
-            contentDiv.style.fontSize = `${fontSize * 1.2}px`; // Ajuste para o PDF
+            contentDiv.style.fontSize = `${fontSize * 1.2}px`;
             
-            // Renderizar conteúdo transposto
             const content = transposeContent(section.content, transpose);
             const lines = content.split('\n');
             
@@ -401,7 +405,6 @@ export default function OfflineSetlistPage() {
                 p.style.minHeight = '1em';
                 p.textContent = line || ' ';
                 
-                // Simular cores do SongDisplay no PDF
                 const isChord = /([A-G](?:#|b)?(?:m|M|maj|min|dim|aug|sus|add|°|\+|-)?(?:\d)?(?:(?:\/[A-G](?:#|b)?))?)/g.test(line);
                 if (isChord && showChords) {
                     p.style.fontWeight = 'bold';
@@ -412,8 +415,27 @@ export default function OfflineSetlistPage() {
                 
                 contentDiv.appendChild(p);
             });
-            
             pageDiv.appendChild(contentDiv);
+
+            // Rodapé Visual (para captura do html2canvas)
+            const footerDiv = document.createElement('div');
+            footerDiv.style.position = 'absolute';
+            footerDiv.style.bottom = '10mm';
+            footerDiv.style.left = '20mm';
+            footerDiv.style.right = '20mm';
+            footerDiv.style.display = 'flex';
+            footerDiv.style.justifyContent = 'space-between';
+            footerDiv.style.fontSize = '10pt';
+            footerDiv.style.color = '#9f50e5';
+            footerDiv.style.borderTop = '1px solid #eee';
+            footerDiv.style.paddingTop = '5mm';
+            footerDiv.innerHTML = `
+                <div style="cursor: pointer;">${i > 0 ? '← Anterior' : ''}</div>
+                <div style="color: #999;">Página ${i + 1} / ${totalPdfPages}</div>
+                <div style="cursor: pointer;">${i < totalPdfPages - 1 ? 'Próxima →' : ''}</div>
+            `;
+            pageDiv.appendChild(footerDiv);
+
             tempContainer.innerHTML = '';
             tempContainer.appendChild(pageDiv);
 
@@ -427,6 +449,16 @@ export default function OfflineSetlistPage() {
             
             if (i > 0) doc.addPage();
             doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+
+            // Adicionar Link Interativo Invisível no PDF (coordenadas em mm)
+            // Anterior (lado esquerdo do rodapé)
+            if (i > 0) {
+                doc.link(20, 280, 40, 10, { pageNumber: i });
+            }
+            // Próximo (lado direito do rodapé)
+            if (i < totalPdfPages - 1) {
+                doc.link(150, 280, 40, 10, { pageNumber: i + 2 });
+            }
         }
 
         doc.save(`${offlineData.name}.pdf`);
@@ -434,7 +466,7 @@ export default function OfflineSetlistPage() {
         
         toast({
             title: "PDF Gerado!",
-            description: "O arquivo foi baixado com sucesso."
+            description: "O arquivo interativo foi baixado com sucesso."
         });
     } catch (e) {
         console.error("Erro ao gerar PDF:", e);
@@ -517,7 +549,7 @@ export default function OfflineSetlistPage() {
                   </div>
                 
                   <div className="flex justify-center items-center gap-2 pt-2 flex-wrap">
-                     <div className="flex items-center gap-1 rounded-md border p-1 w-full max-w-sm bg-background">
+                     <div className="flex items-center gap-1 rounded-md border p-1 w-full max-sm:bg-background">
                           <Button variant="ghost" size="icon" onClick={() => changeTranspose(-1)} className="h-8 w-8">
                               <Minus className="h-4 w-4" />
                           </Button>
