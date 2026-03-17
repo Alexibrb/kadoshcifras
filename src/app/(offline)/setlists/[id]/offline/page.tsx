@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, File } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, File, Sun, SunOff } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,6 +17,7 @@ import { Carousel, CarouselApi, CarouselContent, CarouselItem, CarouselNext, Car
 import { transposeChord, transposeContent } from '@/lib/music';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
 
 interface OfflineSong {
     title: string;
@@ -89,15 +90,17 @@ export default function OfflineSetlistPage() {
   const params = useParams();
   const setlistId = params.id as string;
   const containerRef = useRef<HTMLDivElement>(null);
+  const wakeLockRef = useRef<any>(null);
+  const { toast } = useToast();
 
   const [offlineData, setOfflineData] = useState<OfflineSetlist | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Lê do localStorage, com um valor padrão. A fonte da verdade virá do DB através do useAuth.
   const [fontSize] = useLocalStorage('song-font-size', 14);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', true);
+  const [keepAwake, setKeepAwake] = useState(true);
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', {
     prevPage: ',',
     nextPage: '.',
@@ -111,6 +114,50 @@ export default function OfflineSetlistPage() {
   const [isClient, setIsClient] = useState(false);
 
   const [finalColorSettings, setFinalColorSettings] = useState<ColorSettings | null>(null);
+
+  // Wake Lock Implementation
+  const requestWakeLock = useCallback(async () => {
+    if ('wakeLock' in navigator && keepAwake) {
+      try {
+        wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+        console.log('Wake Lock is active');
+      } catch (err: any) {
+        console.error(`${err.name}, ${err.message}`);
+      }
+    }
+  }, [keepAwake]);
+
+  const releaseWakeLock = useCallback(async () => {
+    if (wakeLockRef.current) {
+      await wakeLockRef.current.release();
+      wakeLockRef.current = null;
+      console.log('Wake Lock released');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (keepAwake) {
+      requestWakeLock();
+    } else {
+      releaseWakeLock();
+    }
+    
+    return () => {
+      releaseWakeLock();
+    };
+  }, [keepAwake, requestWakeLock, releaseWakeLock]);
+
+  // Handle visibility change (re-request wake lock if tab becomes visible again)
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (wakeLockRef.current !== null && document.visibilityState === 'visible') {
+        await requestWakeLock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [requestWakeLock]);
 
   useEffect(() => {
     setIsClient(true);
@@ -167,12 +214,9 @@ export default function OfflineSetlistPage() {
     }
   }, [setlistId]);
   
-  // Adiciona um listener para prevenir atualizações acidentais
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      // Padrão para acionar o diálogo de confirmação do navegador.
       event.preventDefault();
-      // Necessário para alguns navegadores mais antigos.
       event.returnValue = '';
     };
 
@@ -219,8 +263,8 @@ export default function OfflineSetlistPage() {
     if (!offlineData) return '';
     return offlineData.songs
         .map(song => transposeContent(song.content, transpositions[offlineData.songs.indexOf(song)] ?? 0))
-        .join('\n\n---\n\n') // Separador entre músicas
-        .replace(/\n\s*\n\s*\n/g, '\n\n'); // Junta as partes da música
+        .join('\n\n---\n\n')
+        .replace(/\n\s*\n\s*\n/g, '\n\n');
   }, [offlineData, transpositions]);
 
 
@@ -331,7 +375,10 @@ export default function OfflineSetlistPage() {
 
                     <div className="flex-1 space-y-1">
                       <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{showChords ? currentSong.title : offlineData.name}</h1>
-                      <p className="text-muted-foreground text-sm">Modo de Apresentação Offline</p>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">Modo Offline</Badge>
+                        {keepAwake ? <Sun className="h-3 w-3 text-yellow-500" /> : <SunOff className="h-3 w-3 text-muted-foreground" />}
+                      </div>
                     </div>
                     
                     <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon" className="shrink-0">
@@ -357,6 +404,11 @@ export default function OfflineSetlistPage() {
                           <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
                           <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} className="ml-auto" />
                       </div>
+
+                      <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10">
+                          <Label htmlFor="keep-awake" className="text-sm whitespace-nowrap">Manter Tela Acesa</Label>
+                          <Switch id="keep-awake" checked={keepAwake} onCheckedChange={setKeepAwake} className="ml-auto" />
+                      </div>
                   </div>
                 </>
               ) : (
@@ -367,9 +419,12 @@ export default function OfflineSetlistPage() {
                       <span className="sr-only">Voltar</span>
                     </Link>
                   </Button>
-                  <h1 className="text-lg font-bold font-headline tracking-tight truncate">
-                     {showChords ? currentSong.title : offlineData.name}
-                  </h1>
+                  <div className="flex flex-col items-center overflow-hidden">
+                    <h1 className="text-lg font-bold font-headline tracking-tight truncate w-full text-center">
+                       {showChords ? currentSong.title : offlineData.name}
+                    </h1>
+                    {keepAwake && <p className="text-[10px] text-yellow-600 dark:text-yellow-400 font-semibold uppercase tracking-widest flex items-center gap-1"><Sun className="h-2 w-2" /> Tela Ativa</p>}
+                  </div>
                   <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0">
                     <PanelTopOpen className="h-5 w-5" />
                     <span className="sr-only">Mostrar Controles</span>
@@ -443,4 +498,3 @@ export default function OfflineSetlistPage() {
     </div>
   );
 }
-
