@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, File, Sun, Moon } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, File, Sun, Moon, FileDown, Loader2 } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -44,20 +45,22 @@ function SongPresenter({
     transposeValue, 
     fontSize, 
     showChords, 
-    colorSettings 
+    colorSettings,
+    id
 } : { 
     section: Section | undefined, 
     transposeValue: number, 
     fontSize: number, 
     showChords: boolean, 
-    colorSettings: ColorSettings | null 
+    colorSettings: ColorSettings | null,
+    id?: string
 }) {
     if (!section) return null;
 
     const content = transposeContent(section.content, transposeValue);
 
     return (
-        <Card className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none">
+        <Card id={id} className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none">
             <CardContent className="flex-1 h-full p-0">
                 <ScrollArea className="h-full p-4 md:p-6 pt-0">
                     <SongDisplay 
@@ -95,6 +98,7 @@ export default function OfflineSetlistPage() {
   const [offlineData, setOfflineData] = useState<OfflineSetlist | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const [fontSize] = useLocalStorage('song-font-size', 14);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
@@ -123,12 +127,10 @@ export default function OfflineSetlistPage() {
       try {
         wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
         setIsWakeLockActive(true);
-        console.log('Wake Lock is active');
       } catch (err: any) {
         setIsWakeLockActive(false);
-        // Only log warning if it's a real error or an explicit user interaction
         if (isUserInteraction && err.name === 'NotAllowedError') {
-            console.warn('Wake Lock disallowed by browser or permissions policy. This usually happens in non-secure contexts or without user gesture.');
+            console.warn('Wake Lock disallowed by browser or permissions policy.');
         } else if (err.name !== 'NotAllowedError') {
             console.warn(`Wake Lock error: ${err.name}, ${err.message}`);
         }
@@ -142,7 +144,6 @@ export default function OfflineSetlistPage() {
         await wakeLockRef.current.release();
         wakeLockRef.current = null;
         setIsWakeLockActive(false);
-        console.log('Wake Lock released');
       } catch (err) {
         console.warn('Error releasing wake lock:', err);
       }
@@ -167,7 +168,6 @@ export default function OfflineSetlistPage() {
     };
   }, [keepAwake, requestWakeLock, releaseWakeLock]);
 
-  // Handle visibility change (re-request wake lock if tab becomes visible again)
   useEffect(() => {
     const handleVisibilityChange = async () => {
       if (wakeLockRef.current !== null && document.visibilityState === 'visible') {
@@ -339,6 +339,115 @@ export default function OfflineSetlistPage() {
     });
   };
 
+  const handleExportPDF = async () => {
+    if (!offlineData) return;
+    setIsGeneratingPDF(true);
+    
+    try {
+        const { jsPDF } = await import('jspdf');
+        const html2canvas = (await import('html2canvas')).default;
+
+        const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        const tempContainer = document.createElement('div');
+        tempContainer.style.position = 'fixed';
+        tempContainer.style.left = '-9999px';
+        tempContainer.style.top = '0';
+        tempContainer.style.width = '210mm'; // Largura A4
+        tempContainer.style.backgroundColor = 'white';
+        document.body.appendChild(tempContainer);
+
+        for (let i = 0; i < allSections.length; i++) {
+            const section = allSections[i];
+            const song = offlineData.songs[section.songIndex];
+            const transpose = transpositions[section.songIndex] ?? 0;
+
+            const pageDiv = document.createElement('div');
+            pageDiv.style.width = '210mm';
+            pageDiv.style.minHeight = '297mm';
+            pageDiv.style.padding = '20mm';
+            pageDiv.style.boxSizing = 'border-box';
+            pageDiv.style.backgroundColor = 'white';
+            pageDiv.style.color = 'black';
+
+            // Header da página no PDF
+            const header = document.createElement('div');
+            header.style.marginBottom = '10mm';
+            header.style.borderBottom = '1px solid #eee';
+            header.style.paddingBottom = '5mm';
+            header.innerHTML = `
+                <div style="font-family: serif; font-size: 20pt; font-weight: bold; color: #9f50e5;">${song.title}</div>
+                <div style="font-family: serif; font-size: 12pt; color: #666;">${song.artist} | Tom: ${song.key ? transposeChord(song.key, transpose) : 'N/A'}</div>
+                <div style="font-size: 9pt; color: #999; margin-top: 5px;">Página ${section.partIndex + 1} de ${allSections.filter(s => s.songIndex === section.songIndex).length}</div>
+            `;
+            pageDiv.appendChild(header);
+
+            const contentDiv = document.createElement('div');
+            contentDiv.style.whiteSpace = 'pre-wrap';
+            contentDiv.style.fontFamily = 'monospace';
+            contentDiv.style.fontSize = `${fontSize * 1.2}px`; // Ajuste para o PDF
+            
+            // Renderizar conteúdo transposto
+            const content = transposeContent(section.content, transpose);
+            const lines = content.split('\n');
+            
+            lines.forEach(line => {
+                const p = document.createElement('p');
+                p.style.margin = '0';
+                p.style.minHeight = '1em';
+                p.textContent = line || ' ';
+                
+                // Simular cores do SongDisplay no PDF
+                const isChord = /([A-G](?:#|b)?(?:m|M|maj|min|dim|aug|sus|add|°|\+|-)?(?:\d)?(?:(?:\/[A-G](?:#|b)?))?)/g.test(line);
+                if (isChord && showChords) {
+                    p.style.fontWeight = 'bold';
+                    p.style.color = finalColorSettings?.chordsColor || '#F59E0B';
+                } else {
+                    p.style.color = 'black';
+                }
+                
+                contentDiv.appendChild(p);
+            });
+            
+            pageDiv.appendChild(contentDiv);
+            tempContainer.innerHTML = '';
+            tempContainer.appendChild(pageDiv);
+
+            const canvas = await html2canvas(pageDiv, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: 'white'
+            });
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            
+            if (i > 0) doc.addPage();
+            doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+        }
+
+        doc.save(`${offlineData.name}.pdf`);
+        document.body.removeChild(tempContainer);
+        
+        toast({
+            title: "PDF Gerado!",
+            description: "O arquivo foi baixado com sucesso."
+        });
+    } catch (e) {
+        console.error("Erro ao gerar PDF:", e);
+        toast({
+            title: "Erro ao gerar PDF",
+            description: "Ocorreu um problema ao criar o arquivo.",
+            variant: "destructive"
+        });
+    } finally {
+        setIsGeneratingPDF(false);
+    }
+  };
+
   if (loading || !isClient || !finalColorSettings) {
     return (
       <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
@@ -439,6 +548,15 @@ export default function OfflineSetlistPage() {
                             />
                         </div>
                       )}
+
+                      <Button onClick={handleExportPDF} variant="outline" className="h-10" disabled={isGeneratingPDF}>
+                        {isGeneratingPDF ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <FileDown className="mr-2 h-4 w-4" />
+                        )}
+                        Exportar PDF
+                      </Button>
                   </div>
                 </>
               ) : (
