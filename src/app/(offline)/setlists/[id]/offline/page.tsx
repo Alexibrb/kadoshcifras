@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -87,7 +86,6 @@ function SongPresenter({
     );
 }
 
-
 export default function OfflineSetlistPage() {
   const params = useParams();
   const setlistId = params.id as string;
@@ -121,7 +119,6 @@ export default function OfflineSetlistPage() {
 
   const [finalColorSettings, setFinalColorSettings] = useState<ColorSettings | null>(null);
 
-  // Wake Lock Implementation
   const requestWakeLock = useCallback(async (isUserInteraction = false) => {
     if (typeof window !== 'undefined' && 'wakeLock' in navigator && keepAwake) {
       try {
@@ -129,9 +126,8 @@ export default function OfflineSetlistPage() {
         setIsWakeLockActive(true);
       } catch (err: any) {
         setIsWakeLockActive(false);
-        if (isUserInteraction && err.name === 'NotAllowedError') {
-            console.warn('Wake Lock disallowed by browser or permissions policy.');
-        } else if (err.name !== 'NotAllowedError') {
+        // Silenciamos o erro NotAllowedError que ocorre em ambientes não seguros ou sem gesto inicial
+        if (isUserInteraction && err.name !== 'NotAllowedError') {
             console.warn(`Wake Lock error: ${err.name}, ${err.message}`);
         }
       }
@@ -372,13 +368,12 @@ export default function OfflineSetlistPage() {
             pageDiv.style.width = '210mm';
             pageDiv.style.minHeight = '297mm';
             pageDiv.style.padding = '20mm';
-            pageDiv.style.paddingBottom = '30mm'; // Espaço para o rodapé
+            pageDiv.style.paddingBottom = '30mm';
             pageDiv.style.boxSizing = 'border-box';
             pageDiv.style.backgroundColor = 'white';
             pageDiv.style.color = 'black';
             pageDiv.style.position = 'relative';
 
-            // Header
             const header = document.createElement('div');
             header.style.marginBottom = '10mm';
             header.style.borderBottom = '1px solid #eee';
@@ -390,7 +385,6 @@ export default function OfflineSetlistPage() {
             `;
             pageDiv.appendChild(header);
 
-            // Conteúdo
             const contentDiv = document.createElement('div');
             contentDiv.style.whiteSpace = 'pre-wrap';
             contentDiv.style.fontFamily = 'monospace';
@@ -410,14 +404,13 @@ export default function OfflineSetlistPage() {
                     p.style.fontWeight = 'bold';
                     p.style.color = finalColorSettings?.chordsColor || '#F59E0B';
                 } else {
-                    p.style.color = 'black';
+                    p.style.color = finalColorSettings?.lyricsColor || 'black';
                 }
                 
                 contentDiv.appendChild(p);
             });
             pageDiv.appendChild(contentDiv);
 
-            // Rodapé Visual (para captura do html2canvas)
             const footerDiv = document.createElement('div');
             footerDiv.style.position = 'absolute';
             footerDiv.style.bottom = '10mm';
@@ -450,12 +443,9 @@ export default function OfflineSetlistPage() {
             if (i > 0) doc.addPage();
             doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
 
-            // Adicionar Link Interativo Invisível no PDF (coordenadas em mm)
-            // Anterior (lado esquerdo do rodapé)
             if (i > 0) {
                 doc.link(20, 280, 40, 10, { pageNumber: i });
             }
-            // Próximo (lado direito do rodapé)
             if (i < totalPdfPages - 1) {
                 doc.link(150, 280, 40, 10, { pageNumber: i + 2 });
             }
@@ -483,7 +473,8 @@ export default function OfflineSetlistPage() {
   if (loading || !isClient || !finalColorSettings) {
     return (
       <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
-        <h2 className="text-2xl font-bold mb-4">Carregando Dados Offline...</h2>
+        <h2 className="text-2xl font-bold mb-4 text-primary">Carregando Modo Offline...</h2>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -506,8 +497,8 @@ export default function OfflineSetlistPage() {
   if (!offlineData || !currentSong) {
      return (
       <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
-        <h2 className="text-2xl font-bold mb-4">Dados Offline Não Encontrados ou Inválidos</h2>
-        <p className="text-muted-foreground">Gere os dados na página do repertório antes de acessar o modo de apresentação.</p>
+        <h2 className="text-2xl font-bold mb-4">Dados Offline Não Encontrados</h2>
+        <p className="text-muted-foreground">Gere os dados na página do repertório antes de acessar.</p>
          <Button asChild className="mt-6">
           <Link href={`/setlists/${setlistId}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -616,15 +607,15 @@ export default function OfflineSetlistPage() {
       <div className="flex-1 flex flex-col min-h-0">
         {showChords ? (
           <>
-            <div className="flex justify-between items-center mb-4">
-              <div className="text-sm font-semibold flex items-center gap-1.5 p-2 rounded-lg bg-muted/50 border text-foreground">
-                  <Music className="h-4 w-4" />
-                  {currentSongIndex + 1}/{offlineData?.songs.length ?? 0}
+            <div className="flex justify-between items-center mb-4 px-2">
+              <div className="text-xs font-semibold flex items-center gap-1.5 p-2 rounded-lg bg-muted/50 border text-foreground">
+                  <Music className="h-3 w-3" />
+                  Música {currentSongIndex + 1}/{offlineData?.songs.length ?? 0}
               </div>
               {totalPagesOfSong > 1 && (
-                <div className="text-sm font-semibold flex items-center gap-1.5 p-2 rounded-lg bg-muted/50 border text-foreground">
-                    <File className="h-4 w-4" />
-                    {currentPageOfSong}/{totalPagesOfSong}
+                <div className="text-xs font-semibold flex items-center gap-1.5 p-2 rounded-lg bg-muted/50 border text-foreground">
+                    <File className="h-3 w-3" />
+                    Página {currentPageOfSong}/{totalPagesOfSong}
                 </div>
               )}
             </div>
