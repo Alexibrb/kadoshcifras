@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, File, Sun, SunOff } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, File, Sun, Moon } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -398,7 +397,7 @@ export default function OfflineSetlistPage() {
                       <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{showChords ? currentSong.title : offlineData.name}</h1>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-xs">Modo Offline</Badge>
-                        {isWakeLockActive ? <Sun className="h-3 w-3 text-yellow-500" /> : <SunOff className="h-3 w-3 text-muted-foreground" />}
+                        {isWakeLockActive ? <Sun className="h-3 w-3 text-yellow-500" /> : <Moon className="h-3 w-3 text-muted-foreground" />}
                       </div>
                     </div>
                     
