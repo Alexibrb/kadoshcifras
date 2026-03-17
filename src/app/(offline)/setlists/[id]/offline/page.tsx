@@ -101,6 +101,9 @@ export default function OfflineSetlistPage() {
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', true);
   const [keepAwake, setKeepAwake] = useState(true);
+  const [isWakeLockSupported, setIsWakeLockSupported] = useState(false);
+  const [isWakeLockActive, setIsWakeLockActive] = useState(false);
+
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', {
     prevPage: ',',
     nextPage: '.',
@@ -116,22 +119,40 @@ export default function OfflineSetlistPage() {
   const [finalColorSettings, setFinalColorSettings] = useState<ColorSettings | null>(null);
 
   // Wake Lock Implementation
-  const requestWakeLock = useCallback(async () => {
-    if ('wakeLock' in navigator && keepAwake) {
+  const requestWakeLock = useCallback(async (isUserInteraction = false) => {
+    if (typeof window !== 'undefined' && 'wakeLock' in navigator && keepAwake) {
       try {
         wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+        setIsWakeLockActive(true);
         console.log('Wake Lock is active');
       } catch (err: any) {
-        console.error(`${err.name}, ${err.message}`);
+        setIsWakeLockActive(false);
+        // Only log warning if it's a real error or an explicit user interaction
+        if (isUserInteraction && err.name === 'NotAllowedError') {
+            console.warn('Wake Lock disallowed by browser or permissions policy. This usually happens in non-secure contexts or without user gesture.');
+        } else if (err.name !== 'NotAllowedError') {
+            console.warn(`Wake Lock error: ${err.name}, ${err.message}`);
+        }
       }
     }
   }, [keepAwake]);
 
   const releaseWakeLock = useCallback(async () => {
     if (wakeLockRef.current) {
-      await wakeLockRef.current.release();
-      wakeLockRef.current = null;
-      console.log('Wake Lock released');
+      try {
+        await wakeLockRef.current.release();
+        wakeLockRef.current = null;
+        setIsWakeLockActive(false);
+        console.log('Wake Lock released');
+      } catch (err) {
+        console.warn('Error releasing wake lock:', err);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        setIsWakeLockSupported('wakeLock' in navigator);
     }
   }, []);
 
@@ -377,7 +398,7 @@ export default function OfflineSetlistPage() {
                       <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{showChords ? currentSong.title : offlineData.name}</h1>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-xs">Modo Offline</Badge>
-                        {keepAwake ? <Sun className="h-3 w-3 text-yellow-500" /> : <SunOff className="h-3 w-3 text-muted-foreground" />}
+                        {isWakeLockActive ? <Sun className="h-3 w-3 text-yellow-500" /> : <SunOff className="h-3 w-3 text-muted-foreground" />}
                       </div>
                     </div>
                     
@@ -405,10 +426,20 @@ export default function OfflineSetlistPage() {
                           <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} className="ml-auto" />
                       </div>
 
-                      <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10">
-                          <Label htmlFor="keep-awake" className="text-sm whitespace-nowrap">Manter Tela Acesa</Label>
-                          <Switch id="keep-awake" checked={keepAwake} onCheckedChange={setKeepAwake} className="ml-auto" />
-                      </div>
+                      {isWakeLockSupported && (
+                        <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10">
+                            <Label htmlFor="keep-awake" className="text-sm whitespace-nowrap">Manter Tela Acesa</Label>
+                            <Switch 
+                                id="keep-awake" 
+                                checked={keepAwake} 
+                                onCheckedChange={(val) => {
+                                    setKeepAwake(val);
+                                    if (val) requestWakeLock(true);
+                                }} 
+                                className="ml-auto" 
+                            />
+                        </div>
+                      )}
                   </div>
                 </>
               ) : (
@@ -423,7 +454,7 @@ export default function OfflineSetlistPage() {
                     <h1 className="text-lg font-bold font-headline tracking-tight truncate w-full text-center">
                        {showChords ? currentSong.title : offlineData.name}
                     </h1>
-                    {keepAwake && <p className="text-[10px] text-yellow-600 dark:text-yellow-400 font-semibold uppercase tracking-widest flex items-center gap-1"><Sun className="h-2 w-2" /> Tela Ativa</p>}
+                    {isWakeLockActive && <p className="text-[10px] text-yellow-600 dark:text-yellow-400 font-semibold uppercase tracking-widest flex items-center gap-1"><Sun className="h-2 w-2" /> Tela Ativa</p>}
                   </div>
                   <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0">
                     <PanelTopOpen className="h-5 w-5" />
