@@ -356,7 +356,6 @@ export default function OfflineSetlistPage() {
         tempContainer.style.backgroundColor = 'white';
         document.body.appendChild(tempContainer);
 
-        // Define as páginas para processar
         let pagesToProcess: any[] = [];
         if (showChords) {
             pagesToProcess = allSections;
@@ -365,11 +364,8 @@ export default function OfflineSetlistPage() {
                 const transpose = transpositions[songIndex] ?? 0;
                 const fullContent = transposeContent(song.content, transpose);
                 const lines = fullContent.split('\n');
-                
-                // Filtra apenas as letras (remove acordes e espaços extras)
                 const lyricsLines = lines.filter(line => !isChordLine(line));
                 
-                // Divide em páginas de 40 linhas
                 const linesPerPage = 40;
                 for (let i = 0; i < lyricsLines.length; i += linesPerPage) {
                     const chunk = lyricsLines.slice(i, i + linesPerPage).join('\n');
@@ -456,11 +452,14 @@ export default function OfflineSetlistPage() {
             footerDiv.style.display = 'flex';
             footerDiv.style.justifyContent = 'center';
             footerDiv.style.alignItems = 'center';
+            footerDiv.style.textAlign = 'center';
             
             footerDiv.innerHTML = `
-                <span style="flex: 1; text-align: right; padding-right: 10mm;">${i > 0 ? '← Anterior' : ''}</span>
-                <span style="color: #999; flex: 0 0 auto; text-align: center; min-width: 30mm;">Página ${i + 1} / ${totalPdfPages}</span>
-                <span style="flex: 1; text-align: left; padding-left: 10mm;">${i < totalPdfPages - 1 ? 'Próxima →' : ''}</span>
+                <div style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 20px;">
+                    <span style="flex: 1; text-align: right; color: #9f50e5; text-decoration: none;">${i > 0 ? '← Anterior' : ''}</span>
+                    <span style="color: #999; font-weight: bold; min-width: 40mm;">Página ${i + 1} / ${totalPdfPages}</span>
+                    <span style="flex: 1; text-align: left; color: #9f50e5; text-decoration: none;">${i < totalPdfPages - 1 ? 'Próxima →' : ''}</span>
+                </div>
             `;
             pageDiv.appendChild(footerDiv);
 
@@ -554,7 +553,7 @@ export default function OfflineSetlistPage() {
                     </Button>
 
                     <div className="flex-1 space-y-1">
-                      <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{showChords ? currentSong.title : offlineData.name}</h1>
+                      <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight truncate">{showChords ? currentSong.title : offlineData.name}</h1>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-xs">Modo Offline</Badge>
                         {isWakeLockActive ? <Sun className="h-3 w-3 text-yellow-500" /> : <Moon className="h-3 w-3 text-muted-foreground" />}
@@ -567,13 +566,13 @@ export default function OfflineSetlistPage() {
                     </Button>
                   </div>
                 
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-3">
                     <div className="flex flex-row items-center gap-2 w-full">
                        <div className="flex items-center gap-1 rounded-md border p-1 flex-1 bg-background overflow-hidden">
                             <Button variant="ghost" size="icon" onClick={() => changeTranspose(-1)} className="h-8 w-8 shrink-0">
                                 <Minus className="h-4 w-4" />
                             </Button>
-                            <Badge variant="secondary" className="px-2 py-1 text-xs whitespace-nowrap flex-grow text-center justify-center">
+                            <Badge variant="secondary" className="px-2 py-1 text-[10px] md:text-xs whitespace-nowrap flex-grow text-center justify-center">
                                 Tom: {displayedKey} ({currentSongTranspose > 0 ? '+' : ''}{currentSongTranspose})
                             </Badge>
                             <Button variant="ghost" size="icon" onClick={() => changeTranspose(1)} className="h-8 w-8 shrink-0">
