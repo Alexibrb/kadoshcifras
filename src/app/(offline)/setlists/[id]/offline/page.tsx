@@ -435,9 +435,9 @@ export default function OfflineSetlistPage() {
             footerDiv.style.gap = '10mm';
             
             footerDiv.innerHTML = `
-                <span style="cursor: pointer; flex: 1; text-align: center;">${i > 0 ? '← Anterior' : ''}</span>
+                <span style="flex: 1; text-align: center;">${i > 0 ? '← Anterior' : ''}</span>
                 <span style="color: #999; flex: 0 0 auto;">Página ${i + 1} / ${totalPdfPages}</span>
-                <span style="cursor: pointer; flex: 1; text-align: center;">${i < totalPdfPages - 1 ? 'Próxima →' : ''}</span>
+                <span style="flex: 1; text-align: center;">${i < totalPdfPages - 1 ? 'Próxima →' : ''}</span>
             `;
             pageDiv.appendChild(footerDiv);
 
@@ -454,13 +454,6 @@ export default function OfflineSetlistPage() {
             
             if (i > 0) doc.addPage();
             doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-
-            if (i > 0) {
-                doc.link(60, 280, 25, 10, { pageNumber: i });
-            }
-            if (i < totalPdfPages - 1) {
-                doc.link(125, 280, 25, 10, { pageNumber: i + 2 });
-            }
         }
 
         doc.save(`${offlineData.name}${!showChords ? '_Letras' : ''}.pdf`);
@@ -553,8 +546,8 @@ export default function OfflineSetlistPage() {
                 
                   <div className="flex flex-col gap-2">
                     {/* Linha 1: Controle de Tom e Mostrar Cifras */}
-                    <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
-                       <div className="flex items-center gap-1 rounded-md border p-1 flex-1 bg-background w-full">
+                    <div className="flex flex-row items-center gap-2 w-full">
+                       <div className="flex items-center gap-1 rounded-md border p-1 flex-1 bg-background">
                             <Button variant="ghost" size="icon" onClick={() => changeTranspose(-1)} className="h-8 w-8">
                                 <Minus className="h-4 w-4" />
                             </Button>
@@ -566,17 +559,17 @@ export default function OfflineSetlistPage() {
                             </Button>
                         </div>
 
-                        <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 w-full sm:w-auto shrink-0">
-                            <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
-                            <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} className="ml-auto" />
+                        <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 shrink-0">
+                            <Label htmlFor="show-chords" className="text-sm whitespace-nowrap hidden xs:inline">Cifras</Label>
+                            <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
                         </div>
                     </div>
 
                     {/* Linha 2: Manter Tela e Exportar PDF */}
-                    <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
+                    <div className="flex flex-row items-center gap-2 w-full">
                         {isWakeLockSupported && (
-                          <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 flex-1 w-full">
-                              <Label htmlFor="keep-awake" className="text-sm whitespace-nowrap">Manter Tela Acesa</Label>
+                          <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 flex-1">
+                              <Label htmlFor="keep-awake" className="text-sm whitespace-nowrap hidden xs:inline">Tela Acesa</Label>
                               <Switch 
                                   id="keep-awake" 
                                   checked={keepAwake} 
@@ -584,18 +577,18 @@ export default function OfflineSetlistPage() {
                                       setKeepAwake(val);
                                       if (val) requestWakeLock(true);
                                   }} 
-                                  className="ml-auto" 
                               />
                           </div>
                         )}
 
-                        <Button onClick={handleExportPDF} variant="outline" className="h-10 flex-1 w-full sm:w-auto sm:flex-initial" disabled={isGeneratingPDF}>
+                        <Button onClick={handleExportPDF} variant="outline" className="h-10 flex-1" disabled={isGeneratingPDF}>
                           {isGeneratingPDF ? (
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           ) : (
                               <FileDown className="mr-2 h-4 w-4" />
                           )}
-                          Exportar PDF
+                          <span className="hidden xs:inline">Exportar PDF</span>
+                          <span className="xs:hidden">PDF</span>
                         </Button>
                     </div>
                   </div>
