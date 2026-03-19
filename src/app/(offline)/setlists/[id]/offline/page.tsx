@@ -356,11 +356,32 @@ export default function OfflineSetlistPage() {
         tempContainer.style.backgroundColor = 'white';
         document.body.appendChild(tempContainer);
 
-        const pagesToProcess = showChords ? allSections : offlineData.songs.map((s, i) => ({ 
-            songIndex: i, 
-            content: s.content,
-            partIndex: 0
-        }));
+        // Define as páginas para processar
+        let pagesToProcess: any[] = [];
+        if (showChords) {
+            pagesToProcess = allSections;
+        } else {
+            offlineData.songs.forEach((song, songIndex) => {
+                const transpose = transpositions[songIndex] ?? 0;
+                const fullContent = transposeContent(song.content, transpose);
+                const lines = fullContent.split('\n');
+                
+                // Filtra apenas as letras (remove acordes e espaços extras)
+                const lyricsLines = lines.filter(line => !isChordLine(line));
+                
+                // Divide em páginas de 20 linhas
+                const linesPerPage = 20;
+                for (let i = 0; i < lyricsLines.length; i += linesPerPage) {
+                    const chunk = lyricsLines.slice(i, i + linesPerPage).join('\n');
+                    pagesToProcess.push({
+                        songIndex,
+                        content: chunk,
+                        partIndex: Math.floor(i / linesPerPage),
+                        totalParts: Math.ceil(lyricsLines.length / linesPerPage)
+                    });
+                }
+            });
+        }
 
         const totalPdfPages = pagesToProcess.length;
 
@@ -379,14 +400,18 @@ export default function OfflineSetlistPage() {
             pageDiv.style.color = 'black';
             pageDiv.style.position = 'relative';
 
+            const totalPartsForThisSong = showChords 
+                ? allSections.filter(s => s.songIndex === pageInfo.songIndex).length 
+                : pageInfo.totalParts;
+
             const header = document.createElement('div');
             header.style.marginBottom = '10mm';
             header.style.borderBottom = '1px solid #eee';
             header.style.paddingBottom = '5mm';
             header.innerHTML = `
                 <div style="font-family: serif; font-size: 20pt; font-weight: bold; color: #9f50e5;">${song.title}</div>
-                <div style="font-family: serif; font-size: 12pt; color: #666;">${song.artist} | Tom: ${song.key ? transposeChord(song.key, transpose) : 'N/A'}</div>
-                <div style="font-size: 9pt; color: #999; margin-top: 5px;">${showChords ? `Seção ${pageInfo.partIndex + 1} de ${allSections.filter(s => s.songIndex === pageInfo.songIndex).length}` : `Música ${pageInfo.songIndex + 1} de ${offlineData.songs.length}`}</div>
+                <div style="font-family: serif; font-size: 12pt; color: #666;">${song.artist} ${song.key && showChords ? `| Tom: ${transposeChord(song.key, transpose)}` : ''}</div>
+                <div style="font-size: 9pt; color: #999; margin-top: 5px;">Página ${pageInfo.partIndex + 1} de ${totalPartsForThisSong}</div>
             `;
             pageDiv.appendChild(header);
 
@@ -395,8 +420,7 @@ export default function OfflineSetlistPage() {
             contentDiv.style.fontFamily = 'monospace';
             contentDiv.style.fontSize = `${fontSize * 1.2}px`;
             
-            const rawContent = showChords ? pageInfo.content : pageInfo.content.replace(/\n\s*\n\s*\n/g, '\n\n');
-            const content = transposeContent(rawContent, transpose);
+            const content = showChords ? transposeContent(pageInfo.content, transpose) : pageInfo.content;
             const lines = content.split('\n');
             
             lines.forEach(line => {
@@ -432,12 +456,11 @@ export default function OfflineSetlistPage() {
             footerDiv.style.display = 'flex';
             footerDiv.style.justifyContent = 'center';
             footerDiv.style.alignItems = 'center';
-            footerDiv.style.gap = '10mm';
             
             footerDiv.innerHTML = `
-                <span style="flex: 1; text-align: center;">${i > 0 ? '← Anterior' : ''}</span>
-                <span style="color: #999; flex: 0 0 auto;">Página ${i + 1} / ${totalPdfPages}</span>
-                <span style="flex: 1; text-align: center;">${i < totalPdfPages - 1 ? 'Próxima →' : ''}</span>
+                <span style="flex: 1; text-align: right; padding-right: 10mm;">${i > 0 ? '← Anterior' : ''}</span>
+                <span style="color: #999; flex: 0 0 auto; text-align: center; min-width: 30mm;">Página ${i + 1} / ${totalPdfPages}</span>
+                <span style="flex: 1; text-align: left; padding-left: 10mm;">${i < totalPdfPages - 1 ? 'Próxima →' : ''}</span>
             `;
             pageDiv.appendChild(footerDiv);
 
@@ -545,13 +568,12 @@ export default function OfflineSetlistPage() {
                   </div>
                 
                   <div className="flex flex-col gap-2">
-                    {/* Linha 1: Controle de Tom e Mostrar Cifras */}
                     <div className="flex flex-row items-center gap-2 w-full">
                        <div className="flex items-center gap-1 rounded-md border p-1 flex-1 bg-background overflow-hidden">
                             <Button variant="ghost" size="icon" onClick={() => changeTranspose(-1)} className="h-8 w-8 shrink-0">
                                 <Minus className="h-4 w-4" />
                             </Button>
-                            <Badge variant="secondary" className="px-2 py-1 text-[10px] xs:text-xs whitespace-nowrap flex-grow text-center justify-center">
+                            <Badge variant="secondary" className="px-2 py-1 text-xs whitespace-nowrap flex-grow text-center justify-center">
                                 Tom: {displayedKey} ({currentSongTranspose > 0 ? '+' : ''}{currentSongTranspose})
                             </Badge>
                             <Button variant="ghost" size="icon" onClick={() => changeTranspose(1)} className="h-8 w-8 shrink-0">
@@ -560,16 +582,15 @@ export default function OfflineSetlistPage() {
                         </div>
 
                         <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 shrink-0">
-                            <Label htmlFor="show-chords" className="text-xs whitespace-nowrap">Cifras</Label>
+                            <Label htmlFor="show-chords" className="text-xs font-semibold whitespace-nowrap">Cifras</Label>
                             <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
                         </div>
                     </div>
 
-                    {/* Linha 2: Manter Tela e Exportar PDF */}
                     <div className="flex flex-row items-center gap-2 w-full">
                         {isWakeLockSupported && (
                           <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 flex-1">
-                              <Label htmlFor="keep-awake" className="text-xs whitespace-nowrap">Tela Acesa</Label>
+                              <Label htmlFor="keep-awake" className="text-xs font-semibold whitespace-nowrap">Tela Acesa</Label>
                               <Switch 
                                   id="keep-awake" 
                                   checked={keepAwake} 
@@ -581,7 +602,7 @@ export default function OfflineSetlistPage() {
                           </div>
                         )}
 
-                        <Button onClick={handleExportPDF} variant="outline" className="h-10 flex-1 text-xs" disabled={isGeneratingPDF}>
+                        <Button onClick={handleExportPDF} variant="outline" className="h-10 flex-1 text-xs font-semibold" disabled={isGeneratingPDF}>
                           {isGeneratingPDF ? (
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           ) : (
