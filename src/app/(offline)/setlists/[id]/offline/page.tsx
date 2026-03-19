@@ -356,7 +356,6 @@ export default function OfflineSetlistPage() {
         tempContainer.style.backgroundColor = 'white';
         document.body.appendChild(tempContainer);
 
-        // Define o que processar baseado no modo ShowChords
         const pagesToProcess = showChords ? allSections : offlineData.songs.map((s, i) => ({ 
             songIndex: i, 
             content: s.content,
@@ -396,7 +395,6 @@ export default function OfflineSetlistPage() {
             contentDiv.style.fontFamily = 'monospace';
             contentDiv.style.fontSize = `${fontSize * 1.2}px`;
             
-            // Tratamento contínuo se cifras estiverem ocultas
             const rawContent = showChords ? pageInfo.content : pageInfo.content.replace(/\n\s*\n\s*\n/g, '\n\n');
             const content = transposeContent(rawContent, transpose);
             const lines = content.split('\n');
@@ -437,9 +435,9 @@ export default function OfflineSetlistPage() {
             footerDiv.style.gap = '10mm';
             
             footerDiv.innerHTML = `
-                <span style="cursor: pointer; flex: 1; text-align: right;">${i > 0 ? '← Anterior' : ''}</span>
+                <span style="cursor: pointer; flex: 1; text-align: center;">${i > 0 ? '← Anterior' : ''}</span>
                 <span style="color: #999; flex: 0 0 auto;">Página ${i + 1} / ${totalPdfPages}</span>
-                <span style="cursor: pointer; flex: 1; text-align: left;">${i < totalPdfPages - 1 ? 'Próxima →' : ''}</span>
+                <span style="cursor: pointer; flex: 1; text-align: center;">${i < totalPdfPages - 1 ? 'Próxima →' : ''}</span>
             `;
             pageDiv.appendChild(footerDiv);
 
@@ -457,7 +455,6 @@ export default function OfflineSetlistPage() {
             if (i > 0) doc.addPage();
             doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
 
-            // Adiciona links interativos invisíveis sobre os textos de navegação
             if (i > 0) {
                 doc.link(60, 280, 25, 10, { pageNumber: i });
             }
@@ -531,7 +528,7 @@ export default function OfflineSetlistPage() {
       <Card className="mb-4 bg-accent/10 transition-all duration-300">
             <CardContent className="p-4 space-y-4">
               {isPanelVisible ? (
-                <>
+                <div className="flex flex-col gap-4">
                   <div className="flex items-start justify-between gap-4">
                     <Button asChild variant="outline" size="icon" className="shrink-0">
                       <Link href={`/setlists/${setlistId}`}>
@@ -554,49 +551,55 @@ export default function OfflineSetlistPage() {
                     </Button>
                   </div>
                 
-                  <div className="flex justify-center items-center gap-2 pt-2 flex-wrap">
-                     <div className="flex items-center gap-1 rounded-md border p-1 w-full max-sm:bg-background">
-                          <Button variant="ghost" size="icon" onClick={() => changeTranspose(-1)} className="h-8 w-8">
-                              <Minus className="h-4 w-4" />
-                          </Button>
-                          <Badge variant="secondary" className="px-3 py-1 text-xs whitespace-nowrap flex-grow text-center justify-center">
-                              Tom: {displayedKey} ({currentSongTranspose > 0 ? '+' : ''}{currentSongTranspose})
-                          </Badge>
-                          <Button variant="ghost" size="icon" onClick={() => changeTranspose(1)} className="h-8 w-8">
-                              <Plus className="h-4 w-4" />
-                          </Button>
-                      </div>
-
-                      <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10">
-                          <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
-                          <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} className="ml-auto" />
-                      </div>
-
-                      {isWakeLockSupported && (
-                        <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10">
-                            <Label htmlFor="keep-awake" className="text-sm whitespace-nowrap">Manter Tela Acesa</Label>
-                            <Switch 
-                                id="keep-awake" 
-                                checked={keepAwake} 
-                                onCheckedChange={(val) => {
-                                    setKeepAwake(val);
-                                    if (val) requestWakeLock(true);
-                                }} 
-                                className="ml-auto" 
-                            />
+                  <div className="flex flex-col gap-2">
+                    {/* Linha 1: Controle de Tom e Mostrar Cifras */}
+                    <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
+                       <div className="flex items-center gap-1 rounded-md border p-1 flex-1 bg-background w-full">
+                            <Button variant="ghost" size="icon" onClick={() => changeTranspose(-1)} className="h-8 w-8">
+                                <Minus className="h-4 w-4" />
+                            </Button>
+                            <Badge variant="secondary" className="px-3 py-1 text-xs whitespace-nowrap flex-grow text-center justify-center">
+                                Tom: {displayedKey} ({currentSongTranspose > 0 ? '+' : ''}{currentSongTranspose})
+                            </Badge>
+                            <Button variant="ghost" size="icon" onClick={() => changeTranspose(1)} className="h-8 w-8">
+                                <Plus className="h-4 w-4" />
+                            </Button>
                         </div>
-                      )}
 
-                      <Button onClick={handleExportPDF} variant="outline" className="h-10" disabled={isGeneratingPDF}>
-                        {isGeneratingPDF ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <FileDown className="mr-2 h-4 w-4" />
+                        <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 w-full sm:w-auto shrink-0">
+                            <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
+                            <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} className="ml-auto" />
+                        </div>
+                    </div>
+
+                    {/* Linha 2: Manter Tela e Exportar PDF */}
+                    <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
+                        {isWakeLockSupported && (
+                          <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 flex-1 w-full">
+                              <Label htmlFor="keep-awake" className="text-sm whitespace-nowrap">Manter Tela Acesa</Label>
+                              <Switch 
+                                  id="keep-awake" 
+                                  checked={keepAwake} 
+                                  onCheckedChange={(val) => {
+                                      setKeepAwake(val);
+                                      if (val) requestWakeLock(true);
+                                  }} 
+                                  className="ml-auto" 
+                              />
+                          </div>
                         )}
-                        Exportar PDF
-                      </Button>
+
+                        <Button onClick={handleExportPDF} variant="outline" className="h-10 flex-1 w-full sm:w-auto sm:flex-initial" disabled={isGeneratingPDF}>
+                          {isGeneratingPDF ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                              <FileDown className="mr-2 h-4 w-4" />
+                          )}
+                          Exportar PDF
+                        </Button>
+                    </div>
                   </div>
-                </>
+                </div>
               ) : (
                 <div className="flex items-center justify-between gap-4">
                   <Button asChild variant="outline" size="icon" className="shrink-0">
