@@ -547,20 +547,20 @@ export default function OfflineSetlistPage() {
                   <div className="flex flex-col gap-2">
                     {/* Linha 1: Controle de Tom e Mostrar Cifras */}
                     <div className="flex flex-row items-center gap-2 w-full">
-                       <div className="flex items-center gap-1 rounded-md border p-1 flex-1 bg-background">
-                            <Button variant="ghost" size="icon" onClick={() => changeTranspose(-1)} className="h-8 w-8">
+                       <div className="flex items-center gap-1 rounded-md border p-1 flex-1 bg-background overflow-hidden">
+                            <Button variant="ghost" size="icon" onClick={() => changeTranspose(-1)} className="h-8 w-8 shrink-0">
                                 <Minus className="h-4 w-4" />
                             </Button>
-                            <Badge variant="secondary" className="px-3 py-1 text-xs whitespace-nowrap flex-grow text-center justify-center">
+                            <Badge variant="secondary" className="px-2 py-1 text-[10px] xs:text-xs whitespace-nowrap flex-grow text-center justify-center">
                                 Tom: {displayedKey} ({currentSongTranspose > 0 ? '+' : ''}{currentSongTranspose})
                             </Badge>
-                            <Button variant="ghost" size="icon" onClick={() => changeTranspose(1)} className="h-8 w-8">
+                            <Button variant="ghost" size="icon" onClick={() => changeTranspose(1)} className="h-8 w-8 shrink-0">
                                 <Plus className="h-4 w-4" />
                             </Button>
                         </div>
 
                         <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 shrink-0">
-                            <Label htmlFor="show-chords" className="text-sm whitespace-nowrap hidden xs:inline">Cifras</Label>
+                            <Label htmlFor="show-chords" className="text-xs whitespace-nowrap">Cifras</Label>
                             <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
                         </div>
                     </div>
@@ -569,7 +569,7 @@ export default function OfflineSetlistPage() {
                     <div className="flex flex-row items-center gap-2 w-full">
                         {isWakeLockSupported && (
                           <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 flex-1">
-                              <Label htmlFor="keep-awake" className="text-sm whitespace-nowrap hidden xs:inline">Tela Acesa</Label>
+                              <Label htmlFor="keep-awake" className="text-xs whitespace-nowrap">Tela Acesa</Label>
                               <Switch 
                                   id="keep-awake" 
                                   checked={keepAwake} 
@@ -581,14 +581,13 @@ export default function OfflineSetlistPage() {
                           </div>
                         )}
 
-                        <Button onClick={handleExportPDF} variant="outline" className="h-10 flex-1" disabled={isGeneratingPDF}>
+                        <Button onClick={handleExportPDF} variant="outline" className="h-10 flex-1 text-xs" disabled={isGeneratingPDF}>
                           {isGeneratingPDF ? (
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           ) : (
                               <FileDown className="mr-2 h-4 w-4" />
                           )}
-                          <span className="hidden xs:inline">Exportar PDF</span>
-                          <span className="xs:hidden">PDF</span>
+                          <span>Exportar PDF</span>
                         </Button>
                     </div>
                   </div>
