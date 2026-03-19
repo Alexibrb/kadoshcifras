@@ -369,8 +369,8 @@ export default function OfflineSetlistPage() {
                 // Filtra apenas as letras (remove acordes e espaços extras)
                 const lyricsLines = lines.filter(line => !isChordLine(line));
                 
-                // Divide em páginas de 20 linhas
-                const linesPerPage = 20;
+                // Divide em páginas de 40 linhas
+                const linesPerPage = 40;
                 for (let i = 0; i < lyricsLines.length; i += linesPerPage) {
                     const chunk = lyricsLines.slice(i, i + linesPerPage).join('\n');
                     pagesToProcess.push({
