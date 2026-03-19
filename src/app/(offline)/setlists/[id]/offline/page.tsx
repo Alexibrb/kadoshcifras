@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
 import { PedalSettings, ColorSettings } from '@/types';
 import { Carousel, CarouselApi, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { transposeChord, transposeContent } from '@/lib/music';
+import { transposeChord, transposeContent, isChordLine } from '@/lib/music';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
@@ -126,7 +126,6 @@ export default function OfflineSetlistPage() {
         setIsWakeLockActive(true);
       } catch (err: any) {
         setIsWakeLockActive(false);
-        // Silenciamos o erro NotAllowedError que ocorre em ambientes não seguros ou sem gesto inicial
         if (isUserInteraction && err.name !== 'NotAllowedError') {
             console.warn(`Wake Lock error: ${err.name}, ${err.message}`);
         }
@@ -201,7 +200,7 @@ export default function OfflineSetlistPage() {
           setFinalColorSettings(defaultSettings);
       }
     }
-}, [isClient]);
+  }, [isClient]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -394,12 +393,15 @@ export default function OfflineSetlistPage() {
             const lines = content.split('\n');
             
             lines.forEach(line => {
+                const isChord = isChordLine(line);
+                // Se o usuário ocultou as cifras, pulamos as linhas de acordes no PDF também
+                if (isChord && !showChords) return;
+
                 const p = document.createElement('p');
                 p.style.margin = '0';
                 p.style.minHeight = '1em';
                 p.textContent = line || ' ';
                 
-                const isChord = /([A-G](?:#|b)?(?:m|M|maj|min|dim|aug|sus|add|°|\+|-)?(?:\d)?(?:(?:\/[A-G](?:#|b)?))?)/g.test(line);
                 if (isChord && showChords) {
                     p.style.fontWeight = 'bold';
                     p.style.color = finalColorSettings?.chordsColor || '#F59E0B';
@@ -414,18 +416,19 @@ export default function OfflineSetlistPage() {
             const footerDiv = document.createElement('div');
             footerDiv.style.position = 'absolute';
             footerDiv.style.bottom = '10mm';
-            footerDiv.style.left = '20mm';
-            footerDiv.style.right = '20mm';
-            footerDiv.style.display = 'flex';
-            footerDiv.style.justifyContent = 'space-between';
+            footerDiv.style.left = '0';
+            footerDiv.style.right = '0';
+            footerDiv.style.textAlign = 'center';
             footerDiv.style.fontSize = '10pt';
             footerDiv.style.color = '#9f50e5';
             footerDiv.style.borderTop = '1px solid #eee';
             footerDiv.style.paddingTop = '5mm';
+            footerDiv.style.margin = '0 20mm';
+            
             footerDiv.innerHTML = `
-                <div style="cursor: pointer;">${i > 0 ? '← Anterior' : ''}</div>
-                <div style="color: #999;">Página ${i + 1} / ${totalPdfPages}</div>
-                <div style="cursor: pointer;">${i < totalPdfPages - 1 ? 'Próxima →' : ''}</div>
+                <span style="cursor: pointer; margin-right: 15mm;">${i > 0 ? '← Anterior' : ''}</span>
+                <span style="color: #999;">Página ${i + 1} / ${totalPdfPages}</span>
+                <span style="cursor: pointer; margin-left: 15mm;">${i < totalPdfPages - 1 ? 'Próxima →' : ''}</span>
             `;
             pageDiv.appendChild(footerDiv);
 
@@ -443,6 +446,7 @@ export default function OfflineSetlistPage() {
             if (i > 0) doc.addPage();
             doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
 
+            // Links interativos
             if (i > 0) {
                 doc.link(20, 280, 40, 10, { pageNumber: i });
             }
