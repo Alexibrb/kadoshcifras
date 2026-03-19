@@ -352,20 +352,26 @@ export default function OfflineSetlistPage() {
         document.body.appendChild(tempContainer);
 
         let pagesToProcess: any[] = [];
+        const linesPerPage = 40;
         
-        // Estratégia unificada:ignora slides manuais e pagina a cada 40 linhas
+        // Estratégia unificada de paginação com preenchimento de linhas em branco
         offlineData.songs.forEach((song, songIndex) => {
             const transpose = transpositions[songIndex] ?? 0;
             const fullContent = transposeContent(song.content, transpose)
-                                .replace(/\n\s*\n\s*\n/g, '\n\n'); // Ignora slides extras
+                                .replace(/\n\s*\n\s*\n/g, '\n\n');
 
             const lines = fullContent.split('\n');
-            // Filtra se for modo sem cifra
             const filteredLines = showChords ? lines : lines.filter(line => !isChordLine(line));
             
-            const linesPerPage = 40;
             for (let i = 0; i < filteredLines.length; i += linesPerPage) {
-                const chunk = filteredLines.slice(i, i + linesPerPage).join('\n');
+                let chunkLines = filteredLines.slice(i, i + linesPerPage);
+                
+                // Acrescenta linhas em branco para que todas as páginas tenham a mesma altura (exatamente 40 linhas)
+                while (chunkLines.length < linesPerPage) {
+                    chunkLines.push("");
+                }
+                
+                const chunk = chunkLines.join('\n');
                 pagesToProcess.push({
                     songIndex,
                     content: chunk,
@@ -500,7 +506,7 @@ export default function OfflineSetlistPage() {
         
         toast({
             title: "PDF Gerado!",
-            description: "O arquivo foi adaptado ao conteúdo e baixado."
+            description: "O arquivo foi adaptado ao conteúdo e todas as páginas têm a mesma altura."
         });
     } catch (e) {
         console.error("Erro ao gerar PDF:", e);
