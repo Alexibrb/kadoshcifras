@@ -366,7 +366,6 @@ export default function OfflineSetlistPage() {
                 const lines = fullContent.split('\n');
                 const lyricsLines = lines.filter(line => !isChordLine(line));
                 
-                // Dividir letras em blocos de 40 linhas
                 const linesPerPage = 40;
                 for (let i = 0; i < lyricsLines.length; i += linesPerPage) {
                     const chunk = lyricsLines.slice(i, i + linesPerPage).join('\n');
@@ -440,7 +439,6 @@ export default function OfflineSetlistPage() {
             });
             pageDiv.appendChild(contentDiv);
 
-            // Rodapé interativo perfeitamente centralizado
             const footerDiv = document.createElement('div');
             footerDiv.style.position = 'absolute';
             footerDiv.style.bottom = '10mm';
@@ -478,6 +476,16 @@ export default function OfflineSetlistPage() {
             
             if (i > 0) doc.addPage();
             doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+
+            // Adiciona links interativos reais sobre as áreas de navegação no PDF
+            if (i > 0) {
+              // Área clicável para o botão "Anterior" (Esquerda)
+              doc.link(20, 280, 70, 15, { pageNumber: i });
+            }
+            if (i < totalPdfPages - 1) {
+              // Área clicável para o botão "Próximo" (Direita)
+              doc.link(120, 280, 70, 15, { pageNumber: i + 2 });
+            }
         }
 
         doc.save(`${offlineData.name}${!showChords ? '_Letras' : ''}.pdf`);
