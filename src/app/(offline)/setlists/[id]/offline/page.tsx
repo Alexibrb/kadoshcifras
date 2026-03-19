@@ -352,27 +352,28 @@ export default function OfflineSetlistPage() {
         document.body.appendChild(tempContainer);
 
         let pagesToProcess: any[] = [];
-        if (showChords) {
-            pagesToProcess = allSections;
-        } else {
-            offlineData.songs.forEach((song, songIndex) => {
-                const transpose = transpositions[songIndex] ?? 0;
-                const fullContent = transposeContent(song.content, transpose);
-                const lines = fullContent.split('\n');
-                const lyricsLines = lines.filter(line => !isChordLine(line));
-                
-                const linesPerPage = 40;
-                for (let i = 0; i < lyricsLines.length; i += linesPerPage) {
-                    const chunk = lyricsLines.slice(i, i + linesPerPage).join('\n');
-                    pagesToProcess.push({
-                        songIndex,
-                        content: chunk,
-                        partIndex: Math.floor(i / linesPerPage),
-                        totalParts: Math.ceil(lyricsLines.length / linesPerPage)
-                    });
-                }
-            });
-        }
+        
+        // Estratégia unificada:ignora slides manuais e pagina a cada 40 linhas
+        offlineData.songs.forEach((song, songIndex) => {
+            const transpose = transpositions[songIndex] ?? 0;
+            const fullContent = transposeContent(song.content, transpose)
+                                .replace(/\n\s*\n\s*\n/g, '\n\n'); // Ignora slides extras
+
+            const lines = fullContent.split('\n');
+            // Filtra se for modo sem cifra
+            const filteredLines = showChords ? lines : lines.filter(line => !isChordLine(line));
+            
+            const linesPerPage = 40;
+            for (let i = 0; i < filteredLines.length; i += linesPerPage) {
+                const chunk = filteredLines.slice(i, i + linesPerPage).join('\n');
+                pagesToProcess.push({
+                    songIndex,
+                    content: chunk,
+                    partIndex: Math.floor(i / linesPerPage),
+                    totalParts: Math.ceil(filteredLines.length / linesPerPage)
+                });
+            }
+        });
 
         const totalPdfPages = pagesToProcess.length;
         let doc: any;
@@ -390,12 +391,8 @@ export default function OfflineSetlistPage() {
             pageDiv.style.color = 'black';
             pageDiv.style.position = 'relative';
             pageDiv.style.width = 'fit-content';
-            pageDiv.style.minWidth = '160mm'; // Mínimo para o cabeçalho/rodapé ficar bem
+            pageDiv.style.minWidth = '160mm';
             pageDiv.style.display = 'inline-block';
-
-            const totalPartsForThisSong = showChords 
-                ? allSections.filter(s => s.songIndex === pageInfo.songIndex).length 
-                : pageInfo.totalParts;
 
             const header = document.createElement('div');
             header.style.marginBottom = '10mm';
@@ -405,23 +402,19 @@ export default function OfflineSetlistPage() {
             header.innerHTML = `
                 <div style="font-family: serif; font-size: 24pt; font-weight: bold; color: #9f50e5;">${song.title}</div>
                 <div style="font-family: serif; font-size: 14pt; color: #666; margin-top: 5px;">${song.artist} ${song.key && showChords ? `<span style="margin-left: 15px; color: #9f50e5;">• Tom: ${transposeChord(song.key, transpose)}</span>` : ''}</div>
-                <div style="font-size: 10pt; color: #999; margin-top: 8px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Página ${pageInfo.partIndex + 1} de ${totalPartsForThisSong}</div>
+                <div style="font-size: 10pt; color: #999; margin-top: 8px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Página ${pageInfo.partIndex + 1} de ${pageInfo.totalParts}</div>
             `;
             pageDiv.appendChild(header);
 
             const contentDiv = document.createElement('div');
-            contentDiv.style.whiteSpace = 'pre'; // Garante que a largura seja baseada na maior linha real
+            contentDiv.style.whiteSpace = 'pre';
             contentDiv.style.fontFamily = 'monospace';
             contentDiv.style.fontSize = `${fontSize * 1.3}px`;
             contentDiv.style.lineHeight = '1.4';
             
-            const content = showChords ? transposeContent(pageInfo.content, transpose) : pageInfo.content;
-            const lines = content.split('\n');
-            
+            const lines = pageInfo.content.split('\n');
             lines.forEach(line => {
                 const isChord = isChordLine(line);
-                if (isChord && !showChords) return;
-
                 const p = document.createElement('p');
                 p.style.margin = '0';
                 p.style.minHeight = '1.2em';
@@ -465,7 +458,6 @@ export default function OfflineSetlistPage() {
             tempContainer.innerHTML = '';
             tempContainer.appendChild(pageDiv);
 
-            // Medir o tamanho real renderizado
             const rect = pageDiv.getBoundingClientRect();
             const widthMM = rect.width * 0.264583;
             const heightMM = rect.height * 0.264583;
@@ -492,7 +484,6 @@ export default function OfflineSetlistPage() {
 
             doc.addImage(imgData, 'JPEG', 0, 0, widthMM, heightMM);
 
-            // Adiciona links interativos centralizados
             const linkY = heightMM - 20;
             const linkWidth = widthMM / 3;
             
@@ -504,18 +495,18 @@ export default function OfflineSetlistPage() {
             }
         }
 
-        doc.save(`${offlineData.name}${!showChords ? '_Letras' : ''}_Personalizado.pdf`);
+        doc.save(`${offlineData.name}${!showChords ? '_Letras' : '_Cifrado'}_Interativo.pdf`);
         document.body.removeChild(tempContainer);
         
         toast({
-            title: "PDF Personalizado Gerado!",
+            title: "PDF Gerado!",
             description: "O arquivo foi adaptado ao conteúdo e baixado."
         });
     } catch (e) {
         console.error("Erro ao gerar PDF:", e);
         toast({
             title: "Erro ao gerar PDF",
-            description: "Não foi possível criar o arquivo com dimensões personalizadas.",
+            description: "Não foi possível criar o arquivo.",
             variant: "destructive"
         });
     } finally {
@@ -592,7 +583,7 @@ export default function OfflineSetlistPage() {
                     </Button>
                   </div>
                 
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-2">
                     <div className="flex flex-row items-center gap-2 w-full">
                        <div className="flex items-center gap-1 rounded-md border p-1 flex-1 bg-background overflow-hidden h-10">
                             <Button variant="ghost" size="icon" onClick={() => changeTranspose(-1)} className="h-8 w-8 shrink-0">
@@ -607,7 +598,7 @@ export default function OfflineSetlistPage() {
                         </div>
 
                         <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 flex-1">
-                            <Label htmlFor="show-chords" className="text-xs font-semibold whitespace-nowrap">Cifras</Label>
+                            <Label htmlFor="show-chords" className="text-[10px] md:text-xs font-semibold whitespace-nowrap">Cifras</Label>
                             <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
                         </div>
                     </div>
@@ -615,7 +606,7 @@ export default function OfflineSetlistPage() {
                     <div className="flex flex-row items-center gap-2 w-full">
                         {isWakeLockSupported && (
                           <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 flex-1">
-                              <Label htmlFor="keep-awake" className="text-xs font-semibold whitespace-nowrap">Tela Acesa</Label>
+                              <Label htmlFor="keep-awake" className="text-[10px] md:text-xs font-semibold whitespace-nowrap">Tela Acesa</Label>
                               <Switch 
                                   id="keep-awake" 
                                   checked={keepAwake} 
@@ -627,13 +618,13 @@ export default function OfflineSetlistPage() {
                           </div>
                         )}
 
-                        <Button onClick={handleExportPDF} variant="outline" className="h-10 flex-1 text-xs font-semibold" disabled={isGeneratingPDF}>
+                        <Button onClick={handleExportPDF} variant="outline" className="h-10 flex-1 text-[10px] md:text-xs font-semibold" disabled={isGeneratingPDF}>
                           {isGeneratingPDF ? (
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           ) : (
                               <FileDown className="mr-2 h-4 w-4" />
                           )}
-                          <span>Exportar PDF</span>
+                          <span>PDF</span>
                         </Button>
                     </div>
                   </div>
