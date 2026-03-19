@@ -356,12 +356,11 @@ export default function OfflineSetlistPage() {
         tempContainer.style.backgroundColor = 'white';
         document.body.appendChild(tempContainer);
 
-        // Se showChords for false, exportamos música por música (contínuo)
-        // Se showChords for true, exportamos seção por seção (slides)
+        // Define o que processar baseado no modo ShowChords
         const pagesToProcess = showChords ? allSections : offlineData.songs.map((s, i) => ({ 
             songIndex: i, 
             content: s.content,
-            partIndex: 0 // No modo contínuo, tratamos como uma parte única
+            partIndex: 0
         }));
 
         const totalPdfPages = pagesToProcess.length;
@@ -397,7 +396,7 @@ export default function OfflineSetlistPage() {
             contentDiv.style.fontFamily = 'monospace';
             contentDiv.style.fontSize = `${fontSize * 1.2}px`;
             
-            // No modo contínuo, removemos as quebras triplas para não gerar espaços vazios gigantes
+            // Tratamento contínuo se cifras estiverem ocultas
             const rawContent = showChords ? pageInfo.content : pageInfo.content.replace(/\n\s*\n\s*\n/g, '\n\n');
             const content = transposeContent(rawContent, transpose);
             const lines = content.split('\n');
@@ -435,12 +434,12 @@ export default function OfflineSetlistPage() {
             footerDiv.style.display = 'flex';
             footerDiv.style.justifyContent = 'center';
             footerDiv.style.alignItems = 'center';
-            footerDiv.style.gap = '15mm';
+            footerDiv.style.gap = '10mm';
             
             footerDiv.innerHTML = `
-                <span style="cursor: pointer; min-width: 30mm; text-align: right;">${i > 0 ? '← Anterior' : ''}</span>
-                <span style="color: #999;">Página ${i + 1} / ${totalPdfPages}</span>
-                <span style="cursor: pointer; min-width: 30mm; text-align: left;">${i < totalPdfPages - 1 ? 'Próxima →' : ''}</span>
+                <span style="cursor: pointer; flex: 1; text-align: right;">${i > 0 ? '← Anterior' : ''}</span>
+                <span style="color: #999; flex: 0 0 auto;">Página ${i + 1} / ${totalPdfPages}</span>
+                <span style="cursor: pointer; flex: 1; text-align: left;">${i < totalPdfPages - 1 ? 'Próxima →' : ''}</span>
             `;
             pageDiv.appendChild(footerDiv);
 
@@ -458,12 +457,12 @@ export default function OfflineSetlistPage() {
             if (i > 0) doc.addPage();
             doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
 
-            // Links interativos
+            // Adiciona links interativos invisíveis sobre os textos de navegação
             if (i > 0) {
-                doc.link(60, 280, 20, 10, { pageNumber: i });
+                doc.link(60, 280, 25, 10, { pageNumber: i });
             }
             if (i < totalPdfPages - 1) {
-                doc.link(130, 280, 20, 10, { pageNumber: i + 2 });
+                doc.link(125, 280, 25, 10, { pageNumber: i + 2 });
             }
         }
 
