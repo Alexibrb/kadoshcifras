@@ -356,12 +356,20 @@ export default function OfflineSetlistPage() {
         tempContainer.style.backgroundColor = 'white';
         document.body.appendChild(tempContainer);
 
-        const totalPdfPages = allSections.length;
+        // Se showChords for false, exportamos música por música (contínuo)
+        // Se showChords for true, exportamos seção por seção (slides)
+        const pagesToProcess = showChords ? allSections : offlineData.songs.map((s, i) => ({ 
+            songIndex: i, 
+            content: s.content,
+            partIndex: 0 // No modo contínuo, tratamos como uma parte única
+        }));
+
+        const totalPdfPages = pagesToProcess.length;
 
         for (let i = 0; i < totalPdfPages; i++) {
-            const section = allSections[i];
-            const song = offlineData.songs[section.songIndex];
-            const transpose = transpositions[section.songIndex] ?? 0;
+            const pageInfo = pagesToProcess[i];
+            const song = offlineData.songs[pageInfo.songIndex];
+            const transpose = transpositions[pageInfo.songIndex] ?? 0;
 
             const pageDiv = document.createElement('div');
             pageDiv.style.width = '210mm';
@@ -380,7 +388,7 @@ export default function OfflineSetlistPage() {
             header.innerHTML = `
                 <div style="font-family: serif; font-size: 20pt; font-weight: bold; color: #9f50e5;">${song.title}</div>
                 <div style="font-family: serif; font-size: 12pt; color: #666;">${song.artist} | Tom: ${song.key ? transposeChord(song.key, transpose) : 'N/A'}</div>
-                <div style="font-size: 9pt; color: #999; margin-top: 5px;">Seção ${section.partIndex + 1} de ${allSections.filter(s => s.songIndex === section.songIndex).length}</div>
+                <div style="font-size: 9pt; color: #999; margin-top: 5px;">${showChords ? `Seção ${pageInfo.partIndex + 1} de ${allSections.filter(s => s.songIndex === pageInfo.songIndex).length}` : `Música ${pageInfo.songIndex + 1} de ${offlineData.songs.length}`}</div>
             `;
             pageDiv.appendChild(header);
 
@@ -389,12 +397,13 @@ export default function OfflineSetlistPage() {
             contentDiv.style.fontFamily = 'monospace';
             contentDiv.style.fontSize = `${fontSize * 1.2}px`;
             
-            const content = transposeContent(section.content, transpose);
+            // No modo contínuo, removemos as quebras triplas para não gerar espaços vazios gigantes
+            const rawContent = showChords ? pageInfo.content : pageInfo.content.replace(/\n\s*\n\s*\n/g, '\n\n');
+            const content = transposeContent(rawContent, transpose);
             const lines = content.split('\n');
             
             lines.forEach(line => {
                 const isChord = isChordLine(line);
-                // Se o usuário ocultou as cifras, pulamos as linhas de acordes no PDF também
                 if (isChord && !showChords) return;
 
                 const p = document.createElement('p');
@@ -418,17 +427,20 @@ export default function OfflineSetlistPage() {
             footerDiv.style.bottom = '10mm';
             footerDiv.style.left = '0';
             footerDiv.style.right = '0';
-            footerDiv.style.textAlign = 'center';
             footerDiv.style.fontSize = '10pt';
             footerDiv.style.color = '#9f50e5';
             footerDiv.style.borderTop = '1px solid #eee';
             footerDiv.style.paddingTop = '5mm';
             footerDiv.style.margin = '0 20mm';
+            footerDiv.style.display = 'flex';
+            footerDiv.style.justifyContent = 'center';
+            footerDiv.style.alignItems = 'center';
+            footerDiv.style.gap = '15mm';
             
             footerDiv.innerHTML = `
-                <span style="cursor: pointer; margin-right: 15mm;">${i > 0 ? '← Anterior' : ''}</span>
+                <span style="cursor: pointer; min-width: 30mm; text-align: right;">${i > 0 ? '← Anterior' : ''}</span>
                 <span style="color: #999;">Página ${i + 1} / ${totalPdfPages}</span>
-                <span style="cursor: pointer; margin-left: 15mm;">${i < totalPdfPages - 1 ? 'Próxima →' : ''}</span>
+                <span style="cursor: pointer; min-width: 30mm; text-align: left;">${i < totalPdfPages - 1 ? 'Próxima →' : ''}</span>
             `;
             pageDiv.appendChild(footerDiv);
 
@@ -448,19 +460,19 @@ export default function OfflineSetlistPage() {
 
             // Links interativos
             if (i > 0) {
-                doc.link(20, 280, 40, 10, { pageNumber: i });
+                doc.link(60, 280, 20, 10, { pageNumber: i });
             }
             if (i < totalPdfPages - 1) {
-                doc.link(150, 280, 40, 10, { pageNumber: i + 2 });
+                doc.link(130, 280, 20, 10, { pageNumber: i + 2 });
             }
         }
 
-        doc.save(`${offlineData.name}.pdf`);
+        doc.save(`${offlineData.name}${!showChords ? '_Letras' : ''}.pdf`);
         document.body.removeChild(tempContainer);
         
         toast({
             title: "PDF Gerado!",
-            description: "O arquivo interativo foi baixado com sucesso."
+            description: "O arquivo foi baixado com sucesso."
         });
     } catch (e) {
         console.error("Erro ao gerar PDF:", e);
