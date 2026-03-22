@@ -71,7 +71,7 @@ export default function SongPage() {
   
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
-  const [scrollSpeed, setScrollSpeed] = useState(20);
+  const [scrollSpeed, setScrollSpeed] = useState(10);
   const lastScrollTime = useRef<number>(0);
   const scrollPosRef = useRef<number>(0);
   const requestRef = useRef<number>(null);
@@ -305,9 +305,9 @@ export default function SongPage() {
                         <Button asChild variant="outline" size="icon" className="shrink-0">
                             <Link href={backUrl}><ArrowLeft className="h-4 w-4" /><span className="sr-only">Voltar</span></Link>
                         </Button>
-                        <div className="flex-1 space-y-1">
+                        <div className="flex-1 space-y-1 text-center">
                             <h1 className="text-sm font-bold text-muted-foreground uppercase tracking-widest truncate">{song.title}</h1>
-                            <div className="flex flex-row items-center gap-2">
+                            <div className="flex flex-row items-center justify-center gap-2">
                                 <Button variant="outline" onClick={() => { setIsEditing(true); setIsMetadataExpanded(false); }} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-8 text-xs">
                                     <Edit className="mr-1.5 h-3 w-3" /> Editar
                                 </Button>
@@ -339,9 +339,9 @@ export default function SongPage() {
                     </div>
                   </>
                ) : (
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center justify-between gap-4 h-8">
                        <Button asChild variant="outline" size="icon" className="shrink-0 h-8 w-8"><Link href={backUrl}><ArrowLeft className="h-4 w-4" /></Link></Button>
-                       <div className="flex flex-col items-center overflow-hidden">
+                       <div className="flex flex-col items-center overflow-hidden flex-1">
                           <h1 className="text-base font-bold font-headline tracking-tight truncate w-full text-center">{song.title}</h1>
                        </div>
                        <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0 h-8 w-8"><PanelTopOpen className="h-5 w-5" /></Button>
@@ -468,7 +468,7 @@ export default function SongPage() {
             <div className="max-w-screen-xl mx-auto flex flex-row items-center gap-4 w-full p-2 rounded-md border bg-muted/30 shadow-sm">
                 <div className="flex items-center gap-2">
                     {!isContinuousMode && showChords ? (
-                        <Button size="sm" variant="default" onClick={toggleAutoScroll} className="h-8 gap-2">
+                        <Button size="sm" variant="default" onClick={toggleAutoScroll} className="h-8 gap-2 px-6">
                             <Play className="h-4 w-4" /><span className="text-[10px] md:text-xs font-bold">Rolagem</span>
                         </Button>
                     ) : (

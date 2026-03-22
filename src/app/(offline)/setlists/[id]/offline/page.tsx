@@ -115,7 +115,7 @@ export default function OfflineSetlistPage() {
 
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
-  const [scrollSpeed, setScrollSpeed] = useState(20);
+  const [scrollSpeed, setScrollSpeed] = useState(10);
 
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', {
     prevPage: ',',
@@ -265,9 +265,7 @@ export default function OfflineSetlistPage() {
     if (!offlineData) return [];
     const sections: Section[] = [];
     offlineData.songs.forEach((song, songIndex) => {
-        // Normaliza as quebras de linha para garantir consistência entre dispositivos (Windows \r\n vs Unix \n)
         const normalizedContent = song.content.replace(/\r\n/g, '\n');
-        // Divide por 3 ou mais quebras de linha (com espaços opcionais)
         const parts = normalizedContent.split(/\n[\r\t ]*\n[\r\t ]*\n+/);
         
         parts.forEach((part, partIndex) => {
@@ -528,11 +526,11 @@ export default function OfflineSetlistPage() {
                   <Button asChild variant="outline" size="icon" className="shrink-0">
                     <Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /><span className="sr-only">Voltar</span></Link>
                   </Button>
-                  <div className="flex-1 space-y-1">
+                  <div className="flex-1 space-y-1 text-center">
                     <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight truncate">
                        {currentSong.title}
                     </h1>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center gap-2">
                       <Badge variant="outline" className="text-xs">Modo Offline</Badge>
                       {isWakeLockActive ? <Sun className="h-3 w-3 text-yellow-500" /> : <Moon className="h-3 w-3 text-muted-foreground" />}
                     </div>
@@ -568,9 +566,9 @@ export default function OfflineSetlistPage() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center justify-between gap-4 h-8">
                 <Button asChild variant="outline" size="icon" className="shrink-0 h-8 w-8"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
-                <div className="flex flex-col items-center overflow-hidden">
+                <div className="flex flex-col items-center overflow-hidden flex-1">
                   <h1 className="text-base font-bold font-headline tracking-tight truncate w-full text-center">
                      {currentSong.title}
                   </h1>
@@ -658,7 +656,7 @@ export default function OfflineSetlistPage() {
                           size="sm" 
                           variant="default" 
                           onClick={toggleAutoScroll}
-                          className="h-8 gap-2"
+                          className="h-8 gap-2 px-6"
                       >
                           <Play className="h-4 w-4" />
                           <span className="text-[10px] md:text-xs font-bold">Rolagem</span>
