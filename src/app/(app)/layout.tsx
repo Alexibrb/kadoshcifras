@@ -79,8 +79,8 @@ function Header() {
                         </DropdownMenu>
                     </div>
                 </div>
-                {/* Linha 2: Navegação */}
-                <nav className="flex items-center justify-center space-x-1 mt-1 overflow-x-auto pb-1 scrollbar-hide">
+                {/* Linha 2: Navegação (Apenas Ícones) */}
+                <nav className="flex items-center justify-center space-x-2 mt-1 overflow-x-auto pb-1 scrollbar-hide">
                    {navLinks.map(link => {
                        const isActive = pathname === link.href || (link.href !== '/dashboard' && pathname.startsWith(link.href));
                        return (
@@ -88,15 +88,14 @@ function Header() {
                              key={link.href}
                              asChild
                              variant={isActive ? 'secondary' : 'ghost'}
-                             size="sm"
+                             size="icon"
                              className={cn(
-                                "h-9 px-3 gap-2 hover:bg-primary/10 hover:text-primary transition-colors shrink-0",
+                                "h-9 w-9 hover:bg-primary/10 hover:text-primary transition-colors shrink-0",
                                 isActive && "bg-primary/15 text-primary"
                               )}
                            >
-                               <Link href={link.href}>
-                                   <link.icon className="h-4 w-4" />
-                                   <span className="text-xs font-semibold">{link.label}</span>
+                               <Link href={link.href} title={link.label}>
+                                   <link.icon className="h-5 w-5" />
                                </Link>
                            </Button>
                        )
@@ -108,15 +107,14 @@ function Header() {
                              key={link.href}
                              asChild
                              variant={isActive ? 'secondary' : 'ghost'}
-                             size="sm"
+                             size="icon"
                              className={cn(
-                                "h-9 px-3 gap-2 hover:bg-primary/10 hover:text-primary transition-colors shrink-0",
+                                "h-9 w-9 hover:bg-primary/10 hover:text-primary transition-colors shrink-0",
                                 isActive && "bg-primary/15 text-primary"
                               )}
                            >
-                               <Link href={link.href}>
-                                   <link.icon className="h-4 w-4" />
-                                   <span className="text-xs font-semibold">{link.label}</span>
+                               <Link href={link.href} title={link.label}>
+                                   <link.icon className="h-5 w-5" />
                                </Link>
                            </Button>
                        )
@@ -164,10 +162,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             <Skeleton className="h-8 w-8 rounded-full" />
                           </div>
                        </div>
-                        <div className="flex items-center justify-center gap-2 h-9">
-                          <Skeleton className="h-8 w-20 rounded-md" />
-                          <Skeleton className="h-8 w-20 rounded-md" />
-                          <Skeleton className="h-8 w-20 rounded-md" />
+                        <div className="flex items-center justify-center gap-4 h-9">
+                          <Skeleton className="h-8 w-8 rounded-md" />
+                          <Skeleton className="h-8 w-8 rounded-md" />
+                          <Skeleton className="h-8 w-8 rounded-md" />
+                          <Skeleton className="h-8 w-8 rounded-md" />
                         </div>
                     </div>
                 </header>
