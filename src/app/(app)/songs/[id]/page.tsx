@@ -75,7 +75,7 @@ export default function SongPage() {
   const [transpose, setTranspose] = useState(initialTranspose);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [api, setApi] = useState<CarouselApi>()
-  const [current, setCurrent] = useState(0)
+  const [current, setCurrent] = useState(1)
   const [count, setCount] = useState(0)
   const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', true);
   const [toneSaveSuccess, setToneSaveSuccess] = useState(false);
@@ -133,13 +133,13 @@ export default function SongPage() {
   }, [song, initialTranspose, fromSetlistId, setlist, songId]);
 
   useEffect(() => {
-    if (!api) return;
+    if (!api || isContinuousMode) return;
     setCount(api.scrollSnapList().length)
     setCurrent(api.selectedScrollSnap() + 1)
     api.on("select", () => {
       setCurrent(api.selectedScrollSnap() + 1)
     })
-  }, [api])
+  }, [api, isContinuousMode])
 
   const animateScroll = useCallback((time: number) => {
     if (lastScrollTime.current > 0 && scrollAreaRef.current) {
@@ -217,8 +217,8 @@ export default function SongPage() {
       },
       {
         root: scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]'),
-        threshold: 0.1,
-        rootMargin: '-10% 0px -80% 0px'
+        threshold: 0,
+        rootMargin: '-10% 0px -85% 0px'
       }
     );
 
@@ -241,11 +241,12 @@ export default function SongPage() {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
     
+    // O carrossel precisa de um pequeno delay para ser remontado antes do scroll
     setTimeout(() => {
       if (api) {
-        api.scrollTo(current - 1, true);
+        api.scrollTo(current - 1, false);
       }
-    }, 50);
+    }, 150);
   }, [api, current]);
 
   const handleKeyDown = useCallback(
@@ -267,9 +268,6 @@ export default function SongPage() {
         if (key === pedalSettings.prevSong) {
             event.preventDefault();
             if (isContinuousMode) {
-                // No pedal, se for configurado pra parar, pedimos confirmação via UI ou apenas paramos?
-                // Como não tem como mostrar o dialog via atalho de teclado facilmente sem quebrar o fluxo,
-                // vamos apenas pausar a rolagem.
                 setIsAutoScrolling(false);
             }
             return;

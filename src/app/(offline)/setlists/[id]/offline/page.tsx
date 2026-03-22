@@ -305,6 +305,7 @@ export default function OfflineSetlistPage() {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const songIndex = parseInt(entry.target.getAttribute('data-song-index') || '0', 10);
+            // Encontra a primeira seção dessa música no array allSections para sincronizar com o carrossel
             const sectionIndex = allSections.findIndex(s => s.songIndex === songIndex);
             if (sectionIndex !== -1) {
               setCurrentSectionIndex(sectionIndex);
@@ -351,11 +352,12 @@ export default function OfflineSetlistPage() {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
     
+    // O Carousel precisa de um tempo para ser remontado após sair do modo contínuo
     setTimeout(() => {
       if (api) {
-        api.scrollTo(currentSectionIndex, true);
+        api.scrollTo(currentSectionIndex, false);
       }
-    }, 50);
+    }, 150);
   }, [api, currentSectionIndex]);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
