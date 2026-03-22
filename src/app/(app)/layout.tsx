@@ -1,4 +1,3 @@
-
 'use client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -180,7 +179,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col">
-        <Header />
+        {!isSongDisplayPage && <Header />}
         <main className="flex-1">
             {children}
         </main>
