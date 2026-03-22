@@ -130,7 +130,7 @@ function Footer() {
         <footer className="w-full bg-background border-t py-6">
             <div className="container flex flex-col items-center justify-center gap-2">
                 <p className="text-sm text-muted-foreground">
-                    CifrasKadosh • Versão 1.0.2025
+                    CifrasKadosh • Versão 2.0.2026
                 </p>
                 <p className="text-[10px] uppercase tracking-widest text-muted-foreground/50">
                     Desenvolvido por Alex Alves
