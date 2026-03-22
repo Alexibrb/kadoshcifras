@@ -155,22 +155,19 @@ export default function OfflineSetlistPage() {
     }
   }, []);
 
-  // Animação de Rolagem Automática Corrigida
   const animateScroll = useCallback((time: number) => {
     if (lastScrollTime.current && scrollAreaRef.current) {
         const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
         if (viewport) {
             const deltaTime = (time - lastScrollTime.current) / 1000;
-            // Velocidade: 1 no slider = ~2px/seg, 100 no slider = ~200px/seg
             const pixelsPerSecond = scrollSpeed * 2;
             const pixelsToMove = pixelsPerSecond * deltaTime;
             
             scrollPosRef.current += pixelsToMove;
             
-            // Só aplica o scroll se tivermos pelo menos 0.5 pixel acumulado para manter fluidez
             if (scrollPosRef.current >= 0.5) {
                 viewport.scrollTop += scrollPosRef.current;
-                scrollPosRef.current = 0; // Reinicia o acumulador após aplicar
+                scrollPosRef.current = 0;
             }
         }
     }
@@ -425,8 +422,27 @@ export default function OfflineSetlistPage() {
             const canvas = await html2canvas(pageDiv, { scale: 2, useCORS: true, backgroundColor: 'white' });
             const imgData = canvas.toDataURL('image/jpeg', 0.95);
             if (i === 0) doc = new jsPDF({ orientation: widthMM > heightMM ? 'l' : 'p', unit: 'mm', format: [widthMM, heightMM] });
-            else doc.addPage([widthMM, heightMM], widthMM > heightMM ? 'l' : 'p');
+            else {
+              doc.addPage([widthMM, heightMM], widthMM > heightMM ? 'l' : 'p');
+            }
+
+            const pageNum = i + 1;
+            const targetPrev = pageNum > 1 ? pageNum - 1 : 1;
+            const targetNext = pageNum < totalPdfPages ? pageNum + 1 : totalPdfPages;
+
             doc.addImage(imgData, 'JPEG', 0, 0, widthMM, heightMM);
+
+            doc.setFontSize(10);
+            doc.setTextColor(150);
+            doc.text(`Página ${pageNum} de ${totalPdfPages}`, widthMM / 2, heightMM - 10, { align: 'center' });
+
+            doc.setTextColor(159, 80, 229);
+            doc.setFontSize(12);
+            doc.text('← Anterior', (widthMM / 2) - 40, heightMM - 20, { align: 'center' });
+            doc.link((widthMM / 2) - 55, heightMM - 25, 30, 10, { pageNumber: targetPrev });
+
+            doc.text('Próxima →', (widthMM / 2) + 40, heightMM - 20, { align: 'center' });
+            doc.link((widthMM / 2) + 25, heightMM - 25, 30, 10, { pageNumber: targetNext });
         }
         doc.save(`${offlineData.name}.pdf`);
         document.body.removeChild(tempContainer);
@@ -456,87 +472,88 @@ export default function OfflineSetlistPage() {
 
   return (
     <div ref={containerRef} className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen outline-none bg-background" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
-      <Card className="mb-4 bg-accent/10 transition-all duration-300">
-            <CardContent className="p-4 space-y-4">
-              {isPanelVisible ? (
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <Button asChild variant="outline" size="icon" className="shrink-0">
-                      <Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /><span className="sr-only">Voltar</span></Link>
-                    </Button>
-                    <div className="flex-1 space-y-1">
-                      <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight truncate">{showChords ? currentSong.title : offlineData.name}</h1>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">Modo Offline</Badge>
-                        {isWakeLockActive ? <Sun className="h-3 w-3 text-yellow-500" /> : <Moon className="h-3 w-3 text-muted-foreground" />}
+      <div className="flex flex-col gap-2 mb-4">
+        <Card className="bg-accent/10 transition-all duration-300">
+          <CardContent className="p-4 space-y-4">
+            {isPanelVisible ? (
+              <div className="flex flex-col gap-4">
+                <div className="flex items-start justify-between gap-4">
+                  <Button asChild variant="outline" size="icon" className="shrink-0">
+                    <Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /><span className="sr-only">Voltar</span></Link>
+                  </Button>
+                  <div className="flex-1 space-y-1">
+                    <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight truncate">{showChords ? currentSong.title : offlineData.name}</h1>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">Modo Offline</Badge>
+                      {isWakeLockActive ? <Sun className="h-3 w-3 text-yellow-500" /> : <Moon className="h-3 w-3 text-muted-foreground" />}
+                    </div>
+                  </div>
+                  <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon" className="shrink-0"><PanelTopClose className="h-5 w-5" /><span className="sr-only">Ocultar</span></Button>
+                </div>
+              
+                <div className="flex flex-col gap-2">
+                  <div className="flex flex-row items-center gap-2 w-full">
+                     <div className="flex items-center gap-1 rounded-md border p-1 flex-1 bg-background overflow-hidden h-10">
+                          <Button variant="ghost" size="icon" onClick={() => changeTranspose(-1)} className="h-8 w-8 shrink-0"><Minus className="h-4 w-4" /></Button>
+                          <Badge variant="secondary" className="px-2 py-1 text-[10px] md:text-xs whitespace-nowrap flex-grow text-center justify-center">
+                              Tom: {displayedKey}
+                          </Badge>
+                          <Button variant="ghost" size="icon" onClick={() => changeTranspose(1)} className="h-8 w-8 shrink-0"><Plus className="h-4 w-4" /></Button>
                       </div>
-                    </div>
-                    <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon" className="shrink-0"><PanelTopClose className="h-5 w-5" /><span className="sr-only">Ocultar</span></Button>
+                      <div className="flex items-center justify-between space-x-2 rounded-md border p-1 px-3 bg-background h-10 flex-1">
+                          <Label htmlFor="show-chords" className="text-[10px] md:text-xs font-semibold whitespace-nowrap">Cifras</Label>
+                          <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
+                      </div>
                   </div>
-                
-                  <div className="flex flex-col gap-2">
-                    {/* Linha 1: Tom e Cifras - Flex Row Fixo */}
-                    <div className="flex flex-row items-center gap-2 w-full">
-                       <div className="flex items-center gap-1 rounded-md border p-1 flex-1 bg-background overflow-hidden h-10">
-                            <Button variant="ghost" size="icon" onClick={() => changeTranspose(-1)} className="h-8 w-8 shrink-0"><Minus className="h-4 w-4" /></Button>
-                            <Badge variant="secondary" className="px-2 py-1 text-[10px] md:text-xs whitespace-nowrap flex-grow text-center justify-center">
-                                Tom: {displayedKey}
-                            </Badge>
-                            <Button variant="ghost" size="icon" onClick={() => changeTranspose(1)} className="h-8 w-8 shrink-0"><Plus className="h-4 w-4" /></Button>
-                        </div>
-                        <div className="flex items-center justify-between space-x-2 rounded-md border p-1 px-3 bg-background h-10 flex-1">
-                            <Label htmlFor="show-chords" className="text-[10px] md:text-xs font-semibold whitespace-nowrap">Cifras</Label>
-                            <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
-                        </div>
-                    </div>
 
-                    {/* Linha 2: Tela e PDF - Flex Row Fixo */}
-                    <div className="flex flex-row items-center gap-2 w-full">
-                        <div className="flex items-center justify-between space-x-2 rounded-md border p-1 px-3 bg-background h-10 flex-1">
-                            <Label htmlFor="keep-awake" className="text-[10px] md:text-xs font-semibold whitespace-nowrap">Tela Acesa</Label>
-                            <Switch id="keep-awake" checked={keepAwake} onCheckedChange={(val) => { setKeepAwake(val); if (val) requestWakeLock(true); }} />
-                        </div>
-                        <Button onClick={handleExportPDF} variant="outline" className="h-10 flex-1 text-[10px] md:text-xs font-semibold" disabled={isGeneratingPDF}>
-                          {isGeneratingPDF ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <FileDown className="mr-1 h-3 w-3" />}
-                          <span>Exportar PDF</span>
-                        </Button>
-                    </div>
-
-                    {/* Linha 3: Rolagem Automática */}
-                    <div className="flex flex-row items-center gap-4 w-full p-2 rounded-md border bg-background/50">
-                        <div className="flex items-center gap-2">
-                            <Button 
-                                size="icon" 
-                                variant={isAutoScrolling ? "destructive" : "default"} 
-                                onClick={() => setIsAutoScrolling(!isAutoScrolling)}
-                                className="h-8 w-8"
-                            >
-                                {isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                            </Button>
-                            <Label className="text-[10px] md:text-xs font-bold whitespace-nowrap">Rolagem</Label>
-                        </div>
-                        <div className="flex-1 flex items-center gap-2">
-                            <Zap className="h-3 w-3 text-yellow-500" />
-                            <Slider value={[scrollSpeed]} onValueChange={(val) => setScrollSpeed(val[0])} max={100} min={1} step={1} className="flex-1" />
-                            <span className="text-[10px] font-mono w-6">{scrollSpeed}</span>
-                        </div>
-                    </div>
+                  <div className="flex flex-row items-center gap-2 w-full">
+                      <div className="flex items-center justify-between space-x-2 rounded-md border p-1 px-3 bg-background h-10 flex-1">
+                          <Label htmlFor="keep-awake" className="text-[10px] md:text-xs font-semibold whitespace-nowrap">Tela Acesa</Label>
+                          <Switch id="keep-awake" checked={keepAwake} onCheckedChange={(val) => { setKeepAwake(val); if (val) requestWakeLock(true); }} />
+                      </div>
+                      <Button onClick={handleExportPDF} variant="outline" className="h-10 flex-1 text-[10px] md:text-xs font-semibold" disabled={isGeneratingPDF}>
+                        {isGeneratingPDF ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <FileDown className="mr-1 h-3 w-3" />}
+                        <span>Exportar PDF</span>
+                      </Button>
                   </div>
                 </div>
-              ) : (
-                <div className="flex items-center justify-between gap-4">
-                  <Button asChild variant="outline" size="icon" className="shrink-0"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
-                  <div className="flex flex-col items-center overflow-hidden">
-                    <h1 className="text-lg font-bold font-headline tracking-tight truncate w-full text-center">
-                       {showChords ? currentSong.title : offlineData.name}
-                    </h1>
-                    {isAutoScrolling && <p className="text-[10px] text-primary font-bold uppercase tracking-widest flex items-center gap-1"><Zap className="h-2 w-2" /> Rolando: {scrollSpeed}</p>}
-                  </div>
-                  <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0"><PanelTopOpen className="h-5 w-5" /></Button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-4">
+                <Button asChild variant="outline" size="icon" className="shrink-0"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
+                <div className="flex flex-col items-center overflow-hidden">
+                  <h1 className="text-lg font-bold font-headline tracking-tight truncate w-full text-center">
+                     {showChords ? currentSong.title : offlineData.name}
+                  </h1>
+                  {isAutoScrolling && <p className="text-[10px] text-primary font-bold uppercase tracking-widest flex items-center gap-1"><Zap className="h-2 w-2" /> Rolando: {scrollSpeed}</p>}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0"><PanelTopOpen className="h-5 w-5" /></Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Painel de Rolagem Automática sempre visível abaixo do card principal */}
+        <div className="flex flex-row items-center gap-4 w-full p-2 rounded-md border bg-background/50 shadow-sm">
+            <div className="flex items-center gap-2">
+                <Button 
+                    size="icon" 
+                    variant={isAutoScrolling ? "destructive" : "default"} 
+                    onClick={() => setIsAutoScrolling(!isAutoScrolling)}
+                    className="h-8 w-8"
+                >
+                    {isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </Button>
+                <Label className="text-[10px] md:text-xs font-bold whitespace-nowrap">Rolagem</Label>
+            </div>
+            <div className="flex-1 flex items-center gap-2">
+                <Zap className="h-3 w-3 text-yellow-500" />
+                <Slider value={[scrollSpeed]} onValueChange={(val) => setScrollSpeed(val[0])} max={100} min={1} step={1} className="flex-1" />
+                <span className="text-[10px] font-mono w-6">{scrollSpeed}</span>
+            </div>
+        </div>
+      </div>
+
       <div className="flex-1 flex flex-col min-h-0 relative">
         {isAutoScrolling || !showChords ? (
           <Card className="flex-1 flex flex-col bg-white dark:bg-black shadow-none border-none overflow-hidden">
