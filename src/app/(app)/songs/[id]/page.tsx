@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Song, type MetadataItem, Setlist, SetlistSong, PedalSettings, ColorSettings } from '@/types';
-import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, HardDriveDownload, Eye, EyeOff, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Check, File, Music } from 'lucide-react';
+import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, HardDriveDownload, Eye, EyeOff, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Check, File, Music, Play, Pause, X, Zap, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -27,7 +27,6 @@ import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
 import { useAuth } from '@/hooks/use-auth';
 
-
 const ALL_KEYS = [
     'C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B',
     'Cm', 'C#m', 'Dbm', 'Dm', 'D#m', 'Ebm', 'Em', 'Fm', 'F#m', 'Gbm', 'Gm', 'G#m', 'Abm', 'Am', 'A#m', 'Bbm', 'Bm'
@@ -45,6 +44,7 @@ export default function SongPage() {
   
   const { data: song, loading: loadingSong, updateDocument: updateSongDoc } = useFirestoreDocument<Song>('songs', songId);
   const { data: setlist, loading: loadingSetlist, updateDocument: updateSetlistDoc } = useFirestoreDocument<Setlist>('setlists', fromSetlistId || '');
+  
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', { 
     prevPage: ',', 
     nextPage: '.',
@@ -62,6 +62,15 @@ export default function SongPage() {
   const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', true);
   const [toneSaveSuccess, setToneSaveSuccess] = useState(false);
   
+  // Estados de Rolagem Automática
+  const [isContinuousMode, setIsContinuousMode] = useState(false);
+  const [isAutoScrolling, setIsAutoScrolling] = useState(false);
+  const [scrollSpeed, setScrollSpeed] = useState(20);
+  const lastScrollTime = useRef<number>(0);
+  const scrollPosRef = useRef<number>(0);
+  const requestRef = useRef<number>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
   const [editedSong, setEditedSong] = useState<Song | null>(null);
   
   const { data: artists, loading: loadingArtists } = useFirestoreCollection<MetadataItem>('artists', 'name');
@@ -69,7 +78,6 @@ export default function SongPage() {
   const { data: categories, loading: loadingCategories } = useFirestoreCollection<MetadataItem>('categories', 'name');
 
   const containerRef = useRef<HTMLDivElement>(null);
-  
   const initialKeyRef = useRef(song?.key);
 
   const finalFontSize = useMemo(() => appUser?.fontSize ?? 14, [appUser]);
@@ -81,13 +89,12 @@ export default function SongPage() {
         lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
         chordsColor: isDarkMode ? '#F59E0B' : '#000000',
     };
-    // Use appUser settings if they exist, otherwise use defaults
     const userSettings = appUser?.colorSettings;
     if (userSettings && userSettings.lyricsColor && userSettings.chordsColor) {
         return userSettings;
     }
     return defaultSettings;
-}, [appUser, isClient]);
+  }, [appUser, isClient]);
 
   useEffect(() => {
     setIsClient(true);
@@ -109,18 +116,47 @@ export default function SongPage() {
   }, [song, initialTranspose, fromSetlistId, setlist, songId]);
 
   useEffect(() => {
-    if (!api) {
-      return
-    }
-
+    if (!api) return;
     setCount(api.scrollSnapList().length)
     setCurrent(api.selectedScrollSnap() + 1)
-
     api.on("select", () => {
       setCurrent(api.selectedScrollSnap() + 1)
     })
   }, [api])
-  
+
+  // Lógica de Animação da Rolagem
+  const animateScroll = useCallback((time: number) => {
+    if (lastScrollTime.current && scrollAreaRef.current) {
+        const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
+        if (viewport) {
+            const deltaTime = (time - lastScrollTime.current) / 1000;
+            const pixelsPerSecond = scrollSpeed * 2;
+            const pixelsToMove = pixelsPerSecond * deltaTime;
+            
+            scrollPosRef.current += pixelsToMove;
+            
+            if (scrollPosRef.current >= 0.5) {
+                viewport.scrollTop += scrollPosRef.current;
+                scrollPosRef.current = 0;
+            }
+        }
+    }
+    lastScrollTime.current = time;
+    requestRef.current = requestAnimationFrame(animateScroll);
+  }, [scrollSpeed]);
+
+  useEffect(() => {
+    if (isAutoScrolling) {
+        lastScrollTime.current = performance.now();
+        scrollPosRef.current = 0;
+        requestRef.current = requestAnimationFrame(animateScroll);
+    } else {
+        if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    }
+    return () => {
+        if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    }
+  }, [isAutoScrolling, animateScroll]);
 
   const { prevSongId, nextSongId, prevTranspose, nextTranspose } = useMemo(() => {
     if (!fromSetlistId || !setlist || !setlist.songs || setlist.songs.length < 2) {
@@ -130,10 +166,8 @@ export default function SongPage() {
     if (currentIndex === -1) {
       return { prevSongId: null, nextSongId: null, prevTranspose: 0, nextTranspose: 0 };
     }
-
     const prev = currentIndex > 0 ? setlist.songs[currentIndex - 1] : null;
     const next = currentIndex < setlist.songs.length - 1 ? setlist.songs[currentIndex + 1] : null;
-
     return { 
         prevSongId: prev?.songId || null, 
         nextSongId: next?.songId || null,
@@ -141,7 +175,6 @@ export default function SongPage() {
         nextTranspose: next?.transpose || 0,
     };
   }, [setlist, songId, fromSetlistId]);
-
 
   const contentToDisplay = useMemo(() => {
     const currentContent = isEditing ? editedSong?.content : song?.content;
@@ -153,75 +186,82 @@ export default function SongPage() {
     return contentToDisplay.split(/\n\s*\n\s*\n/);
   }, [contentToDisplay]);
 
-  const handleStartEditing = () => {
-    if (!song) return;
-    setEditedSong({ ...song });
-    setIsEditing(true);
-    setIsPanelVisible(true);
-  }
+  const toggleAutoScroll = () => {
+    if (!isContinuousMode) {
+        setIsContinuousMode(true);
+        setIsAutoScrolling(true);
+    } else {
+        setIsAutoScrolling(!isAutoScrolling);
+    }
+  };
+
+  const stopAutoScroll = () => {
+    setIsContinuousMode(false);
+    setIsAutoScrolling(false);
+  };
 
   const handleKeyDown = useCallback(
       (event: React.KeyboardEvent<HTMLDivElement>) => {
         if (isEditing) return;
-
         const key = event.key;
-        if (showChords && (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prevPage)) {
-          event.preventDefault()
-          api?.scrollPrev()
-        } else if (showChords && (key === "ArrowRight" || key === 'PageDown' || key === pedalSettings.nextPage)) {
-          event.preventDefault()
-          api?.scrollNext()
+
+        // Controle de Rolagem via Pedal
+        if (key === pedalSettings.nextSong) {
+            event.preventDefault();
+            if (isContinuousMode) {
+                stopAutoScroll();
+            } else {
+                setIsContinuousMode(true);
+                setIsAutoScrolling(true);
+            }
+            return;
         }
 
-        if (fromSetlistId && pedalSettings.prevSong && key === pedalSettings.prevSong && prevSongId) {
+        if (key === pedalSettings.prevSong) {
             event.preventDefault();
-            router.push(`/songs/${prevSongId}?fromSetlist=${fromSetlistId}&transpose=${prevTranspose}`);
-        } else if (fromSetlistId && pedalSettings.nextSong && key === pedalSettings.nextSong && nextSongId) {
-            event.preventDefault();
-            router.push(`/songs/${nextSongId}?fromSetlist=${fromSetlistId}&transpose=${nextTranspose}`);
+            if (isContinuousMode) {
+                setIsAutoScrolling(!isAutoScrolling);
+            }
+            return;
+        }
+
+        // Navegação de Página/Slide (apenas se não estiver rolando automaticamente)
+        if (!isAutoScrolling) {
+            if (showChords && (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prevPage)) {
+                event.preventDefault()
+                api?.scrollPrev()
+            } else if (showChords && (key === "ArrowRight" || key === 'PageDown' || key === pedalSettings.nextPage)) {
+                event.preventDefault()
+                api?.scrollNext()
+            }
         }
       },
-      [api, isEditing, showChords, pedalSettings, prevSongId, nextSongId, fromSetlistId, router, prevTranspose, nextTranspose]
+      [api, isEditing, showChords, pedalSettings, isContinuousMode, isAutoScrolling]
     )
   
   const handleSave = async () => {
     if (!editedSong || !editedSong.title || !editedSong.artist || !editedSong.category || !editedSong.genre) {
-      alert("Por favor, preencha todos os campos obrigatórios (Título, Artista, Categoria, Gênero).");
+      alert("Por favor, preencha todos os campos obrigatórios.");
       return;
     }
-    
     await updateSongDoc(editedSong);
-    
     setIsEditing(false);
   };
 
-  const handleCancelEditing = () => {
-    setEditedSong(song || null);
-    setIsEditing(false);
-    setTranspose(initialTranspose);
-  }
-
   const handleSaveTransposeToSetlist = useCallback(async () => {
     if (!fromSetlistId || !setlist || !setlist.songs) return;
-    
     const newSongs = setlist.songs.map(s => 
       s.songId === songId ? { ...s, transpose: transpose } : s
     );
-
     await updateSetlistDoc({ songs: newSongs });
-
     setToneSaveSuccess(true);
     setTimeout(() => setToneSaveSuccess(false), 2000);
-
   }, [fromSetlistId, setlist, songId, updateSetlistDoc, transpose]);
 
   const changeTranspose = (change: number) => {
     const newTranspose = Math.min(12, Math.max(-12, transpose + change));
     setTranspose(newTranspose);
   };
-
-  const increaseTranspose = () => changeTranspose(1);
-  const decreaseTranspose = () => changeTranspose(-1);
 
   if (isClient && !loadingSong && !song) {
     notFound();
@@ -242,12 +282,6 @@ export default function SongPage() {
     );
   }
 
-  const updateEditedSongField = (field: keyof Song, value: string | string[]) => {
-    if (editedSong) {
-        setEditedSong({ ...editedSong, [field]: value });
-    }
-  };
-
   const backUrl = fromSetlistId ? `/setlists/${fromSetlistId}` : '/songs';
 
   return (
@@ -257,250 +291,144 @@ export default function SongPage() {
       onKeyDownCapture={handleKeyDown} 
       tabIndex={-1}
     >
-      
       {!isEditing && (
-        <Card className="mb-4 bg-accent/10 transition-all duration-300">
-          <CardContent className="p-4 space-y-4">
-             {isPanelVisible ? (
-                <>
-                  <div className="flex items-start justify-between gap-4">
-                      <Button asChild variant="outline" size="icon" className="shrink-0">
-                          <Link href={backUrl}>
-                              <ArrowLeft className="h-4 w-4" />
-                              <span className="sr-only">Voltar</span>
-                          </Link>
-                      </Button>
+        <div className="flex flex-col gap-2 mb-4">
+          <Card className="bg-accent/10 transition-all duration-300">
+            <CardContent className="p-4 space-y-4">
+               {isPanelVisible ? (
+                  <>
+                    <div className="flex items-start justify-between gap-4">
+                        <Button asChild variant="outline" size="icon" className="shrink-0">
+                            <Link href={backUrl}><ArrowLeft className="h-4 w-4" /><span className="sr-only">Voltar</span></Link>
+                        </Button>
+                        <div className="flex-1 space-y-1">
+                            <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight truncate">{song.title}</h1>
+                            <div className="flex items-center gap-3 flex-wrap">
+                                <p className="text-muted-foreground text-sm">{song.artist}</p>
+                                {song.key && <Badge variant="outline" className="text-sm">Tom: {transposeChord(song.key, transpose)}</Badge>}
+                            </div>
+                            <div className="flex flex-row items-start gap-2 pt-1">
+                                <Button variant="outline" onClick={() => setIsEditing(true)} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-8 text-xs">
+                                    <Edit className="mr-1.5 h-3 w-3" /> Editar
+                                </Button>
+                                {song.url && (
+                                    <Button asChild variant="destructive" size="sm" className="h-8 text-xs">
+                                        <a href={song.url} target="_blank" rel="noopener noreferrer"><PlayCircle className="mr-1.5 h-3 w-3" /> Ouvir</a>
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                        <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon" className="shrink-0"><PanelTopClose className="h-5 w-5" /></Button>
+                    </div>
+                    <div className="flex flex-col sm:flex-row justify-center items-center gap-2 pt-2 flex-wrap">
+                        <div className="flex items-center gap-1 rounded-md border p-1 w-full max-w-sm bg-background">
+                          <Button variant="ghost" size="icon" onClick={() => changeTranspose(-1)} className="h-8 w-8"><Minus className="h-4 w-4" /></Button>
+                          <Badge variant="secondary" className="px-3 py-1 text-xs whitespace-nowrap flex-grow text-center justify-center">Tom: {transpose > 0 ? '+' : ''}{transpose}</Badge>
+                          <Button variant="ghost" size="icon" onClick={() => changeTranspose(1)} className="h-8 w-8"><Plus className="h-4 w-4" /></Button>
+                          {fromSetlistId && (
+                            <Button variant={toneSaveSuccess ? "default" : "outline"} size="sm" onClick={handleSaveTransposeToSetlist} className={cn("h-8 ml-2", toneSaveSuccess && "bg-green-500")}>
+                               {toneSaveSuccess ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+                               <span className="ml-2 hidden sm:inline">{toneSaveSuccess ? "Salvo!" : "Salvar Tom"}</span>
+                            </Button>
+                          )}
+                        </div>
+                         <div className="flex items-center justify-between space-x-2 rounded-md border p-1 px-3 bg-background h-10 w-full max-w-xs">
+                          <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
+                          <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
+                        </div>
+                    </div>
+                  </>
+               ) : (
+                  <div className="flex items-center justify-between gap-4">
+                       <Button asChild variant="outline" size="icon" className="shrink-0"><Link href={backUrl}><ArrowLeft className="h-4 w-4" /></Link></Button>
+                       <div className="flex flex-col items-center overflow-hidden">
+                          <h1 className="text-lg font-bold font-headline tracking-tight truncate w-full text-center">{song.title}</h1>
+                          {isAutoScrolling && <p className="text-[10px] text-primary font-bold uppercase tracking-widest flex items-center gap-1"><Zap className="h-2 w-2" /> Rolando: {scrollSpeed}</p>}
+                       </div>
+                       <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0"><PanelTopOpen className="h-5 w-5" /></Button>
+                  </div>
+               )}
+            </CardContent>
+          </Card>
 
-                      <div className="flex-1 space-y-1">
-                          <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight">{song.title}</h1>
-                          <div className="flex items-center gap-3 flex-wrap">
-                              <p className="text-muted-foreground text-sm">{song.artist}</p>
-                              {song.key && <Badge variant="outline" className="whitespace-nowrap text-sm">Tom: {transposeChord(song.key, transpose)}</Badge>}
-                          </div>
-                          <div className="flex flex-row items-start gap-2 pt-1">
-                              <Button variant="outline" onClick={handleStartEditing} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-8 text-xs">
-                                  <Edit className="mr-1.5 h-3 w-3" /> Editar
-                              </Button>
-                              {song.url && (
-                                  <Button asChild variant="destructive" size="sm" className="h-8 text-xs">
-                                      <a href={song.url} target="_blank" rel="noopener noreferrer">
-                                          <PlayCircle className="mr-1.5 h-3 w-3" /> Ouvir
-                                      </a>
-                                  </Button>
-                              )}
-                          </div>
-                      </div>
-                      
-                      <Button
-                        onClick={() => setIsPanelVisible(false)}
-                        variant="ghost"
-                        size="icon"
-                        className="shrink-0"
-                      >
-                        <PanelTopClose className="h-5 w-5" />
-                        <span className="sr-only">Ocultar Controles</span>
+          {/* Painel de Rolagem Automática */}
+          <div className="flex flex-row items-center gap-4 w-full p-2 rounded-md border bg-background/50 shadow-sm">
+              <div className="flex items-center gap-2">
+                  {!isContinuousMode && showChords ? (
+                      <Button size="sm" variant="default" onClick={toggleAutoScroll} className="h-8 gap-2">
+                          <Play className="h-4 w-4" /><span className="text-[10px] md:text-xs font-bold">Rolagem</span>
                       </Button>
-                  </div>
-                
-                  <div className="flex flex-col sm:flex-row justify-center items-center gap-2 pt-2 flex-wrap">
-                      <div className="flex items-center gap-1 rounded-md border p-1 w-full max-w-sm bg-background">
-                        <Button variant="ghost" size="icon" onClick={decreaseTranspose} className="h-8 w-8">
-                            <Minus className="h-4 w-4" />
-                        </Button>
-                        <Badge variant="secondary" className="px-3 py-1 text-xs whitespace-nowrap flex-grow text-center justify-center">
-                            Tom: {transpose > 0 ? '+' : ''}{transpose}
-                        </Badge>
-                        <Button variant="ghost" size="icon" onClick={increaseTranspose} className="h-8 w-8">
-                            <Plus className="h-4 w-4" />
-                        </Button>
-                        {fromSetlistId && (
-                          <Button 
-                            variant={toneSaveSuccess ? "default" : "outline"} 
-                            size="sm" 
-                            onClick={handleSaveTransposeToSetlist}
-                            className={cn("h-8 ml-2", toneSaveSuccess && "bg-green-500 hover:bg-green-600")}
-                          >
-                             {toneSaveSuccess ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-                             <span className="ml-2 hidden sm:inline">{toneSaveSuccess ? "Salvo!" : "Salvar Tom"}</span>
+                  ) : (
+                      <div className="flex items-center gap-2">
+                          <Button size="icon" variant={isAutoScrolling ? "destructive" : "default"} onClick={toggleAutoScroll} className="h-8 w-8">
+                              {isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                           </Button>
-                        )}
+                          {showChords && (
+                              <Button size="icon" variant="outline" onClick={stopAutoScroll} className="h-8 w-8"><X className="h-4 w-4" /></Button>
+                          )}
+                          <Label className="text-[10px] md:text-xs font-bold whitespace-nowrap">{isAutoScrolling ? "Rolando" : "Pausado"}</Label>
                       </div>
-                       <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 w-full max-w-xs">
-                        <Label htmlFor="show-chords" className="text-sm whitespace-nowrap">Mostrar Cifras</Label>
-                        <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} className="ml-auto" />
-                      </div>
+                  )}
+              </div>
+              {(isContinuousMode || !showChords) && (
+                  <div className="flex-1 flex items-center gap-2">
+                      <Zap className="h-3 w-3 text-yellow-500" />
+                      <Slider value={[scrollSpeed]} onValueChange={(val) => setScrollSpeed(val[0])} max={100} min={1} step={1} className="flex-1" />
+                      <span className="text-[10px] font-mono w-6">{scrollSpeed}</span>
                   </div>
-                </>
-             ) : (
-                <div className="flex items-center justify-between gap-4">
-                     <Button asChild variant="outline" size="icon" className="shrink-0">
-                          <Link href={backUrl}>
-                              <ArrowLeft className="h-4 w-4" />
-                              <span className="sr-only">Voltar</span>
-                          </Link>
-                      </Button>
-                       <h1 className="text-lg font-bold font-headline tracking-tight truncate">{song.title}</h1>
-                      <Button
-                        onClick={() => setIsPanelVisible(true)}
-                        variant="ghost"
-                        size="icon"
-                        className="shrink-0"
-                      >
-                        <PanelTopOpen className="h-5 w-5" />
-                        <span className="sr-only">Mostrar Controles</span>
-                      </Button>
-                </div>
-             )}
-          </CardContent>
-        </Card>
+              )}
+          </div>
+        </div>
       )}
       
       {isEditing && editedSong && (
         <div className="transition-all duration-300">
            <Card className="mb-4 bg-accent/10">
-              <CardContent className="p-4 space-y-4">
-                  <div className="flex items-start justify-between gap-4">
-                      <Button asChild variant="outline" size="icon" className="shrink-0">
-                          <Link href={backUrl}>
-                              <ArrowLeft className="h-4 w-4" />
-                              <span className="sr-only">Voltar</span>
-                          </Link>
-                      </Button>
-
-                      <div className="flex-1">
-                          <h1 className="text-lg font-bold font-headline tracking-tight">Editando: {song.title}</h1>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                          <Button variant="outline" onClick={handleCancelEditing} size="sm">Cancelar</Button>
-                          <Button onClick={handleSave} size="sm">
-                              <Save className="mr-2 h-4 w-4" /> Salvar
-                          </Button>
-                      </div>
-                  </div>
+              <CardContent className="p-4 flex items-center justify-between gap-4">
+                  <Button variant="outline" onClick={() => setIsEditing(false)} size="sm">Cancelar</Button>
+                  <h1 className="text-lg font-bold font-headline truncate flex-1 text-center">Editando: {song.title}</h1>
+                  <Button onClick={handleSave} size="sm"><Save className="mr-2 h-4 w-4" /> Salvar</Button>
               </CardContent>
            </Card>
-            <Card className="mb-4">
+           <Card className="mb-4">
                 <CardContent className="p-4 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="title">Título</Label>
-                        <Input id="title" value={editedSong.title} onChange={(e) => updateEditedSongField('title', e.target.value)} required/>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="artist">Artista</Label>
-                        <Select value={editedSong.artist} onValueChange={(value) => updateEditedSongField('artist', value)} required>
-                            <SelectTrigger><SelectValue placeholder="Selecione um artista" /></SelectTrigger>
-                            <SelectContent>
-                                {artists.map(art => <SelectItem key={art.id} value={art.name}>{art.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="category">Categoria</Label>
-                        <Select value={editedSong.category} onValueChange={(value) => updateEditedSongField('category', value)} required>
-                            <SelectTrigger><SelectValue placeholder="Selecione uma categoria" /></SelectTrigger>
-                            <SelectContent>
-                                {categories.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="genre">Gênero</Label>
-                        <Select value={editedSong.genre} onValueChange={(value) => updateEditedSongField('genre', value)} required>
-                            <SelectTrigger><SelectValue placeholder="Selecione um gênero" /></SelectTrigger>
-                            <SelectContent>
-                              {genres.map(g => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="key">Tom</Label>
-                        <Select 
-                            value={editedSong.key} 
-                            onValueChange={(v) => updateEditedSongField('key', v)}
-                        >
-                            <SelectTrigger><SelectValue placeholder="Selecione um tom" /></SelectTrigger>
-                            <SelectContent>
-                                {ALL_KEYS.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="url">URL da Música</Label>
-                        <Input id="url" value={editedSong.url ?? ''} onChange={(e) => updateEditedSongField('url', e.target.value)} placeholder="https://..." />
-                    </div>
+                    <div className="space-y-1"><Label>Título</Label><Input value={editedSong.title} onChange={(e) => setEditedSong({...editedSong, title: e.target.value})} /></div>
+                    <div className="space-y-1"><Label>Artista</Label><Input value={editedSong.artist} onChange={(e) => setEditedSong({...editedSong, artist: e.target.value})} /></div>
+                    <div className="space-y-1"><Label>Tom</Label><Select value={editedSong.key} onValueChange={(v) => setEditedSong({...editedSong, key: v})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{ALL_KEYS.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}</SelectContent></Select></div>
                 </CardContent>
             </Card>
         </div>
       )}
 
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 relative">
         {isEditing && editedSong ? (
-          <Card className="flex-1 flex flex-col bg-transparent shadow-none border-none">
-            <CardContent className="p-4 md:p-6 space-y-4 flex-1 flex flex-col">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="content-editor">Letra & Cifras</Label>
-                  <Button onClick={handleSave} size="sm">
-                      <Save className="mr-2 h-4 w-4" /> Salvar
-                  </Button>
-                </div>
-                <Alert variant="destructive" className="p-3">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-xs">
-                    Use duas linhas em branco para dividir a música em várias páginas/seções.
-                  </AlertDescription>
-                </Alert>
-                <Textarea
-                  id="content-editor"
-                  value={editedSong.content || ''}
-                  onChange={(e) => {
-                    if (editedSong) {
-                      updateEditedSongField('content', e.target.value);
-                    }
-                  }}
-                  className="font-code w-full"
-                  style={{ 
-                      whiteSpace: 'pre', 
-                      overflowX: 'auto', 
-                      height: '1500px'
-                  }}
-                  required
-                />
-                <div className="flex justify-end mt-4">
-                  <Button onClick={handleSave}>Salvar Música</Button>
-                </div>
-            </CardContent>
+           <Textarea value={editedSong.content || ''} onChange={(e) => setEditedSong({...editedSong, content: e.target.value})} className="font-code flex-1 min-h-[500px]" style={{ whiteSpace: 'pre' }} />
+        ) : (isContinuousMode || !showChords) ? (
+          <Card className="flex-1 flex flex-col bg-white dark:bg-black shadow-none border-none overflow-hidden">
+              <CardContent className="h-full flex flex-col p-0">
+                  <ScrollArea ref={scrollAreaRef} className="h-full p-4 md:p-6 flex-1">
+                      <SongDisplay 
+                          style={{ 
+                            fontSize: `${finalFontSize}px`,
+                            '--lyrics-color': finalColorSettings.lyricsColor,
+                            '--chords-color': finalColorSettings.chordsColor,
+                           } as React.CSSProperties}
+                          content={showChords ? contentToDisplay.replace(/\n\s*\n\s*\n/g, '\n\n') : contentToDisplay.replace(/\n\s*\n\s*\n/g, '\n\n')}
+                          showChords={showChords} 
+                      />
+                  </ScrollArea>
+              </CardContent>
           </Card>
-        ) : showChords ? (
+        ) : (
           <div className="relative flex-1 flex flex-col">
              <div className="flex justify-center items-center gap-4 text-center text-sm text-muted-foreground pt-2 pb-4">
-                 <div className="flex items-center gap-2">
-                    {fromSetlistId && prevSongId ? (
-                       <Button asChild variant="ghost" size="icon">
-                           <Link href={`/songs/${prevSongId}?fromSetlist=${fromSetlistId}&transpose=${prevTranspose}`}>
-                               <ChevronLeft className="h-6 w-6" />
-                           </Link>
-                       </Button>
-                    ) : <div className="w-10"></div>}
-                </div>
-
-                <div className="flex items-center gap-4">
-                    {count > 1 && (
-                        <>
-                        <span className="flex items-center gap-1.5"><File className="h-4 w-4" /> {current} de {count}</span>
-                        </>
-                    )}
-                </div>
-
-                 <div className="flex items-center gap-2">
-                    {fromSetlistId && nextSongId ? (
-                       <Button asChild variant="ghost" size="icon">
-                           <Link href={`/songs/${nextSongId}?fromSetlist=${fromSetlistId}&transpose=${nextTranspose}`}>
-                               <ChevronRight className="h-6 w-6" />
-                           </Link>
-                       </Button>
-                    ) : <div className="w-10"></div>}
-                </div>
+                 <Button asChild variant="ghost" size="icon" disabled={!fromSetlistId || !prevSongId}>
+                    {fromSetlistId && prevSongId ? <Link href={`/songs/${prevSongId}?fromSetlist=${fromSetlistId}&transpose=${prevTranspose}`}><ChevronLeft className="h-6 w-6" /></Link> : <ChevronLeft className="h-6 w-6 opacity-0" />}
+                 </Button>
+                 {count > 1 && <span className="flex items-center gap-1.5"><File className="h-4 w-4" /> {current} de {count}</span>}
+                 <Button asChild variant="ghost" size="icon" disabled={!fromSetlistId || !nextSongId}>
+                    {fromSetlistId && nextSongId ? <Link href={`/songs/${nextSongId}?fromSetlist=${fromSetlistId}&transpose=${nextTranspose}`}><ChevronRight className="h-6 w-6" /></Link> : <ChevronRight className="h-6 w-6 opacity-0" />}
+                 </Button>
              </div>
              <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true }}>
                 <CarouselContent>
@@ -524,61 +452,10 @@ export default function SongPage() {
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <div className="absolute -left-4 top-1/2 -translate-y-1/2 hidden md:block">
-                  <CarouselPrevious />
-                </div>
-                <div className="absolute -right-4 top-1/2 -translate-y-1/2 hidden md:block">
-                  <CarouselNext />
-                </div>
-                
-                <div 
-                    className="absolute left-0 top-0 h-full w-1/3 z-10" 
-                    onClick={() => api?.scrollPrev()} 
-                />
-                <div 
-                    className="absolute right-0 top-0 h-full w-1/3 z-10" 
-                    onClick={() => api?.scrollNext()} 
-                />
+                <div className="absolute left-0 top-0 h-full w-1/3 z-10" onClick={() => api?.scrollPrev()} />
+                <div className="absolute right-0 top-0 h-full w-1/3 z-10" onClick={() => api?.scrollNext()} />
               </Carousel>
           </div>
-        ) : (
-          <Card className="flex-1 flex flex-col bg-white dark:bg-black shadow-none border-none">
-              <CardContent className="h-full flex flex-col p-0">
-                  <div className="flex justify-between items-center w-full px-4 text-center text-sm text-muted-foreground pt-2 pb-2">
-                     <div className="flex items-center gap-2">
-                         {fromSetlistId && prevSongId ? (
-                           <Button asChild variant="ghost" size="icon">
-                               <Link href={`/songs/${prevSongId}?fromSetlist=${fromSetlistId}&transpose=${prevTranspose}`}>
-                                   <ChevronLeft className="h-6 w-6" />
-                               </Link>
-                           </Button>
-                         ) : <div className="w-10"></div>}
-                     </div>
-                      <div className="flex items-center gap-4">
-                        {/* Font control removed */}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {fromSetlistId && nextSongId ? (
-                           <Button asChild variant="ghost" size="icon">
-                               <Link href={`/songs/${nextSongId}?fromSetlist=${fromSetlistId}&transpose=${nextTranspose}`}>
-                                   <ChevronRight className="h-6 w-6" />
-                               </Link>
-                           </Button>
-                         ) : <div className="w-10"></div>}
-                      </div>
-                  </div>
-                  <ScrollArea className="h-full p-4 md:p-6 flex-1">
-                      <SongDisplay 
-                          style={{ 
-                            fontSize: `${finalFontSize}px`,
-                            '--lyrics-color': finalColorSettings.lyricsColor,
-                           }}
-                          content={contentToDisplay.replace(/\n\s*\n\s*\n/g, '\n\n')}
-                          showChords={false} 
-                      />
-                  </ScrollArea>
-              </CardContent>
-          </Card>
         )}
       </div>
     </div>
