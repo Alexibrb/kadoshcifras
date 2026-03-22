@@ -9,7 +9,7 @@ import type { Song, MetadataItem } from '@/types';
 import { ArrowLeft, PlusCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
@@ -52,6 +52,36 @@ export default function NewSongPage() {
   const [isGenreDialogOpen, setIsGenreDialogOpen] = useState(false);
   const [isArtistDialogOpen, setIsArtistDialogOpen] = useState(false);
   
+  // Deduplica metadados por nome para evitar erro de chaves duplicadas no React
+  const uniqueArtists = useMemo(() => {
+    const seen = new Set();
+    return artists.filter(item => {
+      if (!item.name) return false;
+      const duplicate = seen.has(item.name);
+      seen.add(item.name);
+      return !duplicate;
+    });
+  }, [artists]);
+
+  const uniqueCategories = useMemo(() => {
+    const seen = new Set();
+    return categories.filter(item => {
+      if (!item.name) return false;
+      const duplicate = seen.has(item.name);
+      seen.add(item.name);
+      return !duplicate;
+    });
+  }, [categories]);
+
+  const uniqueGenres = useMemo(() => {
+    const seen = new Set();
+    return genres.filter(item => {
+      if (!item.name) return false;
+      const duplicate = seen.has(item.name);
+      seen.add(item.name);
+      return !duplicate;
+    });
+  }, [genres]);
 
   const handleAddArtist = async () => {
     if (newArtist) {
@@ -175,7 +205,7 @@ export default function NewSongPage() {
                       <SelectValue placeholder="Selecione um artista" />
                     </SelectTrigger>
                     <SelectContent>
-                      {artists.map(art => <SelectItem key={art.id} value={art.name}>{art.name}</SelectItem>)}
+                      {uniqueArtists.map(art => <SelectItem key={art.id} value={art.name}>{art.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                   {renderMetadataDialog('artist', isArtistDialogOpen, setIsArtistDialogOpen, newArtist, setNewArtist, handleAddArtist)}
@@ -191,7 +221,7 @@ export default function NewSongPage() {
                           <SelectValue placeholder="Selecione uma categoria" />
                         </SelectTrigger>
                         <SelectContent>
-                          {categories.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}
+                          {uniqueCategories.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       {renderMetadataDialog('category', isCategoryDialogOpen, setIsCategoryDialogOpen, newCategory, setNewCategory, handleAddCategory)}
@@ -205,7 +235,7 @@ export default function NewSongPage() {
                           <SelectValue placeholder="Selecione um gênero" />
                         </SelectTrigger>
                         <SelectContent>
-                          {genres.map(g => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}
+                          {uniqueGenres.map(g => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       {renderMetadataDialog('genre', isGenreDialogOpen, setIsGenreDialogOpen, newGenre, setNewGenre, handleAddGenre)}

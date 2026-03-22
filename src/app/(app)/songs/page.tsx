@@ -48,6 +48,28 @@ export default function SongsPage() {
     setIsClient(true);
   }, []);
 
+  // Deduplica artistas por nome para evitar erros de chave e UI confusa
+  const uniqueArtists = useMemo(() => {
+    const seen = new Set();
+    return artists.filter(item => {
+      if (!item.name) return false;
+      const duplicate = seen.has(item.name);
+      seen.add(item.name);
+      return !duplicate;
+    });
+  }, [artists]);
+
+  // Deduplica categorias por nome
+  const uniqueCategories = useMemo(() => {
+    const seen = new Set();
+    return categories.filter(item => {
+      if (!item.name) return false;
+      const duplicate = seen.has(item.name);
+      seen.add(item.name);
+      return !duplicate;
+    });
+  }, [categories]);
+
   const filteredAndSortedSongs = useMemo(() => {
     if (loading || !isClient) return [];
 
@@ -142,7 +164,7 @@ export default function SongsPage() {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">Todos os Artistas</SelectItem>
-                    {artists.map(artist => (
+                    {uniqueArtists.map(artist => (
                        <SelectItem key={artist.id} value={artist.name}>{artist.name}</SelectItem>
                     ))}
                 </SelectContent>
@@ -153,7 +175,7 @@ export default function SongsPage() {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">Todas as Categorias</SelectItem>
-                     {categories.map(category => (
+                     {uniqueCategories.map(category => (
                        <SelectItem key={category.id} value={category.name}>{category.name}</SelectItem>
                     ))}
                 </SelectContent>
