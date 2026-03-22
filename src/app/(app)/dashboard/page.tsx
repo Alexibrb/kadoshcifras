@@ -1,4 +1,3 @@
-
 'use client';
 import { Button } from '@/components/ui/button';
 import { LogOut, Music, ListMusic } from 'lucide-react';
@@ -28,40 +27,47 @@ export default function DashboardPage() {
   return (
     <div className="flex-1 flex items-center justify-center p-4 md:p-8">
       <div className="flex flex-col space-y-4 w-full max-w-sm">
-        <h2 className="text-3xl font-bold font-headline tracking-tight text-center mb-4">
-          Bem-vindo, {user?.displayName ?? 'Músico'}!
-        </h2>
+        <div className="text-center mb-6">
+            <h2 className="text-3xl font-bold font-headline tracking-tight">
+              Olá, {user?.displayName?.split(' ')[0] ?? 'Músico'}!
+            </h2>
+            <p className="text-muted-foreground text-sm">O que vamos tocar hoje?</p>
+        </div>
 
-        <Button asChild size="lg" className="h-20 text-lg justify-between bg-green-600 hover:bg-green-700 text-white">
+        <Button asChild size="lg" className="h-24 text-lg justify-between shadow-md" variant="default">
           <Link href="/songs">
             <div className="flex items-center">
-              <Music className="mr-4 h-6 w-6" />
-              <span>Músicas</span>
+              <div className="bg-primary-foreground/20 p-3 rounded-full mr-4">
+                <Music className="h-6 w-6" />
+              </div>
+              <span className="font-semibold">Músicas</span>
             </div>
             {loading ? (
-                <Skeleton className="h-6 w-10 rounded-md" />
+                <Skeleton className="h-6 w-10 rounded-md bg-primary-foreground/20" />
             ) : (
-                <Badge variant="secondary" className="text-base">{songs.length}</Badge>
+                <Badge variant="secondary" className="text-base px-3">{songs.length}</Badge>
             )}
           </Link>
         </Button>
 
-        <Button asChild size="lg" className="h-20 text-lg justify-between bg-green-600 hover:bg-green-700 text-white">
+        <Button asChild size="lg" variant="outline" className="h-24 text-lg justify-between shadow-sm border-2">
           <Link href="/setlists">
              <div className="flex items-center">
-              <ListMusic className="mr-4 h-6 w-6" />
-              <span>Repertórios</span>
+              <div className="bg-primary/10 p-3 rounded-full mr-4 text-primary">
+                <ListMusic className="h-6 w-6" />
+              </div>
+              <span className="font-semibold text-primary">Repertórios</span>
             </div>
              {loading ? (
                 <Skeleton className="h-6 w-10 rounded-md" />
             ) : (
-                <Badge variant="secondary" className="text-base">{setlists.length}</Badge>
+                <Badge variant="default" className="text-base px-3 bg-primary">{setlists.length}</Badge>
             )}
           </Link>
         </Button>
 
-        <Button onClick={handleLogout} size="lg" variant="destructive" className="h-16 text-lg justify-start mt-8">
-            <LogOut className="mr-4 h-6 w-6" /> Sair
+        <Button onClick={handleLogout} size="lg" variant="ghost" className="h-16 text-muted-foreground hover:text-destructive hover:bg-destructive/10 mt-8">
+            <LogOut className="mr-3 h-5 w-5" /> Sair da conta
         </Button>
       </div>
     </div>

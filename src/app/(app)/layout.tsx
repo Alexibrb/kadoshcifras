@@ -1,4 +1,3 @@
-
 'use client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -37,7 +36,7 @@ const adminNavLinks = [
 
 function Header() {
     const pathname = usePathname();
-    const { user: authUser, appUser } = useAuth(); // Use authUser to distinguish from component User
+    const { user: authUser, appUser } = useAuth();
     const router = useRouter();
 
     const handleLogout = async () => {
@@ -46,9 +45,9 @@ function Header() {
     };
 
     return (
-        <header className="sticky top-0 z-40 w-full border-b bg-accent text-accent-foreground">
+        <header className="sticky top-0 z-40 w-full border-b bg-card/80 backdrop-blur-md">
             <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
-                <Logo />
+                <Logo className="text-primary" />
                 <div className="flex flex-1 items-center justify-end space-x-4">
                     <nav className="flex items-center space-x-1">
                        {navLinks.map(link => {
@@ -60,8 +59,8 @@ function Header() {
                                  variant={isActive ? 'secondary' : 'ghost'}
                                  size="icon"
                                  className={cn(
-                                    "text-accent-foreground hover:bg-secondary hover:text-secondary-foreground",
-                                    isActive && "bg-secondary text-secondary-foreground"
+                                    "hover:bg-primary/10 hover:text-primary transition-colors",
+                                    isActive && "bg-primary/15 text-primary"
                                   )}
                                >
                                    <Link href={link.href}>
@@ -80,8 +79,8 @@ function Header() {
                                  variant={isActive ? 'secondary' : 'ghost'}
                                  size="icon"
                                  className={cn(
-                                    "text-accent-foreground hover:bg-secondary hover:text-secondary-foreground",
-                                    isActive && "bg-secondary text-secondary-foreground"
+                                    "hover:bg-primary/10 hover:text-primary transition-colors",
+                                    isActive && "bg-primary/15 text-primary"
                                   )}
                                >
                                    <Link href={link.href}>
@@ -95,9 +94,9 @@ function Header() {
                     </nav>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="relative h-8 w-8 rounded-full text-accent-foreground hover:bg-secondary hover:text-secondary-foreground">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={authUser?.photoURL ?? `https://placehold.co/100x100.png?text=${appUser?.displayName?.charAt(0)}`} alt="Avatar do Usuário" data-ai-hint="person music" />
+                        <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-primary/20 ring-offset-2 ring-offset-background transition-all hover:ring-primary/40">
+                          <Avatar className="h-9 w-9">
+                            <AvatarImage src={authUser?.photoURL ?? `https://placehold.co/100x100.png?text=${appUser?.displayName?.charAt(0)}`} alt="Avatar" data-ai-hint="person music" />
                             <AvatarFallback><User /></AvatarFallback>
                           </Avatar>
                         </Button>
@@ -105,14 +104,14 @@ function Header() {
                       <DropdownMenuContent className="w-56" align="end" forceMount>
                         <DropdownMenuLabel className="font-normal">
                           <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-medium leading-none">{appUser?.displayName ?? 'Usuário'}</p>
+                            <p className="text-sm font-semibold leading-none">{appUser?.displayName ?? 'Usuário'}</p>
                             <p className="text-xs leading-none text-muted-foreground">
                               {authUser?.email ?? ''}
                             </p>
                           </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleLogout}>
+                        <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                              <LogOut className="mr-2 h-4 w-4" />
                              <span>Sair</span>
                         </DropdownMenuItem>
@@ -126,10 +125,13 @@ function Header() {
 
 function Footer() {
     return (
-        <footer className="w-full bg-background border-t">
-            <div className="container flex h-14 items-center justify-center">
+        <footer className="w-full bg-background border-t py-6">
+            <div className="container flex flex-col items-center justify-center gap-2">
                 <p className="text-sm text-muted-foreground">
-                    Versão 1.0.2025 - Desenvolvedor Alex Alves
+                    CifrasKadosh • Versão 1.0.2025
+                </p>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground/50">
+                    Desenvolvido por Alex Alves
                 </p>
             </div>
         </footer>
@@ -138,33 +140,29 @@ function Footer() {
 
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-    const { loading, appUser } = useRequireAuth();
+    const { loading } = useRequireAuth();
     const pathname = usePathname();
 
-    // Regex to check if the path is /songs/[id]
     const isSongDisplayPage = /^\/songs\/[^/]+$/.test(pathname);
 
     if (loading) {
         return (
              <div className="flex min-h-screen flex-col">
-                <header className="sticky top-0 z-40 w-full border-b bg-accent text-accent-foreground">
+                <header className="sticky top-0 z-40 w-full border-b bg-card">
                     <div className="container flex h-16 items-center justify-between">
                        <div className="flex items-center gap-2">
-                         <Skeleton className="h-6 w-6" />
+                         <Skeleton className="h-8 w-8 rounded-md" />
                          <Skeleton className="h-5 w-28" />
                        </div>
                         <div className="flex items-center gap-2">
                           <Skeleton className="h-8 w-8 rounded-md" />
                           <Skeleton className="h-8 w-8 rounded-md" />
-                          <Skeleton className="h-8 w-8 rounded-md" />
-                          <Skeleton className="h-8 w-8 rounded-md" />
-                           <Skeleton className="h-8 w-8 rounded-md" />
                           <Skeleton className="h-8 w-8 rounded-full" />
                         </div>
                     </div>
                 </header>
                 <main className="flex-1 p-8">
-                    <Skeleton className="w-full h-[80vh]" />
+                    <Skeleton className="w-full h-[70vh] rounded-xl" />
                 </main>
              </div>
         );
