@@ -303,16 +303,51 @@ export default function OfflineSetlistPage() {
         .replace(/\n\s*\n\s*\n/g, '\n\n');
   }, [offlineData, transpositions]);
 
-  const goToSong = useCallback((direction: 'next' | 'prev') => {
-      if (typeof currentSongIndex !== 'number' || isAutoScrolling) return;
-      const nextSongIndex = direction === 'next' ? currentSongIndex + 1 : currentSongIndex - 1;
-      if (nextSongIndex < 0 || nextSongIndex >= (offlineData?.songs.length ?? 0)) return;
-      const targetSectionIndex = allSections.findIndex(s => s.songIndex === nextSongIndex);
-      if (targetSectionIndex !== -1) api?.scrollTo(targetSectionIndex);
-  }, [currentSongIndex, offlineData?.songs.length, allSections, api, isAutoScrolling]);
+  const toggleAutoScroll = () => {
+    if (!isContinuousMode) {
+        setIsContinuousMode(true);
+        setIsAutoScrolling(true);
+    } else {
+        setIsAutoScrolling(!isAutoScrolling);
+    }
+  };
+
+  const stopAutoScroll = () => {
+    setIsContinuousMode(false);
+    setIsAutoScrolling(false);
+  };
+
+  const toggleModeByPedal = () => {
+    if (isContinuousMode) {
+      stopAutoScroll();
+    } else {
+      setIsContinuousMode(true);
+      setIsAutoScrolling(true);
+    }
+  };
+
+  const togglePauseByPedal = () => {
+    if (isContinuousMode) {
+      setIsAutoScrolling(!isAutoScrolling);
+    }
+  };
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
         const key = event.key;
+        
+        // Atalhos do Pedal
+        if (key === pedalSettings.nextSong) {
+            event.preventDefault();
+            toggleModeByPedal();
+            return;
+        }
+
+        if (key === pedalSettings.prevSong) {
+            event.preventDefault();
+            togglePauseByPedal();
+            return;
+        }
+
         if (showChords && !isAutoScrolling) {
             if (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prevPage) {
             event.preventDefault();
@@ -320,15 +355,9 @@ export default function OfflineSetlistPage() {
             } else if (key === "ArrowRight" || key === 'PageDown' || key === pedalSettings.nextPage) {
             event.preventDefault();
             api?.scrollNext();
-            } else if (key === pedalSettings.prevSong) {
-            event.preventDefault();
-            goToSong('prev');
-            } else if (key === pedalSettings.nextSong) {
-            event.preventDefault();
-            goToSong('next');
             }
         }
-  }, [api, pedalSettings, goToSong, showChords, isAutoScrolling]);
+  }, [api, pedalSettings, showChords, isAutoScrolling, isContinuousMode]);
   
   const changeTranspose = (change: number) => {
     if (typeof currentSongIndex !== 'number') return;
@@ -449,20 +478,6 @@ export default function OfflineSetlistPage() {
         doc.save(`${offlineData.name}.pdf`);
         document.body.removeChild(tempContainer);
     } catch (e) { toast({ title: "Erro ao gerar PDF", variant: "destructive" }); } finally { setIsGeneratingPDF(false); }
-  };
-
-  const toggleAutoScroll = () => {
-    if (!isContinuousMode) {
-        setIsContinuousMode(true);
-        setIsAutoScrolling(true);
-    } else {
-        setIsAutoScrolling(!isAutoScrolling);
-    }
-  };
-
-  const stopAutoScroll = () => {
-    setIsContinuousMode(false);
-    setIsAutoScrolling(false);
   };
 
   if (loading || !isClient || !finalColorSettings) {

@@ -9,7 +9,6 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 import type { PedalSettings } from '@/types';
 import { Check, Settings, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { ColorSettingsForm } from './color-settings-form';
 
 export function PedalSettingsForm() {
   const [settings, setSettings] = useLocalStorage<PedalSettings>('pedal-settings', {
@@ -63,7 +62,7 @@ export function PedalSettingsForm() {
             <CardTitle className="font-headline text-xl">Controles do Pedal</CardTitle>
           </div>
           <CardDescription>
-            Configure as teclas para avançar/retroceder páginas e músicas.
+            Configure as teclas para navegar e controlar a rolagem automática.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -97,21 +96,21 @@ export function PedalSettingsForm() {
           </div>
            <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-                <Label htmlFor="prevSongKey">Música Anterior</Label>
+                <Label htmlFor="nextSongKey">Ligar/Desligar Rolagem</Label>
                 <Input
-                id="prevSongKey"
-                value={prevSongKey || ''}
-                onKeyDown={(e) => handleKeyPress(e, 'prevSong')}
+                id="nextSongKey"
+                value={nextSongKey || ''}
+                onKeyDown={(e) => handleKeyPress(e, 'nextSong')}
                 readOnly
                 placeholder="Pressione uma tecla"
                 />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="nextSongKey">Próxima Música</Label>
+                <Label htmlFor="prevSongKey">Pausar/Retomar</Label>
                 <Input
-                id="nextSongKey"
-                value={nextSongKey || ''}
-                onKeyDown={(e) => handleKeyPress(e, 'nextSong')}
+                id="prevSongKey"
+                value={prevSongKey || ''}
+                onKeyDown={(e) => handleKeyPress(e, 'prevSong')}
                 readOnly
                 placeholder="Pressione uma tecla"
                 />
