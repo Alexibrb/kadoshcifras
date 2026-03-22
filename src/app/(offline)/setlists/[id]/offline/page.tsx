@@ -66,14 +66,7 @@ function SongPresenter({
     return (
         <Card id={id} className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none overflow-hidden">
             <CardContent className="flex-1 h-full p-0">
-                <ScrollArea className="h-full p-4 md:p-6 pt-0">
-                    {/* O título aparece apenas na primeira parte (página) de cada música */}
-                    {section.partIndex === 0 && (
-                        <div className="mb-6 border-l-4 border-primary/20 pl-4 py-2 mt-4">
-                            <h2 className="text-3xl font-bold font-headline text-primary">{song.title}</h2>
-                            <p className="text-sm text-muted-foreground">{song.artist}</p>
-                        </div>
-                    )}
+                <ScrollArea className="h-full p-4 md:p-6">
                     <SongDisplay 
                         style={{ 
                             fontSize: `${fontSize}px`,
@@ -531,7 +524,7 @@ export default function OfflineSetlistPage() {
                   </Button>
                   <div className="flex-1 space-y-1">
                     <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight truncate">
-                       {isContinuousMode ? currentSong.title : offlineData.name}
+                       {currentSong.title}
                     </h1>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="text-xs">Modo Offline</Badge>
@@ -573,7 +566,7 @@ export default function OfflineSetlistPage() {
                 <Button asChild variant="outline" size="icon" className="shrink-0"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
                 <div className="flex flex-col items-center overflow-hidden">
                   <h1 className="text-lg font-bold font-headline tracking-tight truncate w-full text-center">
-                     {isContinuousMode ? currentSong.title : offlineData.name}
+                     {currentSong.title}
                   </h1>
                   {isAutoScrolling && <p className="text-[10px] text-primary font-bold uppercase tracking-widest flex items-center gap-1"><Zap className="h-2 w-2" /> Rolando: {scrollSpeed}</p>}
                 </div>
