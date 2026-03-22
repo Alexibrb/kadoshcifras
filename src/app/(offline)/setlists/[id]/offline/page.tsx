@@ -681,9 +681,6 @@ export default function OfflineSetlistPage() {
                                   <X className="h-4 w-4" />
                               </Button>
                           )}
-                          <Label className="text-[10px] md:text-xs font-bold whitespace-nowrap">
-                              {isAutoScrolling ? "Rolando" : "Pausado"}
-                          </Label>
                       </div>
                   )}
               </div>

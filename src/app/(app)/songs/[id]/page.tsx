@@ -479,7 +479,6 @@ export default function SongPage() {
                             {showChords && (
                                 <Button size="icon" variant="outline" onClick={stopAutoScroll} className="h-8 w-16"><X className="h-4 w-4" /></Button>
                             )}
-                            <Label className="text-[10px] md:text-xs font-bold whitespace-nowrap">{isAutoScrolling ? "Rolando" : "Pausado"}</Label>
                         </div>
                     )}
                 </div>
