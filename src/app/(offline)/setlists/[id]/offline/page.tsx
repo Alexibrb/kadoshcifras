@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, File, Sun, Moon, FileDown, Loader2, Play, Pause, Zap } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, File, Sun, Moon, FileDown, Loader2, Play, Pause, Zap, X } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -96,7 +97,7 @@ export default function OfflineSetlistPage() {
   const wakeLockRef = useRef<any>(null);
   const requestRef = useRef<number>(null);
   const lastScrollTime = useRef<number>(0);
-  const scrollPosRef = useRef<number>(0); // Acumulador para rolagem suave
+  const scrollPosRef = useRef<number>(0); 
   const { toast } = useToast();
 
   const [offlineData, setOfflineData] = useState<OfflineSetlist | null>(null);
@@ -111,7 +112,8 @@ export default function OfflineSetlistPage() {
   const [isWakeLockSupported, setIsWakeLockSupported] = useState(false);
   const [isWakeLockActive, setIsWakeLockActive] = useState(false);
 
-  // Auto-scroll states
+  // Estados da Rolagem
+  const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(20);
 
@@ -449,6 +451,20 @@ export default function OfflineSetlistPage() {
     } catch (e) { toast({ title: "Erro ao gerar PDF", variant: "destructive" }); } finally { setIsGeneratingPDF(false); }
   };
 
+  const toggleAutoScroll = () => {
+    if (!isContinuousMode) {
+        setIsContinuousMode(true);
+        setIsAutoScrolling(true);
+    } else {
+        setIsAutoScrolling(!isAutoScrolling);
+    }
+  };
+
+  const stopAutoScroll = () => {
+    setIsContinuousMode(false);
+    setIsAutoScrolling(false);
+  };
+
   if (loading || !isClient || !finalColorSettings) {
     return (
       <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
@@ -469,6 +485,7 @@ export default function OfflineSetlistPage() {
   }
 
   const displayedKey = currentSong.key ? transposeChord(currentSong.key, currentSongTranspose) : 'N/A';
+  const showContinuous = isContinuousMode || !showChords;
 
   return (
     <div ref={containerRef} className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen outline-none bg-background" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
@@ -482,7 +499,7 @@ export default function OfflineSetlistPage() {
                     <Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /><span className="sr-only">Voltar</span></Link>
                   </Button>
                   <div className="flex-1 space-y-1">
-                    <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight truncate">{showChords ? currentSong.title : offlineData.name}</h1>
+                    <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight truncate">{showContinuous ? currentSong.title : offlineData.name}</h1>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="text-xs">Modo Offline</Badge>
                       {isWakeLockActive ? <Sun className="h-3 w-3 text-yellow-500" /> : <Moon className="h-3 w-3 text-muted-foreground" />}
@@ -523,7 +540,7 @@ export default function OfflineSetlistPage() {
                 <Button asChild variant="outline" size="icon" className="shrink-0"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
                 <div className="flex flex-col items-center overflow-hidden">
                   <h1 className="text-lg font-bold font-headline tracking-tight truncate w-full text-center">
-                     {showChords ? currentSong.title : offlineData.name}
+                     {showContinuous ? currentSong.title : offlineData.name}
                   </h1>
                   {isAutoScrolling && <p className="text-[10px] text-primary font-bold uppercase tracking-widest flex items-center gap-1"><Zap className="h-2 w-2" /> Rolando: {scrollSpeed}</p>}
                 </div>
@@ -533,29 +550,56 @@ export default function OfflineSetlistPage() {
           </CardContent>
         </Card>
 
-        {/* Painel de Rolagem Automática sempre visível abaixo do card principal */}
         <div className="flex flex-row items-center gap-4 w-full p-2 rounded-md border bg-background/50 shadow-sm">
             <div className="flex items-center gap-2">
-                <Button 
-                    size="icon" 
-                    variant={isAutoScrolling ? "destructive" : "default"} 
-                    onClick={() => setIsAutoScrolling(!isAutoScrolling)}
-                    className="h-8 w-8"
-                >
-                    {isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                </Button>
-                <Label className="text-[10px] md:text-xs font-bold whitespace-nowrap">Rolagem</Label>
+                {!isContinuousMode && showChords ? (
+                    <Button 
+                        size="sm" 
+                        variant="default" 
+                        onClick={toggleAutoScroll}
+                        className="h-8 gap-2"
+                    >
+                        <Play className="h-4 w-4" />
+                        <span className="text-[10px] md:text-xs font-bold">Rolagem</span>
+                    </Button>
+                ) : (
+                    <div className="flex items-center gap-2">
+                        <Button 
+                            size="icon" 
+                            variant={isAutoScrolling ? "destructive" : "default"} 
+                            onClick={toggleAutoScroll}
+                            className="h-8 w-8"
+                        >
+                            {isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                        </Button>
+                        {showChords && (
+                            <Button 
+                                size="icon" 
+                                variant="outline" 
+                                onClick={stopAutoScroll}
+                                className="h-8 w-8"
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        )}
+                        <Label className="text-[10px] md:text-xs font-bold whitespace-nowrap">
+                            {isAutoScrolling ? "Rolando" : "Pausado"}
+                        </Label>
+                    </div>
+                )}
             </div>
-            <div className="flex-1 flex items-center gap-2">
-                <Zap className="h-3 w-3 text-yellow-500" />
-                <Slider value={[scrollSpeed]} onValueChange={(val) => setScrollSpeed(val[0])} max={100} min={1} step={1} className="flex-1" />
-                <span className="text-[10px] font-mono w-6">{scrollSpeed}</span>
-            </div>
+            {showContinuous && (
+                <div className="flex-1 flex items-center gap-2">
+                    <Zap className="h-3 w-3 text-yellow-500" />
+                    <Slider value={[scrollSpeed]} onValueChange={(val) => setScrollSpeed(val[0])} max={100} min={1} step={1} className="flex-1" />
+                    <span className="text-[10px] font-mono w-6">{scrollSpeed}</span>
+                </div>
+            )}
         </div>
       </div>
 
       <div className="flex-1 flex flex-col min-h-0 relative">
-        {isAutoScrolling || !showChords ? (
+        {showContinuous ? (
           <Card className="flex-1 flex flex-col bg-white dark:bg-black shadow-none border-none overflow-hidden">
               <CardContent className="h-full flex flex-col p-0">
                   <ScrollArea ref={scrollAreaRef} className="h-full p-4 md:p-6 flex-1">
