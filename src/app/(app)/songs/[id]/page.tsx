@@ -1,3 +1,4 @@
+
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -192,6 +193,32 @@ export default function SongPage() {
     return contentToDisplay.split(/\n\s*\n\s*\n/);
   }, [contentToDisplay]);
 
+  // Observer para identificar a parte atual durante a rolagem
+  useEffect(() => {
+    if (!isContinuousMode || !isClient) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const partIdx = parseInt(entry.target.getAttribute('data-part-index') || '0', 10);
+            setCurrent(partIdx + 1);
+          }
+        });
+      },
+      {
+        root: scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]'),
+        threshold: 0.1,
+        rootMargin: '-10% 0px -80% 0px'
+      }
+    );
+
+    const parts = document.querySelectorAll('[data-part-index]');
+    parts.forEach(p => observer.observe(p));
+
+    return () => observer.disconnect();
+  }, [isContinuousMode, isClient, songParts]);
+
   const toggleAutoScroll = useCallback(() => {
     if (!isContinuousMode) {
         setIsContinuousMode(true);
@@ -202,9 +229,17 @@ export default function SongPage() {
   }, [isContinuousMode, isAutoScrolling]);
 
   const stopAutoScroll = useCallback(() => {
-    // Apenas pausa o movimento, preservando a posição atual na tela
+    // Para a rolagem e volta para o modo pedal na página atual
     setIsAutoScrolling(false);
-  }, []);
+    setIsContinuousMode(false);
+    
+    // Pequeno delay para garantir que o carrossel foi montado antes de sincronizar
+    setTimeout(() => {
+      if (api) {
+        api.scrollTo(current - 1, true);
+      }
+    }, 50);
+  }, [api, current]);
 
   const handleKeyDown = useCallback(
       (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -214,8 +249,10 @@ export default function SongPage() {
         if (key === pedalSettings.nextSong) {
             event.preventDefault();
             if (isContinuousMode) {
-                stopAutoScroll();
+                // Se já estiver no modo contínuo, apenas alterna play/pause
+                setIsAutoScrolling(!isAutoScrolling);
             } else {
+                // Se estiver no pedal, ativa o contínuo e dá play
                 setIsContinuousMode(true);
                 setIsAutoScrolling(true);
             }
@@ -225,7 +262,7 @@ export default function SongPage() {
         if (key === pedalSettings.prevSong) {
             event.preventDefault();
             if (isContinuousMode) {
-                setIsAutoScrolling(prev => !prev);
+                stopAutoScroll();
             }
             return;
         }
@@ -412,15 +449,21 @@ export default function SongPage() {
                           <h2 className="text-2xl font-bold font-headline text-primary">{song.title}</h2>
                           <p className="text-sm text-muted-foreground">{song.artist}</p>
                       </div>
-                      <SongDisplay 
-                          style={{ 
-                            fontSize: `${finalFontSize}px`,
-                            '--lyrics-color': finalColorSettings.lyricsColor,
-                            '--chords-color': finalColorSettings.chordsColor,
-                           } as React.CSSProperties}
-                          content={showChords ? contentToDisplay.replace(/\n\s*\n\s*\n/g, '\n\n') : contentToDisplay.replace(/\n\s*\n\s*\n/g, '\n\n')}
-                          showChords={showChords} 
-                      />
+                      <div className="flex flex-col">
+                        {songParts.map((part, idx) => (
+                          <div key={idx} data-part-index={idx}>
+                             <SongDisplay 
+                                style={{ 
+                                  fontSize: `${finalFontSize}px`,
+                                  '--lyrics-color': finalColorSettings.lyricsColor,
+                                  '--chords-color': finalColorSettings.chordsColor,
+                                } as React.CSSProperties}
+                                content={part}
+                                showChords={showChords} 
+                            />
+                          </div>
+                        ))}
+                      </div>
                   </ScrollArea>
               </CardContent>
           </Card>

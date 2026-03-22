@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -336,9 +337,17 @@ export default function OfflineSetlistPage() {
   }, [isContinuousMode, isAutoScrolling]);
 
   const stopAutoScroll = useCallback(() => {
-    // Apenas pausa o movimento, preservando a posição atual na tela
+    // Para a rolagem e volta para o modo pedal (slides) sincronizado na página atual
     setIsAutoScrolling(false);
-  }, []);
+    setIsContinuousMode(false);
+    
+    // Pequeno delay para garantir que o carrossel foi montado antes de sincronizar
+    setTimeout(() => {
+      if (api) {
+        api.scrollTo(currentSectionIndex, true);
+      }
+    }, 50);
+  }, [api, currentSectionIndex]);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
         const key = event.key;
@@ -346,8 +355,10 @@ export default function OfflineSetlistPage() {
         if (key === pedalSettings.nextSong) {
             event.preventDefault();
             if (isContinuousMode) {
-                stopAutoScroll();
+                // Se já estiver no modo contínuo, apenas alterna play/pause
+                setIsAutoScrolling(!isAutoScrolling);
             } else {
+                // Se estiver no pedal, ativa o contínuo e dá play
                 setIsContinuousMode(true);
                 setIsAutoScrolling(true);
             }
@@ -357,7 +368,7 @@ export default function OfflineSetlistPage() {
         if (key === pedalSettings.prevSong) {
             event.preventDefault();
             if (isContinuousMode) {
-                setIsAutoScrolling(prev => !prev);
+                stopAutoScroll();
             }
             return;
         }
