@@ -287,12 +287,12 @@ export default function SongPage() {
   return (
     <div 
       ref={containerRef}
-      className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-8 h-screen outline-none" 
+      className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-4 h-screen outline-none overflow-hidden" 
       onKeyDownCapture={handleKeyDown} 
       tabIndex={-1}
     >
       {!isEditing && (
-        <div className="flex flex-col gap-2 mb-4">
+        <div className="flex flex-col gap-2 mb-4 shrink-0">
           <Card className="bg-accent/10 transition-all duration-300">
             <CardContent className="p-4 space-y-4">
                {isPanelVisible ? (
@@ -350,39 +350,11 @@ export default function SongPage() {
                )}
             </CardContent>
           </Card>
-
-          {/* Painel de Rolagem Automática */}
-          <div className="flex flex-row items-center gap-4 w-full p-2 rounded-md border bg-background/50 shadow-sm">
-              <div className="flex items-center gap-2">
-                  {!isContinuousMode && showChords ? (
-                      <Button size="sm" variant="default" onClick={toggleAutoScroll} className="h-8 gap-2">
-                          <Play className="h-4 w-4" /><span className="text-[10px] md:text-xs font-bold">Rolagem</span>
-                      </Button>
-                  ) : (
-                      <div className="flex items-center gap-2">
-                          <Button size="icon" variant={isAutoScrolling ? "destructive" : "default"} onClick={toggleAutoScroll} className="h-8 w-8">
-                              {isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                          </Button>
-                          {showChords && (
-                              <Button size="icon" variant="outline" onClick={stopAutoScroll} className="h-8 w-8"><X className="h-4 w-4" /></Button>
-                          )}
-                          <Label className="text-[10px] md:text-xs font-bold whitespace-nowrap">{isAutoScrolling ? "Rolando" : "Pausado"}</Label>
-                      </div>
-                  )}
-              </div>
-              {(isContinuousMode || !showChords) && (
-                  <div className="flex-1 flex items-center gap-2">
-                      <Zap className="h-3 w-3 text-yellow-500" />
-                      <Slider value={[scrollSpeed]} onValueChange={(val) => setScrollSpeed(val[0])} max={100} min={1} step={1} className="flex-1" />
-                      <span className="text-[10px] font-mono w-6">{scrollSpeed}</span>
-                  </div>
-              )}
-          </div>
         </div>
       )}
       
       {isEditing && editedSong && (
-        <div className="transition-all duration-300">
+        <div className="transition-all duration-300 shrink-0">
            <Card className="mb-4 bg-accent/10">
               <CardContent className="p-4 flex items-center justify-between gap-4">
                   <Button variant="outline" onClick={() => setIsEditing(false)} size="sm">Cancelar</Button>
@@ -458,6 +430,36 @@ export default function SongPage() {
           </div>
         )}
       </div>
+
+      {/* Painel de Rolagem Automática no Rodapé */}
+      {!isEditing && (
+        <div className="mt-4 shrink-0 flex flex-row items-center gap-4 w-full p-2 rounded-md border bg-background/50 shadow-sm z-50">
+            <div className="flex items-center gap-2">
+                {!isContinuousMode && showChords ? (
+                    <Button size="sm" variant="default" onClick={toggleAutoScroll} className="h-8 gap-2">
+                        <Play className="h-4 w-4" /><span className="text-[10px] md:text-xs font-bold">Rolagem</span>
+                    </Button>
+                ) : (
+                    <div className="flex items-center gap-2">
+                        <Button size="icon" variant={isAutoScrolling ? "destructive" : "default"} onClick={toggleAutoScroll} className="h-8 w-8">
+                            {isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                        </Button>
+                        {showChords && (
+                            <Button size="icon" variant="outline" onClick={stopAutoScroll} className="h-8 w-8"><X className="h-4 w-4" /></Button>
+                        )}
+                        <Label className="text-[10px] md:text-xs font-bold whitespace-nowrap">{isAutoScrolling ? "Rolando" : "Pausado"}</Label>
+                    </div>
+                )}
+            </div>
+            {(isContinuousMode || !showChords) && (
+                <div className="flex-1 flex items-center gap-2">
+                    <Zap className="h-3 w-3 text-yellow-500" />
+                    <Slider value={[scrollSpeed]} onValueChange={(val) => setScrollSpeed(val[0])} max={100} min={1} step={1} className="flex-1" />
+                    <span className="text-[10px] font-mono w-6">{scrollSpeed}</span>
+                </div>
+            )}
+        </div>
+      )}
     </div>
   );
 }
