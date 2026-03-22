@@ -20,6 +20,17 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface OfflineSong {
     title: string;
@@ -337,11 +348,9 @@ export default function OfflineSetlistPage() {
   }, [isContinuousMode, isAutoScrolling]);
 
   const stopAutoScroll = useCallback(() => {
-    // Para a rolagem e volta para o modo pedal (slides) sincronizado na página atual
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
     
-    // Pequeno delay para garantir que o carrossel foi montado antes de sincronizar
     setTimeout(() => {
       if (api) {
         api.scrollTo(currentSectionIndex, true);
@@ -355,10 +364,8 @@ export default function OfflineSetlistPage() {
         if (key === pedalSettings.nextSong) {
             event.preventDefault();
             if (isContinuousMode) {
-                // Se já estiver no modo contínuo, apenas alterna play/pause
                 setIsAutoScrolling(!isAutoScrolling);
             } else {
-                // Se estiver no pedal, ativa o contínuo e dá play
                 setIsContinuousMode(true);
                 setIsAutoScrolling(true);
             }
@@ -368,7 +375,7 @@ export default function OfflineSetlistPage() {
         if (key === pedalSettings.prevSong) {
             event.preventDefault();
             if (isContinuousMode) {
-                stopAutoScroll();
+                setIsAutoScrolling(false);
             }
             return;
         }
@@ -382,7 +389,7 @@ export default function OfflineSetlistPage() {
             api?.scrollNext();
             }
         }
-  }, [api, pedalSettings, showChords, isAutoScrolling, isContinuousMode, stopAutoScroll]);
+  }, [api, pedalSettings, showChords, isAutoScrolling, isContinuousMode]);
   
   const changeTranspose = (change: number) => {
     if (typeof currentSongIndex !== 'number') return;
@@ -684,14 +691,23 @@ export default function OfflineSetlistPage() {
                               {isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                           </Button>
                           {showChords && (
-                              <Button 
-                                  size="icon" 
-                                  variant="outline" 
-                                  onClick={stopAutoScroll}
-                                  className="h-8 w-16"
-                              >
-                                  <X className="h-4 w-4" />
-                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="icon" variant="outline" className="h-8 w-16"><X className="h-4 w-4" /></Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Parar Rolagem?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Deseja realmente parar a rolagem e voltar ao modo de pedal (slides)?
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={stopAutoScroll}>Confirmar</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                           )}
                       </div>
                   )}

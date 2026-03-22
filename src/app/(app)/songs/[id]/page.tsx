@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Song, type MetadataItem, Setlist, SetlistSong, PedalSettings, ColorSettings } from '@/types';
-import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, Eye, EyeOff, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Check, File, Music, Play, Pause, X, Zap, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, Eye, EyeOff, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Check, File, Music, Play, Pause, X, Zap, Loader2, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -22,10 +22,20 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useFirestoreDocument } from '@/hooks/use-firestore-document';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
 import { useAuth } from '@/hooks/use-auth';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const ALL_KEYS = [
     'C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B',
@@ -193,7 +203,6 @@ export default function SongPage() {
     return contentToDisplay.split(/\n\s*\n\s*\n/);
   }, [contentToDisplay]);
 
-  // Observer para identificar a parte atual durante a rolagem
   useEffect(() => {
     if (!isContinuousMode || !isClient) return;
 
@@ -229,11 +238,9 @@ export default function SongPage() {
   }, [isContinuousMode, isAutoScrolling]);
 
   const stopAutoScroll = useCallback(() => {
-    // Para a rolagem e volta para o modo pedal na página atual
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
     
-    // Pequeno delay para garantir que o carrossel foi montado antes de sincronizar
     setTimeout(() => {
       if (api) {
         api.scrollTo(current - 1, true);
@@ -249,10 +256,8 @@ export default function SongPage() {
         if (key === pedalSettings.nextSong) {
             event.preventDefault();
             if (isContinuousMode) {
-                // Se já estiver no modo contínuo, apenas alterna play/pause
                 setIsAutoScrolling(!isAutoScrolling);
             } else {
-                // Se estiver no pedal, ativa o contínuo e dá play
                 setIsContinuousMode(true);
                 setIsAutoScrolling(true);
             }
@@ -262,7 +267,10 @@ export default function SongPage() {
         if (key === pedalSettings.prevSong) {
             event.preventDefault();
             if (isContinuousMode) {
-                stopAutoScroll();
+                // No pedal, se for configurado pra parar, pedimos confirmação via UI ou apenas paramos?
+                // Como não tem como mostrar o dialog via atalho de teclado facilmente sem quebrar o fluxo,
+                // vamos apenas pausar a rolagem.
+                setIsAutoScrolling(false);
             }
             return;
         }
@@ -277,7 +285,7 @@ export default function SongPage() {
             }
         }
       },
-      [api, isEditing, showChords, pedalSettings, isContinuousMode, isAutoScrolling, stopAutoScroll]
+      [api, isEditing, showChords, pedalSettings, isContinuousMode, isAutoScrolling]
     )
   
   const handleSave = async () => {
@@ -521,7 +529,23 @@ export default function SongPage() {
                                 {isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                             </Button>
                             {showChords && (
-                                <Button size="icon" variant="outline" onClick={stopAutoScroll} className="h-8 w-16"><X className="h-4 w-4" /></Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="icon" variant="outline" className="h-8 w-16"><X className="h-4 w-4" /></Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Parar Rolagem?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Deseja realmente parar a rolagem e voltar ao modo de pedal (slides)?
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={stopAutoScroll}>Confirmar</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                             )}
                         </div>
                     )}
