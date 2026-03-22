@@ -131,7 +131,7 @@ export default function SongPage() {
   }, [api])
 
   const animateScroll = useCallback((time: number) => {
-    if (lastScrollTime.current && scrollAreaRef.current) {
+    if (lastScrollTime.current > 0 && scrollAreaRef.current) {
         const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
         if (viewport) {
             const deltaTime = (time - lastScrollTime.current) / 1000;
@@ -157,6 +157,7 @@ export default function SongPage() {
         requestRef.current = requestAnimationFrame(animateScroll);
     } else {
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
+        lastScrollTime.current = 0;
     }
     return () => {
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
@@ -201,7 +202,7 @@ export default function SongPage() {
   }, [isContinuousMode, isAutoScrolling]);
 
   const stopAutoScroll = useCallback(() => {
-    setIsContinuousMode(false);
+    // Apenas pausa o movimento, preservando a posição atual na tela
     setIsAutoScrolling(false);
   }, []);
 
