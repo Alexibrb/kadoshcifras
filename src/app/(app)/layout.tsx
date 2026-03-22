@@ -46,78 +46,82 @@ function Header() {
 
     return (
         <header className="sticky top-0 z-40 w-full border-b bg-card/80 backdrop-blur-md">
-            <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
-                <Logo className="text-primary" />
-                <div className="flex flex-1 items-center justify-end space-x-4">
-                    <nav className="flex items-center space-x-1">
-                       {navLinks.map(link => {
-                           const isActive = pathname === link.href || (link.href !== '/dashboard' && pathname.startsWith(link.href));
-                           return (
-                               <Button
-                                 key={link.href}
-                                 asChild
-                                 variant={isActive ? 'secondary' : 'ghost'}
-                                 size="icon"
-                                 className={cn(
-                                    "hover:bg-primary/10 hover:text-primary transition-colors",
-                                    isActive && "bg-primary/15 text-primary"
-                                  )}
-                               >
-                                   <Link href={link.href}>
-                                       <link.icon className="h-5 w-5" />
-                                       <span className="sr-only">{link.label}</span>
-                                   </Link>
-                               </Button>
-                           )
-                       })}
-                       {appUser?.role === 'admin' && adminNavLinks.map(link => {
-                           const isActive = pathname === link.href || pathname.startsWith(link.href);
-                           return (
-                               <Button
-                                 key={link.href}
-                                 asChild
-                                 variant={isActive ? 'secondary' : 'ghost'}
-                                 size="icon"
-                                 className={cn(
-                                    "hover:bg-primary/10 hover:text-primary transition-colors",
-                                    isActive && "bg-primary/15 text-primary"
-                                  )}
-                               >
-                                   <Link href={link.href}>
-                                       <link.icon className="h-5 w-5" />
-                                       <span className="sr-only">{link.label}</span>
-                                   </Link>
-                               </Button>
-                           )
-                       })}
-                       <ThemeToggle />
-                    </nav>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-primary/20 ring-offset-2 ring-offset-background transition-all hover:ring-primary/40">
-                          <Avatar className="h-9 w-9">
-                            <AvatarImage src={authUser?.photoURL ?? `https://placehold.co/100x100.png?text=${appUser?.displayName?.charAt(0)}`} alt="Avatar" data-ai-hint="person music" />
-                            <AvatarFallback><User /></AvatarFallback>
-                          </Avatar>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-56" align="end" forceMount>
-                        <DropdownMenuLabel className="font-normal">
-                          <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-semibold leading-none">{appUser?.displayName ?? 'Usuário'}</p>
-                            <p className="text-xs leading-none text-muted-foreground">
-                              {authUser?.email ?? ''}
-                            </p>
-                          </div>
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                             <LogOut className="mr-2 h-4 w-4" />
-                             <span>Sair</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+            <div className="container flex flex-col py-2">
+                {/* Linha 1: Logo e Usuário */}
+                <div className="flex h-10 items-center justify-between">
+                    <Logo className="text-primary scale-90 origin-left" />
+                    <div className="flex items-center space-x-2">
+                        <ThemeToggle />
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="relative h-8 w-8 rounded-full ring-2 ring-primary/20 ring-offset-2 ring-offset-background transition-all hover:ring-primary/40">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={authUser?.photoURL ?? `https://placehold.co/100x100.png?text=${appUser?.displayName?.charAt(0)}`} alt="Avatar" data-ai-hint="person music" />
+                                <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+                              </Avatar>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-56" align="end" forceMount>
+                            <DropdownMenuLabel className="font-normal">
+                              <div className="flex flex-col space-y-1">
+                                <p className="text-sm font-semibold leading-none">{appUser?.displayName ?? 'Usuário'}</p>
+                                <p className="text-xs leading-none text-muted-foreground">
+                                  {authUser?.email ?? ''}
+                                </p>
+                              </div>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                 <LogOut className="mr-2 h-4 w-4" />
+                                 <span>Sair</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </div>
+                {/* Linha 2: Navegação */}
+                <nav className="flex items-center justify-center space-x-1 mt-1 overflow-x-auto pb-1 scrollbar-hide">
+                   {navLinks.map(link => {
+                       const isActive = pathname === link.href || (link.href !== '/dashboard' && pathname.startsWith(link.href));
+                       return (
+                           <Button
+                             key={link.href}
+                             asChild
+                             variant={isActive ? 'secondary' : 'ghost'}
+                             size="sm"
+                             className={cn(
+                                "h-9 px-3 gap-2 hover:bg-primary/10 hover:text-primary transition-colors shrink-0",
+                                isActive && "bg-primary/15 text-primary"
+                              )}
+                           >
+                               <Link href={link.href}>
+                                   <link.icon className="h-4 w-4" />
+                                   <span className="text-xs font-semibold">{link.label}</span>
+                               </Link>
+                           </Button>
+                       )
+                   })}
+                   {appUser?.role === 'admin' && adminNavLinks.map(link => {
+                       const isActive = pathname === link.href || pathname.startsWith(link.href);
+                       return (
+                           <Button
+                             key={link.href}
+                             asChild
+                             variant={isActive ? 'secondary' : 'ghost'}
+                             size="sm"
+                             className={cn(
+                                "h-9 px-3 gap-2 hover:bg-primary/10 hover:text-primary transition-colors shrink-0",
+                                isActive && "bg-primary/15 text-primary"
+                              )}
+                           >
+                               <Link href={link.href}>
+                                   <link.icon className="h-4 w-4" />
+                                   <span className="text-xs font-semibold">{link.label}</span>
+                               </Link>
+                           </Button>
+                       )
+                   })}
+                </nav>
             </div>
         </header>
     )
@@ -149,15 +153,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         return (
              <div className="flex min-h-screen flex-col">
                 <header className="sticky top-0 z-40 w-full border-b bg-card">
-                    <div className="container flex h-16 items-center justify-between">
-                       <div className="flex items-center gap-2">
-                         <Skeleton className="h-8 w-8 rounded-md" />
-                         <Skeleton className="h-5 w-28" />
+                    <div className="container flex flex-col py-2 space-y-2">
+                       <div className="flex items-center justify-between h-10">
+                         <div className="flex items-center gap-2">
+                            <Skeleton className="h-6 w-6 rounded-md" />
+                            <Skeleton className="h-4 w-24" />
+                         </div>
+                          <div className="flex items-center gap-2">
+                            <Skeleton className="h-8 w-8 rounded-md" />
+                            <Skeleton className="h-8 w-8 rounded-full" />
+                          </div>
                        </div>
-                        <div className="flex items-center gap-2">
-                          <Skeleton className="h-8 w-8 rounded-md" />
-                          <Skeleton className="h-8 w-8 rounded-md" />
-                          <Skeleton className="h-8 w-8 rounded-full" />
+                        <div className="flex items-center justify-center gap-2 h-9">
+                          <Skeleton className="h-8 w-20 rounded-md" />
+                          <Skeleton className="h-8 w-20 rounded-md" />
+                          <Skeleton className="h-8 w-20 rounded-md" />
                         </div>
                     </div>
                 </header>
