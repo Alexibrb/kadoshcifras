@@ -1,4 +1,3 @@
-
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -344,7 +343,6 @@ export default function SongPage() {
                        <Button asChild variant="outline" size="icon" className="shrink-0 h-8 w-8"><Link href={backUrl}><ArrowLeft className="h-4 w-4" /></Link></Button>
                        <div className="flex flex-col items-center overflow-hidden">
                           <h1 className="text-base font-bold font-headline tracking-tight truncate w-full text-center">{song.title}</h1>
-                          {isAutoScrolling && <p className="text-[10px] text-primary font-bold uppercase tracking-widest flex items-center gap-1"><Zap className="h-2 w-2" /> Rolando: {scrollSpeed}</p>}
                        </div>
                        <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0 h-8 w-8"><PanelTopOpen className="h-5 w-5" /></Button>
                   </div>
@@ -475,11 +473,11 @@ export default function SongPage() {
                         </Button>
                     ) : (
                         <div className="flex items-center gap-2">
-                            <Button size="icon" variant={isAutoScrolling ? "destructive" : "default"} onClick={toggleAutoScroll} className="h-8 w-8">
+                            <Button size="icon" variant={isAutoScrolling ? "destructive" : "default"} onClick={toggleAutoScroll} className="h-8 w-16">
                                 {isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                             </Button>
                             {showChords && (
-                                <Button size="icon" variant="outline" onClick={stopAutoScroll} className="h-8 w-8"><X className="h-4 w-4" /></Button>
+                                <Button size="icon" variant="outline" onClick={stopAutoScroll} className="h-8 w-16"><X className="h-4 w-4" /></Button>
                             )}
                             <Label className="text-[10px] md:text-xs font-bold whitespace-nowrap">{isAutoScrolling ? "Rolando" : "Pausado"}</Label>
                         </div>
@@ -487,9 +485,8 @@ export default function SongPage() {
                 </div>
                 {(isContinuousMode || !showChords) && (
                     <div className="flex-1 flex items-center gap-2">
-                        <Zap className="h-3 w-3 text-yellow-500" />
                         <Slider value={[scrollSpeed]} onValueChange={(val) => setScrollSpeed(val[0])} max={100} min={1} step={1} className="flex-1" />
-                        <span className="text-[10px] font-mono w-6">{scrollSpeed}</span>
+                        <span className="text-[10px] font-mono font-bold w-12 text-primary">{scrollSpeed}</span>
                     </div>
                 )}
             </div>
