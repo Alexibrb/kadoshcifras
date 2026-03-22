@@ -28,8 +28,19 @@ export default function SetlistPage() {
   const { toast } = useToast();
   
   const { appUser } = useAuth();
-  const { data: setlist, loading: loadingSetlist, updateDocument: updateSetlistDoc } = useFirestoreDocument<Setlist>('setlists', setlistId);
-  const { data: allSongs, loading: loadingSongs } = useFirestoreCollection<Song>('songs');
+  
+  // Só busca o documento se o usuário estiver logado. 
+  // O hook useRequireAuth cuidará do redirecionamento se não estiver aprovado.
+  const { data: setlist, loading: loadingSetlist, updateDocument: updateSetlistDoc } = useFirestoreDocument<Setlist>(
+    'setlists', 
+    appUser ? setlistId : null
+  );
+  
+  const { data: allSongs, loading: loadingSongs } = useFirestoreCollection<Song>(
+    'songs', 
+    undefined, 
+    appUser?.isApproved ? [] : [['id', '==', 'disabled']] // Desativa a busca se não estiver aprovado
+  );
 
   const [isClient, setIsClient] = useState(false);
   const [hasOfflineVersion, setHasOfflineVersion] = useState(false);
@@ -52,7 +63,6 @@ export default function SetlistPage() {
   useEffect(() => {
     if (setlist) {
         setEditedName(setlist.name);
-        // Apenas atualize as músicas ordenadas se não estiverem sendo arrastadas
         setOrderedSongs(setlist.songs || []);
     }
   }, [setlist]);
@@ -143,8 +153,8 @@ export default function SetlistPage() {
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
-    setOrderedSongs(items); // Atualiza o estado local imediatamente para feedback visual
-    updateSetlistDoc({ songs: items }); // Envia a atualização para o Firestore
+    setOrderedSongs(items);
+    updateSetlistDoc({ songs: items });
   };
 
   const generateOfflineData = () => {
@@ -164,7 +174,7 @@ export default function SetlistPage() {
     
     const offlineSongs = songsToProcess.map(setlistSong => {
       const song = songMap.get(setlistSong.songId);
-      if (!song) return null; // Ignora se a música não for encontrada, em vez de quebrar
+      if (!song) return null;
       return {
           title: song.title,
           artist: song.artist,
@@ -187,22 +197,12 @@ export default function SetlistPage() {
     try {
       const storageKey = `offline-setlist-${setlistId}`;
       const jsonString = JSON.stringify(dataToSave, null, 2);
-      
       localStorage.setItem(storageKey, jsonString);
-      
-      toast({
-        variant: "destructive",
-        title: "Repertório salvo para uso offline!",
-        description: "Não atualize ou saia da pagina se estiver sem internet",
-      });
-      
       router.push(`/setlists/${setlistId}/offline`);
-
     } catch (error) {
-       console.error("Erro ao salvar no localStorage:", error);
        toast({
         title: "Erro ao Salvar",
-        description: "Não foi possível salvar o repertório para uso offline. O armazenamento pode estar cheio.",
+        description: "Não foi possível salvar o repertório para uso offline.",
         variant: "destructive"
       });
     }
@@ -334,7 +334,6 @@ export default function SetlistPage() {
                                  if (!song) return null;
                                  
                                  const displayedKey = song.key ? transposeChord(song.key, setlistSong.transpose) : 'N/A';
-                                 // Usar uma combinação de songId e index para garantir ID único
                                  const draggableId = `${setlistSong.songId}-${index}`;
 
                                  return (

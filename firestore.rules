@@ -21,7 +21,7 @@ service cloud.firestore {
     
     // Helper function to check if the requesting user is approved
     function isApproved() {
-      return isAuthenticated() && getAppUser(request.auth.uid).isApproved == true;
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getAppUser(request.auth.uid).isApproved == true;
     }
 
     // USERS COLLECTION
@@ -29,34 +29,36 @@ service cloud.firestore {
       // READ: 
       // - An admin can read any user's profile.
       // - A non-admin user can only read their own profile.
-      allow read: if isAdmin() || request.auth.uid == userId;
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
 
       // CREATE:
-      // A user can create their own document upon signup, but:
-      // - They must be the owner of the document.
-      // - The `isApproved` field must be false.
-      // - The `role` must be 'user'.
-      // - They can only provide displayName and email.
-      allow create: if request.auth.uid == userId
+      // A user can create their own document upon signup
+      allow create: if isAuthenticated() && request.auth.uid == userId
                       && request.resource.data.isApproved == false
                       && request.resource.data.role == 'user'
                       && request.resource.data.keys().hasOnly(['displayName', 'email', 'isApproved', 'role', 'createdAt']);
 
       // UPDATE:
       // - An admin can update anyone's `isApproved` or `role`.
-      // - A user can only update their own displayName, colorSettings, and fontSize.
+      // - A user can only update their own settings.
       allow update: if isAdmin() 
-                    || (request.auth.uid == userId && request.resource.data.keys().hasAny(['displayName', 'colorSettings', 'fontSize']));
+                    || (isAuthenticated() && request.auth.uid == userId && request.resource.data.keys().hasAny(['displayName', 'colorSettings', 'fontSize']));
       
       // DELETE: No one should delete user documents.
       allow delete: if false;
     }
     
-    // For other collections like songs, setlists, artists, genres, categories
+    // SETLISTS COLLECTION
+    match /setlists/{setlistId} {
+      // Permite leitura se for aprovado OU se for público (mesmo pendente de aprovação mas logado)
+      allow read: if isApproved() || (isAuthenticated() && resource.data.isPublic == true);
+      allow write: if isApproved();
+    }
+
+    // OTHER COLLECTIONS
     match /{collection}/{docId} {
-      // Any authenticated and approved user can perform actions on these collections.
-      // We explicitly exclude the 'users' collection from this rule.
-      allow read, write: if isApproved() && collection != 'users';
+      // Qualquer usuário aprovado pode acessar outras coleções (músicas, artistas, etc)
+      allow read, write: if isApproved() && collection != 'users' && collection != 'setlists';
     }
   }
 }

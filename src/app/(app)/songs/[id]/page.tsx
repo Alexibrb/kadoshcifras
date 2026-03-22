@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Song, type MetadataItem, Setlist, SetlistSong, PedalSettings, ColorSettings } from '@/types';
-import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, HardDriveDownload, Eye, EyeOff, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Check, File, Music, Play, Pause, X, Zap, Loader2 } from 'lucide-react';
+import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, Eye, EyeOff, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Check, File, Music, Play, Pause, X, Zap, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -42,8 +42,17 @@ export default function SongPage() {
 
   const { appUser, loading: authLoading } = useAuth();
   
-  const { data: song, loading: loadingSong, updateDocument: updateSongDoc } = useFirestoreDocument<Song>('songs', songId);
-  const { data: setlist, loading: loadingSetlist, updateDocument: updateSetlistDoc } = useFirestoreDocument<Setlist>('setlists', fromSetlistId || '');
+  // Só busca os documentos se o usuário estiver logado e aprovado (ou se o setlist for necessário para a lógica)
+  // useRequireAuth redirecionará se necessário, mas evitamos o erro de permissão aqui.
+  const { data: song, loading: loadingSong, updateDocument: updateSongDoc } = useFirestoreDocument<Song>(
+    'songs', 
+    appUser?.isApproved ? songId : null
+  );
+  
+  const { data: setlist, loading: loadingSetlist, updateDocument: updateSetlistDoc } = useFirestoreDocument<Setlist>(
+    'setlists', 
+    (appUser?.isApproved && fromSetlistId) ? fromSetlistId : null
+  );
   
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', { 
     prevPage: ',', 
@@ -62,7 +71,6 @@ export default function SongPage() {
   const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', true);
   const [toneSaveSuccess, setToneSaveSuccess] = useState(false);
   
-  // Estados de Rolagem Automática
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(20);
@@ -73,9 +81,9 @@ export default function SongPage() {
 
   const [editedSong, setEditedSong] = useState<Song | null>(null);
   
-  const { data: artists, loading: loadingArtists } = useFirestoreCollection<MetadataItem>('artists', 'name');
-  const { data: genres, loading: loadingGenres } = useFirestoreCollection<MetadataItem>('genres', 'name');
-  const { data: categories, loading: loadingCategories } = useFirestoreCollection<MetadataItem>('categories', 'name');
+  const { data: artists, loading: loadingArtists } = useFirestoreCollection<MetadataItem>('artists', 'name', appUser?.isApproved ? [] : [['id', '==', 'disabled']]);
+  const { data: genres, loading: loadingGenres } = useFirestoreCollection<MetadataItem>('genres', 'name', appUser?.isApproved ? [] : [['id', '==', 'disabled']]);
+  const { data: categories, loading: loadingCategories } = useFirestoreCollection<MetadataItem>('categories', 'name', appUser?.isApproved ? [] : [['id', '==', 'disabled']]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const initialKeyRef = useRef(song?.key);
@@ -260,7 +268,7 @@ export default function SongPage() {
     setTranspose(newTranspose);
   };
 
-  if (isClient && !loadingSong && !song) {
+  if (isClient && !loadingSong && !song && !authLoading) {
     notFound();
   }
   
