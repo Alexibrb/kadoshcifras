@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Song, type MetadataItem, Setlist, SetlistSong, PedalSettings, ColorSettings } from '@/types';
-import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, Eye, EyeOff, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Check, File, Music, Play, Pause, X, Zap, Loader2 } from 'lucide-react';
+import { ArrowLeft, Edit, Minus, Plus, Save, PlayCircle, Eye, EyeOff, PanelTopClose, PanelTopOpen, ChevronLeft, ChevronRight, Check, File, Music, Play, Pause, X, Zap, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -42,8 +42,6 @@ export default function SongPage() {
 
   const { appUser, loading: authLoading } = useAuth();
   
-  // Só busca os documentos se o usuário estiver logado e aprovado (ou se o setlist for necessário para a lógica)
-  // useRequireAuth redirecionará se necessário, mas evitamos o erro de permissão aqui.
   const { data: song, loading: loadingSong, updateDocument: updateSongDoc } = useFirestoreDocument<Song>(
     'songs', 
     appUser?.isApproved ? songId : null
@@ -63,6 +61,7 @@ export default function SongPage() {
   
   const [isClient, setIsClient] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isMetadataExpanded, setIsMetadataExpanded] = useState(false);
   const [transpose, setTranspose] = useState(initialTranspose);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [api, setApi] = useState<CarouselApi>()
@@ -251,6 +250,7 @@ export default function SongPage() {
     }
     await updateSongDoc(editedSong);
     setIsEditing(false);
+    setIsMetadataExpanded(false);
   };
 
   const handleSaveTransposeToSetlist = useCallback(async () => {
@@ -309,7 +309,7 @@ export default function SongPage() {
                         <div className="flex-1 space-y-1">
                             <h1 className="text-sm font-bold text-muted-foreground uppercase tracking-widest truncate">{song.title}</h1>
                             <div className="flex flex-row items-center gap-2">
-                                <Button variant="outline" onClick={() => setIsEditing(true)} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-8 text-xs">
+                                <Button variant="outline" onClick={() => { setIsEditing(true); setIsMetadataExpanded(false); }} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-8 text-xs">
                                     <Edit className="mr-1.5 h-3 w-3" /> Editar
                                 </Button>
                                 {song.url && (
@@ -356,25 +356,56 @@ export default function SongPage() {
       
       {isEditing && editedSong && (
         <div className="transition-all duration-300 shrink-0">
-           <Card className="mb-4 bg-accent/10">
+           <Card className="mb-2 bg-accent/10 border-none shadow-none">
               <CardContent className="p-4 flex items-center justify-between gap-4">
-                  <Button variant="outline" onClick={() => setIsEditing(false)} size="sm">Cancelar</Button>
-                  <h1 className="text-lg font-bold font-headline truncate flex-1 text-center">Editando: {song.title}</h1>
+                  <Button variant="outline" onClick={() => { setIsEditing(false); setIsMetadataExpanded(false); }} size="sm">Cancelar</Button>
+                  <div className="flex-1 flex flex-col items-center">
+                    <h1 className="text-xs font-bold font-headline truncate opacity-70">Editando: {song.title}</h1>
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setIsMetadataExpanded(!isMetadataExpanded)}
+                        className="h-7 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10"
+                    >
+                        {isMetadataExpanded ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
+                        Informações da Música
+                    </Button>
+                  </div>
                   <Button onClick={handleSave} size="sm"><Save className="mr-2 h-4 w-4" /> Salvar</Button>
               </CardContent>
            </Card>
-           <Card className="mb-4">
+           
+           {isMetadataExpanded && (
+             <Card className="mb-4 animate-in slide-in-from-top-2 duration-200">
                 <CardContent className="p-4 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="space-y-1"><Label>Título</Label><Input value={editedSong.title} onChange={(e) => setEditedSong({...editedSong, title: e.target.value})} /></div>
                     <div className="space-y-1"><Label>Artista</Label><Input value={editedSong.artist} onChange={(e) => setEditedSong({...editedSong, artist: e.target.value})} /></div>
                     <div className="space-y-1"><Label>Tom</Label><Select value={editedSong.key} onValueChange={(v) => setEditedSong({...editedSong, key: v})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{ALL_KEYS.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}</SelectContent></Select></div>
                 </CardContent>
             </Card>
+           )}
         </div>
       )}
 
       <div className="flex-1 flex flex-col min-h-0 relative">
-        {(isContinuousMode || !showChords) ? (
+        {isEditing ? (
+           <div className="h-full flex flex-col">
+              <Alert variant="destructive" className="p-2 mb-2 bg-destructive/5 border-destructive/20 text-destructive">
+                <AlertCircle className="h-3 w-3" />
+                <AlertDescription className="text-[10px] leading-tight">
+                  Dica: Duas linhas em branco criam uma nova página para o modo de apresentação.
+                </AlertDescription>
+              </Alert>
+              <Textarea
+                id="content"
+                value={editedSong?.content || ''}
+                onChange={(e) => setEditedSong(prev => prev ? {...prev, content: e.target.value} : null)}
+                placeholder="Digite ou cole sua cifra aqui"
+                className="flex-1 font-code resize-none focus-visible:ring-1 text-base leading-relaxed"
+                style={{ whiteSpace: 'pre', overflowX: 'auto' }}
+              />
+           </div>
+        ) : (isContinuousMode || !showChords) ? (
           <Card className="flex-1 flex flex-col bg-white dark:bg-black shadow-none border-none overflow-hidden">
               <CardContent className="h-full flex flex-col p-0">
                   <ScrollArea ref={scrollAreaRef} className="h-full p-4 md:p-6 flex-1">
