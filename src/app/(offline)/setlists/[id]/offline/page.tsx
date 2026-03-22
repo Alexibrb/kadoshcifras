@@ -96,6 +96,7 @@ export default function OfflineSetlistPage() {
   const wakeLockRef = useRef<any>(null);
   const requestRef = useRef<number>(null);
   const lastScrollTime = useRef<number>(0);
+  const scrollPosRef = useRef<number>(0); // Acumulador para rolagem suave
   const { toast } = useToast();
 
   const [offlineData, setOfflineData] = useState<OfflineSetlist | null>(null);
@@ -112,7 +113,7 @@ export default function OfflineSetlistPage() {
 
   // Auto-scroll states
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
-  const [scrollSpeed, setScrollSpeed] = useState(20); // 1-100
+  const [scrollSpeed, setScrollSpeed] = useState(20);
 
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', {
     prevPage: ',',
@@ -154,18 +155,23 @@ export default function OfflineSetlistPage() {
     }
   }, []);
 
-  // Auto-scroll animation loop
+  // Animação de Rolagem Automática Corrigida
   const animateScroll = useCallback((time: number) => {
-    if (lastScrollTime.current !== undefined && scrollAreaRef.current) {
-        const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+    if (lastScrollTime.current && scrollAreaRef.current) {
+        const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
         if (viewport) {
             const deltaTime = (time - lastScrollTime.current) / 1000;
-            // Base pixels per second is modified by scrollSpeed
-            // speed=1 is very slow, speed=100 is fast
-            const pixelsPerSecond = (scrollSpeed * scrollSpeed) / 100; // Quadratic scaling for better control at low speeds
-            const pixelsToScroll = pixelsPerSecond * deltaTime;
+            // Velocidade: 1 no slider = ~2px/seg, 100 no slider = ~200px/seg
+            const pixelsPerSecond = scrollSpeed * 2;
+            const pixelsToMove = pixelsPerSecond * deltaTime;
             
-            viewport.scrollBy({ top: pixelsToScroll, behavior: 'auto' });
+            scrollPosRef.current += pixelsToMove;
+            
+            // Só aplica o scroll se tivermos pelo menos 0.5 pixel acumulado para manter fluidez
+            if (scrollPosRef.current >= 0.5) {
+                viewport.scrollTop += scrollPosRef.current;
+                scrollPosRef.current = 0; // Reinicia o acumulador após aplicar
+            }
         }
     }
     lastScrollTime.current = time;
@@ -175,6 +181,7 @@ export default function OfflineSetlistPage() {
   useEffect(() => {
     if (isAutoScrolling) {
         lastScrollTime.current = performance.now();
+        scrollPosRef.current = 0;
         requestRef.current = requestAnimationFrame(animateScroll);
     } else {
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
@@ -196,10 +203,7 @@ export default function OfflineSetlistPage() {
     } else {
       releaseWakeLock();
     }
-    
-    return () => {
-      releaseWakeLock();
-    };
+    return () => releaseWakeLock();
   }, [keepAwake, requestWakeLock, releaseWakeLock]);
 
   useEffect(() => {
@@ -208,16 +212,13 @@ export default function OfflineSetlistPage() {
         await requestWakeLock();
       }
     };
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [requestWakeLock]);
 
   useEffect(() => {
     setIsClient(true);
-    if (containerRef.current) {
-        containerRef.current.focus();
-    }
+    if (containerRef.current) containerRef.current.focus();
   }, []);
 
   useEffect(() => {
@@ -227,17 +228,10 @@ export default function OfflineSetlistPage() {
           lyricsColor: isDarkMode ? '#FFFFFF' : '#000000',
           chordsColor: isDarkMode ? '#F59E0B' : '#000000',
       };
-      
       const storedSettings = localStorage.getItem('user-color-settings');
       if (storedSettings) {
-           try {
-             setFinalColorSettings(JSON.parse(storedSettings));
-           } catch(e) {
-             setFinalColorSettings(defaultSettings);
-           }
-      } else {
-          setFinalColorSettings(defaultSettings);
-      }
+           try { setFinalColorSettings(JSON.parse(storedSettings)); } catch(e) { setFinalColorSettings(defaultSettings); }
+      } else { setFinalColorSettings(defaultSettings); }
     }
   }, [isClient]);
 
@@ -253,18 +247,9 @@ export default function OfflineSetlistPage() {
               setOfflineData(parsedData);
               setTranspositions(parsedData.songs.map(s => s.initialTranspose || 0));
               setError(null);
-          } else {
-              setError("Dados offline corrompidos ou em formato inválido. Por favor, gere o repertório novamente.");
-          }
-        } else {
-          setError("Dados offline não encontrados. Por favor, volte e clique em 'Abrir Repertório' na página do repertório.");
-        }
-      } catch (e) {
-        console.error("Erro ao ler do localStorage:", e);
-        setError("Não foi possível carregar os dados offline. O formato pode ser inválido. Tente gerar novamente.");
-      } finally {
-        setLoading(false);
-      }
+          } else { setError("Dados offline corrompidos."); }
+        } else { setError("Dados offline não encontrados."); }
+      } catch (e) { setError("Erro ao carregar dados offline."); } finally { setLoading(false); }
     }
   }, [setlistId]);
   
@@ -273,17 +258,12 @@ export default function OfflineSetlistPage() {
       event.preventDefault();
       event.returnValue = '';
     };
-
     window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
   const allSections = useMemo((): Section[] => {
     if (!offlineData) return [];
-    
     const sections: Section[] = [];
     offlineData.songs.forEach((song, songIndex) => {
         const parts = song.content.split(/\n\s*\n\s*\n/);
@@ -324,25 +304,12 @@ export default function OfflineSetlistPage() {
         .replace(/\n\s*\n\s*\n/g, '\n\n');
   }, [offlineData, transpositions]);
 
-
-  const totalPagesOfSong = useMemo(() => {
-    if (typeof currentSongIndex !== 'number') return 0;
-    return allSections.filter(s => s.songIndex === currentSongIndex).length;
-  }, [allSections, currentSongIndex]);
-
-  const currentPageOfSong = currentSection ? currentSection.partIndex + 1 : 0;
-
   const goToSong = useCallback((direction: 'next' | 'prev') => {
       if (typeof currentSongIndex !== 'number' || isAutoScrolling) return;
-      
       const nextSongIndex = direction === 'next' ? currentSongIndex + 1 : currentSongIndex - 1;
-      
       if (nextSongIndex < 0 || nextSongIndex >= (offlineData?.songs.length ?? 0)) return;
-
       const targetSectionIndex = allSections.findIndex(s => s.songIndex === nextSongIndex);
-      if (targetSectionIndex !== -1) {
-          api?.scrollTo(targetSectionIndex);
-      }
+      if (targetSectionIndex !== -1) api?.scrollTo(targetSectionIndex);
   }, [currentSongIndex, offlineData?.songs.length, allSections, api, isAutoScrolling]);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -354,8 +321,7 @@ export default function OfflineSetlistPage() {
             } else if (key === "ArrowRight" || key === 'PageDown' || key === pedalSettings.nextPage) {
             event.preventDefault();
             api?.scrollNext();
-            }
-            else if (key === pedalSettings.prevSong) {
+            } else if (key === pedalSettings.prevSong) {
             event.preventDefault();
             goToSong('prev');
             } else if (key === pedalSettings.nextSong) {
@@ -379,11 +345,9 @@ export default function OfflineSetlistPage() {
   const handleExportPDF = async () => {
     if (!offlineData) return;
     setIsGeneratingPDF(true);
-    
     try {
         const { jsPDF } = await import('jspdf');
         const html2canvas = (await import('html2canvas')).default;
-
         const tempContainer = document.createElement('div');
         tempContainer.style.position = 'fixed';
         tempContainer.style.left = '-9999px';
@@ -397,21 +361,16 @@ export default function OfflineSetlistPage() {
         
         offlineData.songs.forEach((song, songIndex) => {
             const transpose = transpositions[songIndex] ?? 0;
-            const fullContent = transposeContent(song.content, transpose)
-                                .replace(/\n\s*\n\s*\n/g, '\n\n');
-
+            const fullContent = transposeContent(song.content, transpose).replace(/\n\s*\n\s*\n/g, '\n\n');
             const lines = fullContent.split('\n');
             const filteredLines = showChords ? lines : lines.filter(line => !isChordLine(line));
             
             for (let i = 0; i < filteredLines.length; i += linesPerPage) {
                 let chunkLines = filteredLines.slice(i, i + linesPerPage);
-                while (chunkLines.length < linesPerPage) {
-                    chunkLines.push("");
-                }
-                const chunk = chunkLines.join('\n');
+                while (chunkLines.length < linesPerPage) chunkLines.push("");
                 pagesToProcess.push({
                     songIndex,
-                    content: chunk,
+                    content: chunkLines.join('\n'),
                     partIndex: Math.floor(i / linesPerPage),
                     totalParts: Math.ceil(filteredLines.length / linesPerPage)
                 });
@@ -424,30 +383,20 @@ export default function OfflineSetlistPage() {
         for (let i = 0; i < totalPdfPages; i++) {
             const pageInfo = pagesToProcess[i];
             const song = offlineData.songs[pageInfo.songIndex];
-            const transpose = transpositions[pageInfo.songIndex] ?? 0;
-
             const pageDiv = document.createElement('div');
             pageDiv.style.padding = '20mm';
             pageDiv.style.paddingBottom = '35mm';
-            pageDiv.style.boxSizing = 'border-box';
             pageDiv.style.backgroundColor = 'white';
-            pageDiv.style.color = 'black';
-            pageDiv.style.position = 'relative';
             pageDiv.style.width = 'fit-content';
             pageDiv.style.minWidth = '160mm';
             pageDiv.style.display = 'inline-block';
 
-            const header = document.createElement('div');
-            header.style.marginBottom = '10mm';
-            header.style.borderBottom = '2px solid #f0f0f0';
-            header.style.paddingBottom = '5mm';
-            header.style.width = '100%';
-            header.innerHTML = `
-                <div style="font-family: serif; font-size: 24pt; font-weight: bold; color: #9f50e5;">${song.title}</div>
-                <div style="font-family: serif; font-size: 14pt; color: #666; margin-top: 5px;">${song.artist} ${song.key && showChords ? `<span style="margin-left: 15px; color: #9f50e5;">• Tom: ${transposeChord(song.key, transpose)}</span>` : ''}</div>
-                <div style="font-size: 10pt; color: #999; margin-top: 8px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Página ${pageInfo.partIndex + 1} de ${pageInfo.totalParts}</div>
+            pageDiv.innerHTML = `
+                <div style="margin-bottom: 10mm; border-bottom: 2px solid #f0f0f0; padding-bottom: 5mm; width: 100%;">
+                    <div style="font-family: serif; font-size: 24pt; font-weight: bold; color: #9f50e5;">${song.title}</div>
+                    <div style="font-family: serif; font-size: 14pt; color: #666; margin-top: 5px;">${song.artist}</div>
+                </div>
             `;
-            pageDiv.appendChild(header);
 
             const contentDiv = document.createElement('div');
             contentDiv.style.whiteSpace = 'pre';
@@ -455,112 +404,50 @@ export default function OfflineSetlistPage() {
             contentDiv.style.fontSize = `${fontSize * 1.3}px`;
             contentDiv.style.lineHeight = '1.4';
             
-            const lines = pageInfo.content.split('\n');
-            lines.forEach(line => {
-                const isChord = isChordLine(line);
+            pageInfo.content.split('\n').forEach((line: string) => {
                 const p = document.createElement('p');
                 p.style.margin = '0';
-                p.style.minHeight = '1.2em';
                 p.textContent = line || ' ';
-                if (isChord && showChords) {
+                if (isChordLine(line) && showChords) {
                     p.style.fontWeight = 'bold';
                     p.style.color = finalColorSettings?.chordsColor || '#F59E0B';
-                } else {
-                    p.style.color = finalColorSettings?.lyricsColor || 'black';
-                }
+                } else p.style.color = finalColorSettings?.lyricsColor || 'black';
                 contentDiv.appendChild(p);
             });
             pageDiv.appendChild(contentDiv);
 
-            const footerDiv = document.createElement('div');
-            footerDiv.style.position = 'absolute';
-            footerDiv.style.bottom = '10mm';
-            footerDiv.style.left = '0';
-            footerDiv.style.right = '0';
-            footerDiv.style.fontSize = '12pt';
-            footerDiv.style.color = '#9f50e5';
-            footerDiv.style.borderTop = '2px solid #f0f0f0';
-            footerDiv.style.paddingTop = '8mm';
-            footerDiv.style.margin = '0 20mm';
-            footerDiv.style.display = 'flex';
-            footerDiv.style.justifyContent = 'center';
-            footerDiv.style.alignItems = 'center';
-            footerDiv.style.textAlign = 'center';
-            footerDiv.innerHTML = `
-                <div style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 30px; font-weight: bold;">
-                    <span style="flex: 1; text-align: right; color: #9f50e5; opacity: ${i > 0 ? '1' : '0.2'}">${i > 0 ? '← ANTERIOR' : ''}</span>
-                    <span style="color: #666; background: #f8f8f8; padding: 5px 15px; border-radius: 20px; min-width: 50mm;">PAGINA ${i + 1} / ${totalPdfPages}</span>
-                    <span style="flex: 1; text-align: left; color: #9f50e5; opacity: ${i < totalPdfPages - 1 ? '1' : '0.2'}">${i < totalPdfPages - 1 ? 'PRÓXIMA →' : ''}</span>
-                </div>
-            `;
-            pageDiv.appendChild(footerDiv);
-
             tempContainer.innerHTML = '';
             tempContainer.appendChild(pageDiv);
-
             const rect = pageDiv.getBoundingClientRect();
             const widthMM = rect.width * 0.264583;
             const heightMM = rect.height * 0.264583;
 
-            const canvas = await html2canvas(pageDiv, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: 'white',
-                width: rect.width,
-                height: rect.height
-            });
-
+            const canvas = await html2canvas(pageDiv, { scale: 2, useCORS: true, backgroundColor: 'white' });
             const imgData = canvas.toDataURL('image/jpeg', 0.95);
-            if (i === 0) {
-                doc = new jsPDF({
-                    orientation: widthMM > heightMM ? 'l' : 'p',
-                    unit: 'mm',
-                    format: [widthMM, heightMM]
-                });
-            } else {
-                doc.addPage([widthMM, heightMM], widthMM > heightMM ? 'l' : 'p');
-            }
+            if (i === 0) doc = new jsPDF({ orientation: widthMM > heightMM ? 'l' : 'p', unit: 'mm', format: [widthMM, heightMM] });
+            else doc.addPage([widthMM, heightMM], widthMM > heightMM ? 'l' : 'p');
             doc.addImage(imgData, 'JPEG', 0, 0, widthMM, heightMM);
-            if (i > 0) doc.link(20, heightMM - 20, widthMM / 3, 15, { pageNumber: i });
-            if (i < totalPdfPages - 1) doc.link(widthMM - (widthMM / 3) - 20, heightMM - 20, widthMM / 3, 15, { pageNumber: i + 2 });
         }
-
-        doc.save(`${offlineData.name}${!showChords ? '_Letras' : '_Cifrado'}_Interativo.pdf`);
+        doc.save(`${offlineData.name}.pdf`);
         document.body.removeChild(tempContainer);
-        toast({ title: "PDF Gerado!", description: "O arquivo foi adaptado ao conteúdo e todas as páginas têm a mesma altura." });
-    } catch (e) {
-        console.error("Erro ao gerar PDF:", e);
-        toast({ title: "Erro ao gerar PDF", description: "Não foi possível criar o arquivo.", variant: "destructive" });
-    } finally { setIsGeneratingPDF(false); }
+    } catch (e) { toast({ title: "Erro ao gerar PDF", variant: "destructive" }); } finally { setIsGeneratingPDF(false); }
   };
 
   if (loading || !isClient || !finalColorSettings) {
     return (
       <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
-        <h2 className="text-2xl font-bold mb-4 text-primary">Carregando Modo Offline...</h2>
+        <h2 className="text-2xl font-bold mb-4 text-primary">Carregando...</h2>
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (error) {
+  if (error || !offlineData || !currentSong) {
      return (
       <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
-        <h2 className="text-2xl font-bold text-destructive mb-4">Erro ao Carregar</h2>
-        <p className="text-muted-foreground mb-6">{error}</p>
-        <Button asChild>
-          <Link href={`/setlists/${setlistId}`}><ArrowLeft className="mr-2 h-4 w-4" />Voltar para o Repertório</Link>
-        </Button>
-      </div>
-    );
-  }
-  
-  if (!offlineData || !currentSong) {
-     return (
-      <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
-        <h2 className="text-2xl font-bold mb-4">Dados Offline Não Encontrados</h2>
-        <p className="text-muted-foreground">Gere os dados na página do repertório antes de acessar.</p>
-         <Button asChild className="mt-6"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="mr-2 h-4 w-4" />Voltar para o Repertório</Link></Button>
+        <h2 className="text-2xl font-bold text-destructive mb-4">Erro</h2>
+        <p className="text-muted-foreground mb-6">{error || "Dados não encontrados"}</p>
+        <Button asChild><Link href={`/setlists/${setlistId}`}><ArrowLeft className="mr-2 h-4 w-4" />Voltar</Link></Button>
       </div>
     );
   }
@@ -584,35 +471,33 @@ export default function OfflineSetlistPage() {
                         {isWakeLockActive ? <Sun className="h-3 w-3 text-yellow-500" /> : <Moon className="h-3 w-3 text-muted-foreground" />}
                       </div>
                     </div>
-                    <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon" className="shrink-0"><PanelTopClose className="h-5 w-5" /><span className="sr-only">Ocultar Controles</span></Button>
+                    <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon" className="shrink-0"><PanelTopClose className="h-5 w-5" /><span className="sr-only">Ocultar</span></Button>
                   </div>
                 
                   <div className="flex flex-col gap-2">
-                    {/* Linha 1: Tom e Cifras */}
+                    {/* Linha 1: Tom e Cifras - Flex Row Fixo */}
                     <div className="flex flex-row items-center gap-2 w-full">
                        <div className="flex items-center gap-1 rounded-md border p-1 flex-1 bg-background overflow-hidden h-10">
                             <Button variant="ghost" size="icon" onClick={() => changeTranspose(-1)} className="h-8 w-8 shrink-0"><Minus className="h-4 w-4" /></Button>
-                            <Badge variant="secondary" className="px-2 py-1 text-xs whitespace-nowrap flex-grow text-center justify-center">
-                                Tom: {displayedKey} ({currentSongTranspose > 0 ? '+' : ''}{currentSongTranspose})
+                            <Badge variant="secondary" className="px-2 py-1 text-[10px] md:text-xs whitespace-nowrap flex-grow text-center justify-center">
+                                Tom: {displayedKey}
                             </Badge>
                             <Button variant="ghost" size="icon" onClick={() => changeTranspose(1)} className="h-8 w-8 shrink-0"><Plus className="h-4 w-4" /></Button>
                         </div>
-                        <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 flex-1">
-                            <Label htmlFor="show-chords" className="text-xs font-semibold whitespace-nowrap">Cifras</Label>
+                        <div className="flex items-center justify-between space-x-2 rounded-md border p-1 px-3 bg-background h-10 flex-1">
+                            <Label htmlFor="show-chords" className="text-[10px] md:text-xs font-semibold whitespace-nowrap">Cifras</Label>
                             <Switch id="show-chords" checked={showChords} onCheckedChange={setShowChords} />
                         </div>
                     </div>
 
-                    {/* Linha 2: Tela e PDF */}
+                    {/* Linha 2: Tela e PDF - Flex Row Fixo */}
                     <div className="flex flex-row items-center gap-2 w-full">
-                        {isWakeLockSupported && (
-                          <div className="flex items-center space-x-2 rounded-md border p-1 px-3 bg-background h-10 flex-1">
-                              <Label htmlFor="keep-awake" className="text-xs font-semibold whitespace-nowrap">Tela Acesa</Label>
-                              <Switch id="keep-awake" checked={keepAwake} onCheckedChange={(val) => { setKeepAwake(val); if (val) requestWakeLock(true); }} />
-                          </div>
-                        )}
-                        <Button onClick={handleExportPDF} variant="outline" className="h-10 flex-1 text-xs font-semibold" disabled={isGeneratingPDF}>
-                          {isGeneratingPDF ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+                        <div className="flex items-center justify-between space-x-2 rounded-md border p-1 px-3 bg-background h-10 flex-1">
+                            <Label htmlFor="keep-awake" className="text-[10px] md:text-xs font-semibold whitespace-nowrap">Tela Acesa</Label>
+                            <Switch id="keep-awake" checked={keepAwake} onCheckedChange={(val) => { setKeepAwake(val); if (val) requestWakeLock(true); }} />
+                        </div>
+                        <Button onClick={handleExportPDF} variant="outline" className="h-10 flex-1 text-[10px] md:text-xs font-semibold" disabled={isGeneratingPDF}>
+                          {isGeneratingPDF ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <FileDown className="mr-1 h-3 w-3" />}
                           <span>Exportar PDF</span>
                         </Button>
                     </div>
@@ -628,18 +513,11 @@ export default function OfflineSetlistPage() {
                             >
                                 {isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                             </Button>
-                            <Label className="text-xs font-bold whitespace-nowrap">Rolagem</Label>
+                            <Label className="text-[10px] md:text-xs font-bold whitespace-nowrap">Rolagem</Label>
                         </div>
                         <div className="flex-1 flex items-center gap-2">
                             <Zap className="h-3 w-3 text-yellow-500" />
-                            <Slider 
-                                value={[scrollSpeed]} 
-                                onValueChange={(val) => setScrollSpeed(val[0])} 
-                                max={100} 
-                                min={1} 
-                                step={1}
-                                className="flex-1"
-                            />
+                            <Slider value={[scrollSpeed]} onValueChange={(val) => setScrollSpeed(val[0])} max={100} min={1} step={1} className="flex-1" />
                             <span className="text-[10px] font-mono w-6">{scrollSpeed}</span>
                         </div>
                     </div>
@@ -647,22 +525,21 @@ export default function OfflineSetlistPage() {
                 </div>
               ) : (
                 <div className="flex items-center justify-between gap-4">
-                  <Button asChild variant="outline" size="icon" className="shrink-0"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /><span className="sr-only">Voltar</span></Link></Button>
+                  <Button asChild variant="outline" size="icon" className="shrink-0"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
                   <div className="flex flex-col items-center overflow-hidden">
                     <h1 className="text-lg font-bold font-headline tracking-tight truncate w-full text-center">
                        {showChords ? currentSong.title : offlineData.name}
                     </h1>
-                    {isWakeLockActive && <p className="text-[10px] text-yellow-600 dark:text-yellow-400 font-semibold uppercase tracking-widest flex items-center gap-1"><Sun className="h-2 w-2" /> Tela Ativa</p>}
                     {isAutoScrolling && <p className="text-[10px] text-primary font-bold uppercase tracking-widest flex items-center gap-1"><Zap className="h-2 w-2" /> Rolando: {scrollSpeed}</p>}
                   </div>
-                  <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0"><PanelTopOpen className="h-5 w-5" /><span className="sr-only">Mostrar Controles</span></Button>
+                  <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0"><PanelTopOpen className="h-5 w-5" /></Button>
                 </div>
               )}
             </CardContent>
           </Card>
       <div className="flex-1 flex flex-col min-h-0 relative">
         {isAutoScrolling || !showChords ? (
-          <Card className="flex-1 flex flex-col bg-white dark:bg-black shadow-none border-none">
+          <Card className="flex-1 flex flex-col bg-white dark:bg-black shadow-none border-none overflow-hidden">
               <CardContent className="h-full flex flex-col p-0">
                   <ScrollArea ref={scrollAreaRef} className="h-full p-4 md:p-6 flex-1">
                       <SongDisplay 
@@ -671,7 +548,7 @@ export default function OfflineSetlistPage() {
                             '--lyrics-color': finalColorSettings.lyricsColor,
                             '--chords-color': finalColorSettings.chordsColor,
                            } as React.CSSProperties}
-                          content={showChords ? fullContentContinuous : (offlineData.songs.map((s, idx) => transposeContent(s.content, transpositions[idx] ?? 0)).join('\n\n---\n\n').replace(/\n\s*\n\s*\n/g, '\n\n'))}
+                          content={showChords ? fullContentContinuous : (offlineData.songs.map((s, idx) => transposeContent(s.content, transpositions[idx] ?? 0)).join('\n\n---\n\n'))}
                           showChords={showChords} 
                       />
                   </ScrollArea>
@@ -680,8 +557,10 @@ export default function OfflineSetlistPage() {
         ) : (
           <>
             <div className="flex justify-between items-center mb-4 px-2">
-              <div className="text-xs font-semibold flex items-center gap-1.5 p-2 rounded-lg bg-muted/50 border text-foreground"><Music className="h-3 w-3" />Música {currentSongIndex + 1}/{offlineData?.songs.length ?? 0}</div>
-              {totalPagesOfSong > 1 && (<div className="text-xs font-semibold flex items-center gap-1.5 p-2 rounded-lg bg-muted/50 border text-foreground"><File className="h-3 w-3" />Página {currentPageOfSong}/{totalPagesOfSong}</div>)}
+              <div className="text-xs font-semibold flex items-center gap-1.5 p-2 rounded-lg bg-muted/50 border"><Music className="h-3 w-3" />Música {currentSongIndex + 1}/{offlineData?.songs.length ?? 0}</div>
+              {allSections.filter(s => s.songIndex === currentSongIndex).length > 1 && (
+                <div className="text-xs font-semibold flex items-center gap-1.5 p-2 rounded-lg bg-muted/50 border"><File className="h-3 w-3" />Página {currentSection.partIndex + 1}</div>
+              )}
             </div>
             <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true, loop: false }}>
               <CarouselContent>
