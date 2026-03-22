@@ -28,7 +28,7 @@ import { Slider } from '@/components/ui/slider';
 import { useAuth } from '@/hooks/use-auth';
 
 const ALL_KEYS = [
-    'C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B',
+    'C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B',
     'Cm', 'C#m', 'Dbm', 'Dm', 'D#m', 'Ebm', 'Em', 'Fm', 'F#m', 'Gbm', 'Gm', 'G#m', 'Abm', 'Am', 'A#m', 'Bbm', 'Bm'
 ];
 
@@ -287,7 +287,7 @@ export default function SongPage() {
   return (
     <div 
       ref={containerRef}
-      className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-4 h-screen outline-none overflow-hidden" 
+      className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-24 h-screen outline-none overflow-hidden relative" 
       onKeyDownCapture={handleKeyDown} 
       tabIndex={-1}
     >
@@ -431,33 +431,35 @@ export default function SongPage() {
         )}
       </div>
 
-      {/* Painel de Rolagem Automática no Rodapé */}
+      {/* Painel de Rolagem Automática - Rodapé Fixo */}
       {!isEditing && (
-        <div className="mt-4 shrink-0 flex flex-row items-center gap-4 w-full p-2 rounded-md border bg-background/50 shadow-sm z-50">
-            <div className="flex items-center gap-2">
-                {!isContinuousMode && showChords ? (
-                    <Button size="sm" variant="default" onClick={toggleAutoScroll} className="h-8 gap-2">
-                        <Play className="h-4 w-4" /><span className="text-[10px] md:text-xs font-bold">Rolagem</span>
-                    </Button>
-                ) : (
-                    <div className="flex items-center gap-2">
-                        <Button size="icon" variant={isAutoScrolling ? "destructive" : "default"} onClick={toggleAutoScroll} className="h-8 w-8">
-                            {isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t z-50">
+            <div className="max-w-screen-xl mx-auto flex flex-row items-center gap-4 w-full p-2 rounded-md border bg-muted/30 shadow-sm">
+                <div className="flex items-center gap-2">
+                    {!isContinuousMode && showChords ? (
+                        <Button size="sm" variant="default" onClick={toggleAutoScroll} className="h-8 gap-2">
+                            <Play className="h-4 w-4" /><span className="text-[10px] md:text-xs font-bold">Rolagem</span>
                         </Button>
-                        {showChords && (
-                            <Button size="icon" variant="outline" onClick={stopAutoScroll} className="h-8 w-8"><X className="h-4 w-4" /></Button>
-                        )}
-                        <Label className="text-[10px] md:text-xs font-bold whitespace-nowrap">{isAutoScrolling ? "Rolando" : "Pausado"}</Label>
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <Button size="icon" variant={isAutoScrolling ? "destructive" : "default"} onClick={toggleAutoScroll} className="h-8 w-8">
+                                {isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                            </Button>
+                            {showChords && (
+                                <Button size="icon" variant="outline" onClick={stopAutoScroll} className="h-8 w-8"><X className="h-4 w-4" /></Button>
+                            )}
+                            <Label className="text-[10px] md:text-xs font-bold whitespace-nowrap">{isAutoScrolling ? "Rolando" : "Pausado"}</Label>
+                        </div>
+                    )}
+                </div>
+                {(isContinuousMode || !showChords) && (
+                    <div className="flex-1 flex items-center gap-2">
+                        <Zap className="h-3 w-3 text-yellow-500" />
+                        <Slider value={[scrollSpeed]} onValueChange={(val) => setScrollSpeed(val[0])} max={100} min={1} step={1} className="flex-1" />
+                        <span className="text-[10px] font-mono w-6">{scrollSpeed}</span>
                     </div>
                 )}
             </div>
-            {(isContinuousMode || !showChords) && (
-                <div className="flex-1 flex items-center gap-2">
-                    <Zap className="h-3 w-3 text-yellow-500" />
-                    <Slider value={[scrollSpeed]} onValueChange={(val) => setScrollSpeed(val[0])} max={100} min={1} step={1} className="flex-1" />
-                    <span className="text-[10px] font-mono w-6">{scrollSpeed}</span>
-                </div>
-            )}
         </div>
       )}
     </div>
