@@ -1,10 +1,11 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useFirestoreDocument } from '@/hooks/use-firestore-document';
 import { type Setlist, type Song, type SetlistSong } from '@/types';
-import { ArrowLeft, Music, Plus, Minus, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff, HardDriveDownload, MonitorPlay, Bug } from 'lucide-react';
+import { ArrowLeft, Music, Plus, Minus, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff, HardDriveDownload, MonitorPlay, Bug, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
@@ -27,7 +28,6 @@ export default function SetlistPage() {
   
   const { appUser, loading: authLoading } = useAuth();
   
-  // Só busca o documento se o usuário estiver logado e tiver perfil carregado
   const { data: setlist, loading: loadingSetlist, updateDocument: updateSetlistDoc } = useFirestoreDocument<Setlist>(
     'setlists', 
     appUser ? setlistId : null
@@ -44,6 +44,7 @@ export default function SetlistPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
+  const [isSyncing, setIsSyncing] = useState(false);
   
   const loading = loadingSetlist || loadingSongs || authLoading || !isClient;
 
@@ -148,9 +149,43 @@ export default function SetlistPage() {
     updateSetlistDoc({ songs: items });
   };
 
-  const handleOpenSetlist = () => {
-    if (!setlist) return;
-    router.push(`/setlists/${setlistId}/offline`);
+  const handleOpenSetlist = async () => {
+    if (!setlist || !isClient) return;
+    
+    setIsSyncing(true);
+    try {
+        // Coleta todos os dados das músicas para garantir que o modo offline tenha as letras completas
+        const offlineSongs = orderedSongs.map(os => {
+            const song = songMap.get(os.songId);
+            return {
+                title: song?.title || 'Sem Título',
+                artist: song?.artist || 'Sem Artista',
+                content: song?.content || '',
+                key: song?.key,
+                initialTranspose: os.transpose || 0
+            };
+        });
+
+        const offlineData = {
+            name: setlist.name,
+            songs: offlineSongs
+        };
+
+        // Salva no LocalStorage do dispositivo atual (celular ou PC)
+        localStorage.setItem(`offline-setlist-${setlistId}`, JSON.stringify(offlineData));
+        
+        // Redireciona para o modo de apresentação
+        router.push(`/setlists/${setlistId}/offline`);
+    } catch (error) {
+        console.error("Erro ao sincronizar para offline:", error);
+        toast({
+            title: "Erro de Sincronização",
+            description: "Não foi possível preparar o repertório para uso offline.",
+            variant: "destructive"
+        });
+    } finally {
+        setIsSyncing(false);
+    }
   };
   
   if (isClient && !loading && !setlist) {
@@ -252,8 +287,8 @@ export default function SetlistPage() {
                   </div>
                 </div>
               )}
-               <Button onClick={handleOpenSetlist} variant="default">
-                    <MonitorPlay className="mr-2 h-4 w-4" />
+               <Button onClick={handleOpenSetlist} variant="default" disabled={isSyncing || orderedSongs.length === 0}>
+                    {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MonitorPlay className="mr-2 h-4 w-4" />}
                     Abrir Repertório
                 </Button>
             </div>

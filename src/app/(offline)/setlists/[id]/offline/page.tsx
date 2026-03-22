@@ -266,15 +266,22 @@ export default function OfflineSetlistPage() {
     if (!offlineData) return [];
     const sections: Section[] = [];
     offlineData.songs.forEach((song, songIndex) => {
-        const parts = song.content.split(/\n\s*\n\s*\n/);
+        // Normaliza as quebras de linha para garantir consistência entre dispositivos (Windows \r\n vs Unix \n)
+        const normalizedContent = song.content.replace(/\r\n/g, '\n');
+        // Divide por 3 ou mais quebras de linha (com espaços opcionais)
+        const parts = normalizedContent.split(/\n[\r\t ]*\n[\r\t ]*\n+/);
+        
         parts.forEach((part, partIndex) => {
-            sections.push({
-                songIndex: songIndex,
-                partIndex: partIndex,
-                content: part,
-                isLastSectionOfSong: partIndex === parts.length - 1,
-                isLastSectionOfSetlist: partIndex === parts.length - 1 && songIndex === offlineData.songs.length - 1,
-            });
+            const trimmedPart = part.trim();
+            if (trimmedPart) {
+                sections.push({
+                    songIndex: songIndex,
+                    partIndex: partIndex,
+                    content: trimmedPart,
+                    isLastSectionOfSong: partIndex === parts.length - 1,
+                    isLastSectionOfSetlist: partIndex === parts.length - 1 && songIndex === offlineData.songs.length - 1,
+                });
+            }
         });
     });
     return sections;
@@ -638,8 +645,6 @@ export default function OfflineSetlistPage() {
                   </CarouselItem>
                 ))}
               </CarouselContent>
-              <div className="absolute -left-12 top-1/2 -translate-y-1/2 hidden md:block"><CarouselPrevious /></div>
-              <div className="absolute -right-12 top-1/2 -translate-y-1/2 hidden md:block"><CarouselNext /></div>
               <div className="absolute left-0 top-0 h-full w-1/3 z-10" onClick={() => api?.scrollPrev()} />
               <div className="absolute right-0 top-0 h-full w-1/3 z-10" onClick={() => api?.scrollNext()} />
             </Carousel>
