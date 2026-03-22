@@ -279,30 +279,48 @@ export default function OfflineSetlistPage() {
     return sections;
   }, [offlineData]);
 
-   useEffect(() => {
-    if (!api || isAutoScrolling) return;
+  // Observer para detectar música atual no modo contínuo
+  useEffect(() => {
+    if (!isContinuousMode || !isClient || !offlineData) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const songIndex = parseInt(entry.target.getAttribute('data-song-index') || '0', 10);
+            const sectionIndex = allSections.findIndex(s => s.songIndex === songIndex);
+            if (sectionIndex !== -1) {
+              setCurrentSectionIndex(sectionIndex);
+            }
+          }
+        });
+      },
+      {
+        root: scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]'),
+        threshold: 0,
+        rootMargin: '-10% 0px -85% 0px', // Foca na detecção da música no topo do viewport
+      }
+    );
+
+    const songElements = document.querySelectorAll('[data-song-index]');
+    songElements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, [isContinuousMode, isClient, offlineData, allSections]);
+
+  useEffect(() => {
+    if (!api || isContinuousMode) return;
     const handleSelect = () => setCurrentSectionIndex(api.selectedScrollSnap());
     api.on("select", handleSelect);
     handleSelect();
     return () => { api.off("select", handleSelect); }
-  }, [api, isAutoScrolling]);
+  }, [api, isContinuousMode]);
 
   const currentSection = allSections[currentSectionIndex];
   const currentSongIndex = currentSection?.songIndex;
   const currentSong = typeof currentSongIndex === 'number' ? offlineData?.songs[currentSongIndex] : undefined;
   const currentSongTranspose = typeof currentSongIndex === 'number' ? (transpositions[currentSongIndex] ?? 0) : 0;
   
-  const fullContentContinuous = useMemo(() => {
-    if (!offlineData) return '';
-    return offlineData.songs
-        .map((song, idx) => {
-            const transposed = transposeContent(song.content, transpositions[idx] ?? 0);
-            return transposed.replace(/\n\s*\n\s*\n/g, '\n\n');
-        })
-        .join('\n\n' + '-'.repeat(30) + '\n\n')
-        .replace(/\n\s*\n\s*\n/g, '\n\n');
-  }, [offlineData, transpositions]);
-
   const toggleAutoScroll = useCallback(() => {
     if (!isContinuousMode) {
         setIsContinuousMode(true);
@@ -507,7 +525,9 @@ export default function OfflineSetlistPage() {
                     <Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /><span className="sr-only">Voltar</span></Link>
                   </Button>
                   <div className="flex-1 space-y-1">
-                    <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight truncate">{showContinuous ? currentSong.title : offlineData.name}</h1>
+                    <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight truncate">
+                       {isContinuousMode ? currentSong.title : offlineData.name}
+                    </h1>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="text-xs">Modo Offline</Badge>
                       {isWakeLockActive ? <Sun className="h-3 w-3 text-yellow-500" /> : <Moon className="h-3 w-3 text-muted-foreground" />}
@@ -548,7 +568,7 @@ export default function OfflineSetlistPage() {
                 <Button asChild variant="outline" size="icon" className="shrink-0"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
                 <div className="flex flex-col items-center overflow-hidden">
                   <h1 className="text-lg font-bold font-headline tracking-tight truncate w-full text-center">
-                     {showContinuous ? currentSong.title : offlineData.name}
+                     {isContinuousMode ? currentSong.title : offlineData.name}
                   </h1>
                   {isAutoScrolling && <p className="text-[10px] text-primary font-bold uppercase tracking-widest flex items-center gap-1"><Zap className="h-2 w-2" /> Rolando: {scrollSpeed}</p>}
                 </div>
@@ -564,15 +584,36 @@ export default function OfflineSetlistPage() {
           <Card className="flex-1 flex flex-col bg-white dark:bg-black shadow-none border-none overflow-hidden">
               <CardContent className="h-full flex flex-col p-0">
                   <ScrollArea ref={scrollAreaRef} className="h-full p-4 md:p-6 flex-1">
-                      <SongDisplay 
-                          style={{ 
-                            fontSize: `${fontSize}px`,
-                            '--lyrics-color': finalColorSettings.lyricsColor,
-                            '--chords-color': finalColorSettings.chordsColor,
-                           } as React.CSSProperties}
-                          content={showChords ? fullContentContinuous : (offlineData.songs.map((s, idx) => transposeContent(s.content, transpositions[idx] ?? 0)).join('\n\n---\n\n'))}
-                          showChords={showChords} 
-                      />
+                      <div className="flex flex-col gap-12">
+                        {offlineData.songs.map((song, songIdx) => (
+                          <div 
+                            key={songIdx} 
+                            data-song-index={songIdx} 
+                            className="flex flex-col"
+                          >
+                            <div className="mb-6 flex flex-col border-l-4 border-primary/20 pl-4 py-2">
+                                <h2 className="text-2xl font-bold font-headline text-primary opacity-60">{song.title}</h2>
+                                <p className="text-sm text-muted-foreground opacity-60">{song.artist}</p>
+                            </div>
+                            <SongDisplay 
+                                style={{ 
+                                  fontSize: `${fontSize}px`,
+                                  '--lyrics-color': finalColorSettings.lyricsColor,
+                                  '--chords-color': finalColorSettings.chordsColor,
+                                } as React.CSSProperties}
+                                content={transposeContent(song.content, transpositions[songIdx] ?? 0).replace(/\n\s*\n\s*\n/g, '\n\n')}
+                                showChords={showChords} 
+                            />
+                            {songIdx < offlineData.songs.length - 1 && (
+                                <div className="mt-16 flex items-center gap-4 opacity-30">
+                                    <Separator className="flex-1" />
+                                    <Music className="h-4 w-4 shrink-0" />
+                                    <Separator className="flex-1" />
+                                </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                   </ScrollArea>
               </CardContent>
           </Card>
