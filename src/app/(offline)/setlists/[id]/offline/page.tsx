@@ -62,7 +62,7 @@ function SongPresenter({
     const content = transposeContent(section.content, transposeValue);
 
     return (
-        <Card id={id} className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none">
+        <Card id={id} className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none overflow-hidden">
             <CardContent className="flex-1 h-full p-0">
                 <ScrollArea className="h-full p-4 md:p-6 pt-0">
                     <SongDisplay 
@@ -303,48 +303,41 @@ export default function OfflineSetlistPage() {
         .replace(/\n\s*\n\s*\n/g, '\n\n');
   }, [offlineData, transpositions]);
 
-  const toggleAutoScroll = () => {
+  const toggleAutoScroll = useCallback(() => {
     if (!isContinuousMode) {
         setIsContinuousMode(true);
         setIsAutoScrolling(true);
     } else {
         setIsAutoScrolling(!isAutoScrolling);
     }
-  };
+  }, [isContinuousMode, isAutoScrolling]);
 
-  const stopAutoScroll = () => {
+  const stopAutoScroll = useCallback(() => {
     setIsContinuousMode(false);
     setIsAutoScrolling(false);
-  };
-
-  const toggleModeByPedal = () => {
-    if (isContinuousMode) {
-      stopAutoScroll();
-    } else {
-      setIsContinuousMode(true);
-      setIsAutoScrolling(true);
-    }
-  };
-
-  const togglePauseByPedal = () => {
-    if (isContinuousMode) {
-      setIsAutoScrolling(!isAutoScrolling);
-    }
-  };
+  }, []);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
         const key = event.key;
         
-        // Atalhos do Pedal
+        // Pedal: Ligar/Desligar Rolagem
         if (key === pedalSettings.nextSong) {
             event.preventDefault();
-            toggleModeByPedal();
+            if (isContinuousMode) {
+                stopAutoScroll();
+            } else {
+                setIsContinuousMode(true);
+                setIsAutoScrolling(true);
+            }
             return;
         }
 
+        // Pedal: Pausar/Retomar
         if (key === pedalSettings.prevSong) {
             event.preventDefault();
-            togglePauseByPedal();
+            if (isContinuousMode) {
+                setIsAutoScrolling(prev => !prev);
+            }
             return;
         }
 
@@ -357,7 +350,7 @@ export default function OfflineSetlistPage() {
             api?.scrollNext();
             }
         }
-  }, [api, pedalSettings, showChords, isAutoScrolling, isContinuousMode]);
+  }, [api, pedalSettings, showChords, isAutoScrolling, isContinuousMode, stopAutoScroll]);
   
   const changeTranspose = (change: number) => {
     if (typeof currentSongIndex !== 'number') return;

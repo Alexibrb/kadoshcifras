@@ -186,26 +186,26 @@ export default function SongPage() {
     return contentToDisplay.split(/\n\s*\n\s*\n/);
   }, [contentToDisplay]);
 
-  const toggleAutoScroll = () => {
+  const toggleAutoScroll = useCallback(() => {
     if (!isContinuousMode) {
         setIsContinuousMode(true);
         setIsAutoScrolling(true);
     } else {
         setIsAutoScrolling(!isAutoScrolling);
     }
-  };
+  }, [isContinuousMode, isAutoScrolling]);
 
-  const stopAutoScroll = () => {
+  const stopAutoScroll = useCallback(() => {
     setIsContinuousMode(false);
     setIsAutoScrolling(false);
-  };
+  }, []);
 
   const handleKeyDown = useCallback(
       (event: React.KeyboardEvent<HTMLDivElement>) => {
         if (isEditing) return;
         const key = event.key;
 
-        // Controle de Rolagem via Pedal
+        // Pedal: Ligar/Desligar Rolagem
         if (key === pedalSettings.nextSong) {
             event.preventDefault();
             if (isContinuousMode) {
@@ -217,10 +217,11 @@ export default function SongPage() {
             return;
         }
 
+        // Pedal: Pausar/Retomar
         if (key === pedalSettings.prevSong) {
             event.preventDefault();
             if (isContinuousMode) {
-                setIsAutoScrolling(!isAutoScrolling);
+                setIsAutoScrolling(prev => !prev);
             }
             return;
         }
@@ -236,7 +237,7 @@ export default function SongPage() {
             }
         }
       },
-      [api, isEditing, showChords, pedalSettings, isContinuousMode, isAutoScrolling]
+      [api, isEditing, showChords, pedalSettings, isContinuousMode, isAutoScrolling, stopAutoScroll]
     )
   
   const handleSave = async () => {
