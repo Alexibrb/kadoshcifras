@@ -520,9 +520,9 @@ export default function OfflineSetlistPage() {
 
   return (
     <div ref={containerRef} className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-24 h-screen outline-none bg-background overflow-hidden relative" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
-      <div className="flex flex-col gap-2 mb-4 shrink-0">
+      <div className={cn("flex flex-col gap-2 shrink-0 transition-all", isPanelVisible ? "mb-4" : "mb-1")}>
         <Card className="bg-accent/10 transition-all duration-300">
-          <CardContent className="p-4 space-y-4">
+          <CardContent className={cn("transition-all", isPanelVisible ? "p-4 space-y-4" : "p-1.5")}>
             {isPanelVisible ? (
               <div className="flex flex-col gap-4">
                 <div className="flex items-start justify-between gap-4">
@@ -570,14 +570,14 @@ export default function OfflineSetlistPage() {
               </div>
             ) : (
               <div className="flex items-center justify-between gap-4">
-                <Button asChild variant="outline" size="icon" className="shrink-0"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
+                <Button asChild variant="outline" size="icon" className="shrink-0 h-8 w-8"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
                 <div className="flex flex-col items-center overflow-hidden">
-                  <h1 className="text-lg font-bold font-headline tracking-tight truncate w-full text-center">
+                  <h1 className="text-base font-bold font-headline tracking-tight truncate w-full text-center">
                      {currentSong.title}
                   </h1>
                   {isAutoScrolling && <p className="text-[10px] text-primary font-bold uppercase tracking-widest flex items-center gap-1"><Zap className="h-2 w-2" /> Rolando: {scrollSpeed}</p>}
                 </div>
-                <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0"><PanelTopOpen className="h-5 w-5" /></Button>
+                <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="shrink-0 h-8 w-8"><PanelTopOpen className="h-5 w-5" /></Button>
               </div>
             )}
           </CardContent>
