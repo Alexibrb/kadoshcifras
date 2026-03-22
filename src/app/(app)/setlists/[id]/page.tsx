@@ -1,4 +1,3 @@
-
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -19,7 +18,6 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { transposeChord } from '@/lib/music';
 import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function SetlistPage() {
   const params = useParams();
@@ -27,10 +25,9 @@ export default function SetlistPage() {
   const router = useRouter();
   const { toast } = useToast();
   
-  const { appUser } = useAuth();
+  const { appUser, loading: authLoading } = useAuth();
   
-  // Só busca o documento se o usuário estiver logado. 
-  // O hook useRequireAuth cuidará do redirecionamento se não estiver aprovado.
+  // Só busca o documento se o usuário estiver logado e tiver perfil carregado
   const { data: setlist, loading: loadingSetlist, updateDocument: updateSetlistDoc } = useFirestoreDocument<Setlist>(
     'setlists', 
     appUser ? setlistId : null
@@ -39,26 +36,20 @@ export default function SetlistPage() {
   const { data: allSongs, loading: loadingSongs } = useFirestoreCollection<Song>(
     'songs', 
     undefined, 
-    appUser?.isApproved ? [] : [['id', '==', 'disabled']] // Desativa a busca se não estiver aprovado
+    appUser?.isApproved ? [] : [['id', '==', 'disabled']]
   );
 
   const [isClient, setIsClient] = useState(false);
-  const [hasOfflineVersion, setHasOfflineVersion] = useState(false);
   const [orderedSongs, setOrderedSongs] = useState<SetlistSong[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   
-  // Estado de carregamento combinado
-  const loading = loadingSetlist || loadingSongs || !appUser;
+  const loading = loadingSetlist || loadingSongs || authLoading || !isClient;
 
   useEffect(() => { 
     setIsClient(true);
-    if (typeof window !== 'undefined') {
-      const offlineData = localStorage.getItem(`offline-setlist-${setlistId}`);
-      setHasOfflineVersion(!!offlineData);
-    }
-  }, [setlistId]);
+  }, []);
   
   useEffect(() => {
     if (setlist) {
@@ -157,55 +148,9 @@ export default function SetlistPage() {
     updateSetlistDoc({ songs: items });
   };
 
-  const generateOfflineData = () => {
-    if (loading || !setlist || !songMap) return null;
-
-    const songsToProcess = setlist.songs || [];
-    
-    const allSongsFound = songsToProcess.every(setlistSong => songMap.has(setlistSong.songId));
-    if (!allSongsFound) {
-      toast({
-        title: "Erro de Sincronização",
-        description: "Algumas músicas do repertório ainda estão carregando. Aguarde um instante e tente novamente.",
-        variant: "destructive"
-      });
-      return null;
-    }
-    
-    const offlineSongs = songsToProcess.map(setlistSong => {
-      const song = songMap.get(setlistSong.songId);
-      if (!song) return null;
-      return {
-          title: song.title,
-          artist: song.artist,
-          content: song.content,
-          key: song.key,
-          initialTranspose: setlistSong.transpose
-      };
-    }).filter((song): song is NonNullable<typeof song> => song !== null);
-
-    return {
-      name: setlist.name,
-      songs: offlineSongs
-    };
-  }
-
-  const handleGenerateOffline = () => {
-    const dataToSave = generateOfflineData();
-    if (!dataToSave) return;
-
-    try {
-      const storageKey = `offline-setlist-${setlistId}`;
-      const jsonString = JSON.stringify(dataToSave, null, 2);
-      localStorage.setItem(storageKey, jsonString);
-      router.push(`/setlists/${setlistId}/offline`);
-    } catch (error) {
-       toast({
-        title: "Erro ao Salvar",
-        description: "Não foi possível salvar o repertório para uso offline.",
-        variant: "destructive"
-      });
-    }
+  const handleOpenSetlist = () => {
+    if (!setlist) return;
+    router.push(`/setlists/${setlistId}/offline`);
   };
   
   if (isClient && !loading && !setlist) {
@@ -216,7 +161,7 @@ export default function SetlistPage() {
       notFound();
   }
 
-  if (!isClient || loading) {
+  if (loading) {
     return (
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
             <div className="flex items-center justify-between gap-4">
@@ -252,13 +197,13 @@ export default function SetlistPage() {
             </Button>
             <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                    {setlist.isPublic ? <Globe className="h-7 w-7" /> : <Lock className="h-7 w-7" />}
-                    {setlist.isVisible ? <Eye className="h-7 w-7" /> : <EyeOff className="h-7 w-7" />}
+                    {setlist?.isPublic ? <Globe className="h-7 w-7" /> : <Lock className="h-7 w-7" />}
+                    {setlist?.isVisible ? <Eye className="h-7 w-7" /> : <EyeOff className="h-7 w-7" />}
                 </div>
                 <div>
                     {!isEditingName ? (
                       <div className="flex items-center gap-2">
-                         <h2 className="text-3xl font-bold font-headline tracking-tight">{setlist.name}</h2>
+                         <h2 className="text-3xl font-bold font-headline tracking-tight">{setlist?.name}</h2>
                          {canChangeSettings && (
                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsEditingName(true)}>
                               <Edit className="h-4 w-4" />
@@ -275,7 +220,7 @@ export default function SetlistPage() {
                             autoFocus
                         />
                         <Button size="icon" className="h-10 w-10" onClick={handleNameSave}><Save className="h-5 w-5" /></Button>
-                        <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => { setIsEditingName(false); setEditedName(setlist.name); }}><X className="h-5 w-5" /></Button>
+                        <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => { setIsEditingName(false); setEditedName(setlist?.name || ''); }}><X className="h-5 w-5" /></Button>
                       </div>
                     )}
                     <p className="text-muted-foreground">{orderedSongs.length} música(s)</p>
@@ -287,27 +232,27 @@ export default function SetlistPage() {
                 <div className="flex items-center gap-4 flex-wrap">
                   <div className="flex items-center space-x-2 rounded-md border p-2">
                     <Label htmlFor="public-switch" className="text-sm font-medium">
-                      {setlist.isPublic ? 'Público' : 'Privado'}
+                      {setlist?.isPublic ? 'Público' : 'Privado'}
                     </Label>
                     <Switch
                       id="public-switch"
-                      checked={setlist.isPublic}
+                      checked={setlist?.isPublic || false}
                       onCheckedChange={handlePublicToggle}
                     />
                   </div>
                   <div className="flex items-center space-x-2 rounded-md border p-2">
                     <Label htmlFor="visibility-switch" className="text-sm font-medium">
-                      {setlist.isVisible ? 'Visível' : 'Oculto'}
+                      {setlist?.isVisible ? 'Visível' : 'Oculto'}
                     </Label>
                     <Switch
                       id="visibility-switch"
-                      checked={setlist.isVisible}
+                      checked={setlist?.isVisible || false}
                       onCheckedChange={handleVisibilityToggle}
                     />
                   </div>
                 </div>
               )}
-               <Button onClick={handleGenerateOffline} variant="default">
+               <Button onClick={handleOpenSetlist} variant="default">
                     <MonitorPlay className="mr-2 h-4 w-4" />
                     Abrir Repertório
                 </Button>
@@ -324,7 +269,7 @@ export default function SetlistPage() {
                   </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
-                  {isClient && orderedSongs.length > 0 ? (
+                  {orderedSongs.length > 0 ? (
                       <DragDropContext onDragEnd={onDragEnd}>
                         <Droppable droppableId="songs" isDropDisabled={!canEdit}>
                           {(provided) => (

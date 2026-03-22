@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -16,7 +15,7 @@ service cloud.firestore {
 
     // Helper function to check if the requesting user is an admin
     function isAdmin() {
-      return isAuthenticated() && getAppUser(request.auth.uid).role == 'admin';
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getAppUser(request.auth.uid).role == 'admin';
     }
     
     // Helper function to check if the requesting user is approved
@@ -26,39 +25,44 @@ service cloud.firestore {
 
     // USERS COLLECTION
     match /users/{userId} {
-      // READ: 
-      // - An admin can read any user's profile.
-      // - A non-admin user can only read their own profile.
       allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
 
-      // CREATE:
-      // A user can create their own document upon signup
       allow create: if isAuthenticated() && request.auth.uid == userId
                       && request.resource.data.isApproved == false
-                      && request.resource.data.role == 'user'
-                      && request.resource.data.keys().hasOnly(['displayName', 'email', 'isApproved', 'role', 'createdAt']);
+                      && request.resource.data.role == 'user';
 
-      // UPDATE:
-      // - An admin can update anyone's `isApproved` or `role`.
-      // - A user can only update their own settings.
       allow update: if isAdmin() 
-                    || (isAuthenticated() && request.auth.uid == userId && request.resource.data.keys().hasAny(['displayName', 'colorSettings', 'fontSize']));
+                    || (isAuthenticated() && request.auth.uid == userId);
       
-      // DELETE: No one should delete user documents.
       allow delete: if false;
     }
     
     // SETLISTS COLLECTION
     match /setlists/{setlistId} {
-      // Permite leitura se for aprovado OU se for público (mesmo pendente de aprovação mas logado)
-      allow read: if isApproved() || (isAuthenticated() && resource.data.isPublic == true);
-      allow write: if isApproved();
+      // Permite leitura se for aprovado OU se for público OU se for o próprio criador
+      allow read: if isAdmin() 
+                  || isApproved() 
+                  || (isAuthenticated() && (resource.data.isPublic == true || resource.data.isVisible == true))
+                  || (isAuthenticated() && resource.data.creatorId == request.auth.uid);
+      
+      // Permite escrita se for aprovado OU se estiver criando seu próprio documento
+      allow write: if isAdmin() 
+                   || isApproved()
+                   || (isAuthenticated() && (request.resource.data.creatorId == request.auth.uid || resource.data.creatorId == request.auth.uid));
     }
 
-    // OTHER COLLECTIONS
+    // SONGS COLLECTION
+    match /songs/{songId} {
+      // Usuários autenticados podem ler músicas (necessário para ver repertórios públicos)
+      allow read: if isAuthenticated();
+      // Apenas aprovados ou admin podem criar/editar músicas
+      allow write: if isApproved() || isAdmin();
+    }
+
+    // OTHER COLLECTIONS (artists, genres, categories)
     match /{collection}/{docId} {
-      // Qualquer usuário aprovado pode acessar outras coleções (músicas, artistas, etc)
-      allow read, write: if isApproved() && collection != 'users' && collection != 'setlists';
+      allow read: if isAuthenticated();
+      allow write: if isApproved() || isAdmin();
     }
   }
 }

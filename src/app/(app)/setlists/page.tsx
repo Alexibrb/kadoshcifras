@@ -1,4 +1,3 @@
-
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,41 +24,39 @@ export default function SetlistsPage() {
   const { appUser, loading: authLoading } = useAuth();
   const [isClient, setIsClient] = useState(false);
   
-  // Busca os repertórios do PRÓPRIO usuário (incluindo os ocultos)
+  // Busca os repertórios do PRÓPRIO usuário
   const { data: mySetlistsData, loading: loadingMySetlists } = useFirestoreCollection<Setlist>(
     'setlists',
-    undefined, // Ordenação removida do servidor
-    appUser ? [['creatorId', '==', appUser.id]] : [] // Aplica filtro apenas quando appUser está disponível
+    undefined,
+    appUser ? [['creatorId', '==', appUser.id]] : [['id', '==', 'none']]
   );
 
-  // Busca os repertórios de OUTROS usuários que sejam VISÍVEIS
+  // Busca os repertórios que sejam VISÍVEIS para qualquer um
   const { data: otherSetlistsData, loading: loadingOtherSetlists } = useFirestoreCollection<Setlist>(
     'setlists',
-    undefined, // Ordenação removida do servidor
+    undefined,
     [['isVisible', '==', true]]
   );
 
   const { deleteDocument } = useFirestoreCollection<Setlist>('setlists');
 
-  const loading = authLoading || loadingMySetlists || loadingOtherSetlists;
+  const loading = authLoading || loadingMySetlists || loadingOtherSetlists || !isClient;
 
   useEffect(() => {
     setIsClient(true);
   }, []);
   
   const setlists = useMemo(() => {
-    if (!isClient || loading || !appUser) return [];
+    if (!isClient || !appUser) return [];
 
-    // Filtra os repertórios de outros usuários para não incluir os que já são meus
-    const filteredOthers = otherSetlistsData.filter(s => s.creatorId !== appUser.id);
-    
     // Combina as duas listas, garantindo que não haja duplicatas
+    const filteredOthers = otherSetlistsData.filter(s => s.creatorId !== appUser.id);
     const combined = [...mySetlistsData, ...filteredOthers];
     const uniqueSetlists = Array.from(new Map(combined.map(item => [item.id, item])).values());
     
     // Ordena no cliente
     return uniqueSetlists.sort((a,b) => a.name.localeCompare(b.name));
-  }, [mySetlistsData, otherSetlistsData, appUser, loading, isClient]);
+  }, [mySetlistsData, otherSetlistsData, appUser, isClient]);
 
 
   const deleteSetlist = (id: string) => {
@@ -78,7 +75,7 @@ export default function SetlistsPage() {
             </Button>
         </div>
       </div>
-      {loading && isClient ? (
+      {loading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <Card key={i} className="p-4 space-y-3">
@@ -88,7 +85,7 @@ export default function SetlistsPage() {
             </Card>
           ))}
         </div>
-      ) : isClient && setlists.length === 0 ? (
+      ) : setlists.length === 0 ? (
         <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm mt-8 py-24">
           <div className="flex flex-col items-center gap-1 text-center">
             <ListMusic className="h-12 w-12 text-muted-foreground" />
@@ -103,8 +100,7 @@ export default function SetlistsPage() {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {isClient &&
-            setlists.map((setlist) => {
+          {setlists.map((setlist) => {
               const canDelete = appUser?.role === 'admin' || appUser?.id === setlist.creatorId;
               return (
               <Card key={setlist.id} className="p-4 flex flex-col">
