@@ -124,7 +124,6 @@ export default function SongPage() {
     })
   }, [api])
 
-  // Lógica de Animação da Rolagem
   const animateScroll = useCallback((time: number) => {
     if (lastScrollTime.current && scrollAreaRef.current) {
         const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
@@ -205,7 +204,6 @@ export default function SongPage() {
         if (isEditing) return;
         const key = event.key;
 
-        // Pedal: Ligar/Desligar Rolagem
         if (key === pedalSettings.nextSong) {
             event.preventDefault();
             if (isContinuousMode) {
@@ -217,7 +215,6 @@ export default function SongPage() {
             return;
         }
 
-        // Pedal: Pausar/Retomar
         if (key === pedalSettings.prevSong) {
             event.preventDefault();
             if (isContinuousMode) {
@@ -226,7 +223,6 @@ export default function SongPage() {
             return;
         }
 
-        // Navegação de Página/Slide (apenas se não estiver rolando automaticamente)
         if (!isAutoScrolling) {
             if (showChords && (key === "ArrowLeft" || key === 'PageUp' || key === pedalSettings.prevPage)) {
                 event.preventDefault()
@@ -410,6 +406,10 @@ export default function SongPage() {
                       <Card className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none">
                         <CardContent className="flex-1 h-full p-0">
                           <ScrollArea className="h-full p-4 md:p-6">
+                            <div className="mb-6 border-l-4 border-primary/20 pl-4 py-2">
+                                <h2 className="text-2xl font-bold font-headline text-primary">{song.title}</h2>
+                                <p className="text-sm text-muted-foreground">{song.artist}</p>
+                            </div>
                             <SongDisplay 
                                 style={{ 
                                   fontSize: `${finalFontSize}px`, 
@@ -432,7 +432,6 @@ export default function SongPage() {
         )}
       </div>
 
-      {/* Painel de Rolagem Automática - Rodapé Fixo */}
       {!isEditing && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t z-50">
             <div className="max-w-screen-xl mx-auto flex flex-row items-center gap-4 w-full p-2 rounded-md border bg-muted/30 shadow-sm">

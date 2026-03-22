@@ -48,6 +48,7 @@ function SongPresenter({
     fontSize, 
     showChords, 
     colorSettings,
+    song,
     id
 } : { 
     section: Section | undefined, 
@@ -55,9 +56,10 @@ function SongPresenter({
     fontSize: number, 
     showChords: boolean, 
     colorSettings: ColorSettings | null,
+    song: OfflineSong | undefined,
     id?: string
 }) {
-    if (!section) return null;
+    if (!section || !song) return null;
 
     const content = transposeContent(section.content, transposeValue);
 
@@ -65,6 +67,10 @@ function SongPresenter({
         <Card id={id} className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none overflow-hidden">
             <CardContent className="flex-1 h-full p-0">
                 <ScrollArea className="h-full p-4 md:p-6 pt-0">
+                    <div className="mb-6 border-l-4 border-primary/20 pl-4 py-2">
+                        <h2 className="text-2xl font-bold font-headline text-primary">{song.title}</h2>
+                        <p className="text-sm text-muted-foreground">{song.artist}</p>
+                    </div>
                     <SongDisplay 
                         style={{ 
                             fontSize: `${fontSize}px`,
@@ -112,7 +118,6 @@ export default function OfflineSetlistPage() {
   const [isWakeLockSupported, setIsWakeLockSupported] = useState(false);
   const [isWakeLockActive, setIsWakeLockActive] = useState(false);
 
-  // Estados da Rolagem
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(20);
@@ -279,7 +284,6 @@ export default function OfflineSetlistPage() {
     return sections;
   }, [offlineData]);
 
-  // Observer para detectar música atual no modo contínuo
   useEffect(() => {
     if (!isContinuousMode || !isClient || !offlineData) return;
 
@@ -298,7 +302,7 @@ export default function OfflineSetlistPage() {
       {
         root: scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]'),
         threshold: 0,
-        rootMargin: '-10% 0px -85% 0px', // Foca na detecção da música no topo do viewport
+        rootMargin: '-10% 0px -85% 0px',
       }
     );
 
@@ -338,7 +342,6 @@ export default function OfflineSetlistPage() {
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
         const key = event.key;
         
-        // Pedal: Ligar/Desligar Rolagem
         if (key === pedalSettings.nextSong) {
             event.preventDefault();
             if (isContinuousMode) {
@@ -350,7 +353,6 @@ export default function OfflineSetlistPage() {
             return;
         }
 
-        // Pedal: Pausar/Retomar
         if (key === pedalSettings.prevSong) {
             event.preventDefault();
             if (isContinuousMode) {
@@ -629,7 +631,14 @@ export default function OfflineSetlistPage() {
               <CarouselContent>
                 {allSections.map((section, index) => (
                   <CarouselItem key={index} className="h-full">
-                      <SongPresenter section={section} transposeValue={transpositions[section.songIndex] ?? 0} fontSize={fontSize} showChords={showChords} colorSettings={finalColorSettings} />
+                      <SongPresenter 
+                        section={section} 
+                        transposeValue={transpositions[section.songIndex] ?? 0} 
+                        fontSize={fontSize} 
+                        showChords={showChords} 
+                        colorSettings={finalColorSettings}
+                        song={offlineData.songs[section.songIndex]}
+                      />
                   </CarouselItem>
                 ))}
               </CarouselContent>
@@ -642,7 +651,6 @@ export default function OfflineSetlistPage() {
         )}
       </div>
 
-      {/* Barra de Controle de Rolagem - Rodapé Fixo Offline */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t z-50">
           <div className="max-w-screen-xl mx-auto flex flex-row items-center gap-4 w-full p-2 rounded-md border bg-muted/30 shadow-sm">
               <div className="flex items-center gap-2">
