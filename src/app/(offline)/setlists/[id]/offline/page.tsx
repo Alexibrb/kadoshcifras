@@ -67,10 +67,13 @@ function SongPresenter({
         <Card id={id} className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none overflow-hidden">
             <CardContent className="flex-1 h-full p-0">
                 <ScrollArea className="h-full p-4 md:p-6 pt-0">
-                    <div className="mb-6 border-l-4 border-primary/20 pl-4 py-2">
-                        <h2 className="text-2xl font-bold font-headline text-primary">{song.title}</h2>
-                        <p className="text-sm text-muted-foreground">{song.artist}</p>
-                    </div>
+                    {/* O título aparece apenas na primeira parte (página) de cada música */}
+                    {section.partIndex === 0 && (
+                        <div className="mb-6 border-l-4 border-primary/20 pl-4 py-2 mt-4">
+                            <h2 className="text-3xl font-bold font-headline text-primary">{song.title}</h2>
+                            <p className="text-sm text-muted-foreground">{song.artist}</p>
+                        </div>
+                    )}
                     <SongDisplay 
                         style={{ 
                             fontSize: `${fontSize}px`,
@@ -594,8 +597,8 @@ export default function OfflineSetlistPage() {
                             className="flex flex-col"
                           >
                             <div className="mb-6 flex flex-col border-l-4 border-primary/20 pl-4 py-2">
-                                <h2 className="text-2xl font-bold font-headline text-primary opacity-60">{song.title}</h2>
-                                <p className="text-sm text-muted-foreground opacity-60">{song.artist}</p>
+                                <h2 className="text-3xl font-bold font-headline text-primary">{song.title}</h2>
+                                <p className="text-sm text-muted-foreground">{song.artist}</p>
                             </div>
                             <SongDisplay 
                                 style={{ 

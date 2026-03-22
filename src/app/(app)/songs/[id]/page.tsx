@@ -299,12 +299,9 @@ export default function SongPage() {
                             <Link href={backUrl}><ArrowLeft className="h-4 w-4" /><span className="sr-only">Voltar</span></Link>
                         </Button>
                         <div className="flex-1 space-y-1">
-                            <h1 className="text-2xl font-bold font-headline tracking-tight leading-tight truncate">{song.title}</h1>
-                            <div className="flex items-center gap-3 flex-wrap">
-                                <p className="text-muted-foreground text-sm">{song.artist}</p>
-                                {song.key && <Badge variant="outline" className="text-sm">Tom: {transposeChord(song.key, transpose)}</Badge>}
-                            </div>
-                            <div className="flex flex-row items-start gap-2 pt-1">
+                            {/* O título aqui agora é secundário já que está no card */}
+                            <h1 className="text-sm font-bold text-muted-foreground uppercase tracking-widest truncate">{song.title}</h1>
+                            <div className="flex flex-row items-center gap-2">
                                 <Button variant="outline" onClick={() => setIsEditing(true)} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-8 text-xs">
                                     <Edit className="mr-1.5 h-3 w-3" /> Editar
                                 </Button>
@@ -370,12 +367,14 @@ export default function SongPage() {
       )}
 
       <div className="flex-1 flex flex-col min-h-0 relative">
-        {isEditing && editedSong ? (
-           <Textarea value={editedSong.content || ''} onChange={(e) => setEditedSong({...editedSong, content: e.target.value})} className="font-code flex-1 min-h-[500px]" style={{ whiteSpace: 'pre' }} />
-        ) : (isContinuousMode || !showChords) ? (
+        {(isContinuousMode || !showChords) ? (
           <Card className="flex-1 flex flex-col bg-white dark:bg-black shadow-none border-none overflow-hidden">
               <CardContent className="h-full flex flex-col p-0">
                   <ScrollArea ref={scrollAreaRef} className="h-full p-4 md:p-6 flex-1">
+                      <div className="mb-6 border-l-4 border-primary/20 pl-4 py-2">
+                          <h2 className="text-2xl font-bold font-headline text-primary">{song.title}</h2>
+                          <p className="text-sm text-muted-foreground">{song.artist}</p>
+                      </div>
                       <SongDisplay 
                           style={{ 
                             fontSize: `${finalFontSize}px`,
@@ -406,10 +405,13 @@ export default function SongPage() {
                       <Card className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none">
                         <CardContent className="flex-1 h-full p-0">
                           <ScrollArea className="h-full p-4 md:p-6">
-                            <div className="mb-6 border-l-4 border-primary/20 pl-4 py-2">
-                                <h2 className="text-2xl font-bold font-headline text-primary">{song.title}</h2>
-                                <p className="text-sm text-muted-foreground">{song.artist}</p>
-                            </div>
+                            {/* O título aparece apenas na primeira parte da música no slide */}
+                            {index === 0 && (
+                                <div className="mb-6 border-l-4 border-primary/20 pl-4 py-2">
+                                    <h2 className="text-3xl font-bold font-headline text-primary">{song.title}</h2>
+                                    <p className="text-sm text-muted-foreground">{song.artist}</p>
+                                </div>
+                            )}
                             <SongDisplay 
                                 style={{ 
                                   fontSize: `${finalFontSize}px`, 
