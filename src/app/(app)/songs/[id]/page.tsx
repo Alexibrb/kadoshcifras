@@ -1,4 +1,3 @@
-
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -120,7 +119,7 @@ export default function SongPage() {
     if (containerRef.current) {
         containerRef.current.focus();
     }
-    // Setup silent audio for media session
+    // Setup silent audio for media session keep-alive
     silentAudioRef.current = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
     if (silentAudioRef.current) silentAudioRef.current.loop = true;
   }, [initialTranspose]);
@@ -295,7 +294,6 @@ export default function SongPage() {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
     
-    // O carrossel precisa de um pequeno delay para ser remontado antes do scroll
     setTimeout(() => {
       if (api) {
         api.scrollTo(current - 1, false);
@@ -589,7 +587,7 @@ export default function SongPage() {
                                     <AlertDialogHeader>
                                       <AlertDialogTitle>Parar Rolagem?</AlertDialogTitle>
                                       <AlertDialogDescription>
-                                        Deseja realmente parar a rolagem e voltar ao modo de pedal (slides)?
+                                        Deseja realmente parar a rolagem e retornar ao modo de pedal (slides)?
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>

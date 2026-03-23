@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -234,7 +233,7 @@ export default function OfflineSetlistPage() {
   useEffect(() => {
     setIsClient(true);
     if (containerRef.current) containerRef.current.focus();
-    // Setup silent audio
+    // Setup silent audio for media session keep-alive
     silentAudioRef.current = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
     if (silentAudioRef.current) silentAudioRef.current.loop = true;
   }, []);
@@ -361,7 +360,6 @@ export default function OfflineSetlistPage() {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const songIndex = parseInt(entry.target.getAttribute('data-song-index') || '0', 10);
-            // Encontra a primeira seção dessa música no array allSections para sincronizar com o carrossel
             const sectionIndex = allSections.findIndex(s => s.songIndex === songIndex);
             if (sectionIndex !== -1) {
               setCurrentSectionIndex(sectionIndex);
@@ -408,7 +406,6 @@ export default function OfflineSetlistPage() {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
     
-    // O Carousel precisa de um tempo para ser remontado após sair do modo contínuo
     setTimeout(() => {
       if (api) {
         api.scrollTo(currentSectionIndex, false);
@@ -757,7 +754,7 @@ export default function OfflineSetlistPage() {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Parar Rolagem?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Deseja realmente parar a rolagem e voltar ao modo de pedal (slides)?
+                                      Deseja realmente parar a rolagem e retornar ao modo de pedal (slides)?
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
