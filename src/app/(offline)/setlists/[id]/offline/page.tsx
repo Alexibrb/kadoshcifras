@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -263,20 +262,36 @@ export default function OfflineSetlistPage() {
     return sections;
   }, [offlineData]);
 
-  const handlePlayMedia = useCallback(() => {
+  const toggleAutoScroll = useCallback(() => {
+    // Prime the audio engine on user interaction
     if (silentAudioRef.current) {
       silentAudioRef.current.play().catch(() => {});
     }
-    setIsAutoScrolling(true);
-    setIsContinuousMode(true);
-  }, []);
 
-  const handlePauseMedia = useCallback(() => {
+    if (!isContinuousMode) {
+        setIsContinuousMode(true);
+        setIsAutoScrolling(true);
+    } else {
+        setIsAutoScrolling(!isAutoScrolling);
+    }
+  }, [isContinuousMode, isAutoScrolling]);
+
+  const stopAutoScroll = useCallback(() => {
     setIsAutoScrolling(false);
+    setIsContinuousMode(false);
     if (silentAudioRef.current) {
       silentAudioRef.current.pause();
     }
-  }, []);
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = 'paused';
+    }
+    
+    setTimeout(() => {
+      if (api) {
+        api.scrollTo(currentSectionIndex, false);
+      }
+    }, 150);
+  }, [api, currentSectionIndex]);
 
   // Media Session Control
   useEffect(() => {
@@ -294,11 +309,14 @@ export default function OfflineSetlistPage() {
         });
 
         navigator.mediaSession.setActionHandler('play', () => {
-            handlePlayMedia();
+          if (silentAudioRef.current) silentAudioRef.current.play().catch(() => {});
+          setIsAutoScrolling(true);
+          setIsContinuousMode(true);
         });
         
         navigator.mediaSession.setActionHandler('pause', () => {
-            handlePauseMedia();
+          setIsAutoScrolling(false);
+          if (silentAudioRef.current) silentAudioRef.current.pause();
         });
         
         navigator.mediaSession.setActionHandler('previoustrack', () => {
@@ -320,7 +338,7 @@ export default function OfflineSetlistPage() {
             navigator.mediaSession.setActionHandler('nexttrack', null);
         }
     };
-  }, [isClient, offlineData, currentSectionIndex, api, isContinuousMode, allSections, handlePlayMedia, handlePauseMedia]);
+  }, [isClient, offlineData, currentSectionIndex, api, isContinuousMode, allSections]);
 
   // Update Media Session State
   useEffect(() => {
@@ -410,37 +428,6 @@ export default function OfflineSetlistPage() {
     handleSelect();
     return () => { api.off("select", handleSelect); }
   }, [api, isContinuousMode]);
-
-  const toggleAutoScroll = useCallback(() => {
-    // Prime the audio engine on user interaction
-    if (silentAudioRef.current) {
-      silentAudioRef.current.play().catch(() => {});
-    }
-
-    if (!isContinuousMode) {
-        setIsContinuousMode(true);
-        setIsAutoScrolling(true);
-    } else {
-        setIsAutoScrolling(!isAutoScrolling);
-    }
-  }, [isContinuousMode, isAutoScrolling]);
-
-  const stopAutoScroll = useCallback(() => {
-    setIsAutoScrolling(false);
-    setIsContinuousMode(false);
-    if (silentAudioRef.current) {
-      silentAudioRef.current.pause();
-    }
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.playbackState = 'paused';
-    }
-    
-    setTimeout(() => {
-      if (api) {
-        api.scrollTo(currentSectionIndex, false);
-      }
-    }, 150);
-  }, [api, currentSectionIndex]);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
         const key = event.key;
