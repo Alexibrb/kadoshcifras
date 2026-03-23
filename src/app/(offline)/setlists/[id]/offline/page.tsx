@@ -32,7 +32,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const SILENT_AUDIO_BASE64 = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
+// 1 second silent WAV
+const SILENT_AUDIO_BASE64 = 'data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAgD8AAIA/AAABAAgAZGF0YRAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
 interface OfflineSong {
     title: string;
@@ -292,11 +293,18 @@ export default function OfflineSetlistPage() {
           artwork: [{ src: 'https://placehold.co/512x512/9f50e5/ffffff?text=K', sizes: '512x512', type: 'image/png' }]
         });
 
-        navigator.mediaSession.setActionHandler('play', handlePlayMedia);
-        navigator.mediaSession.setActionHandler('pause', handlePauseMedia);
+        navigator.mediaSession.setActionHandler('play', () => {
+            handlePlayMedia();
+        });
+        
+        navigator.mediaSession.setActionHandler('pause', () => {
+            handlePauseMedia();
+        });
+        
         navigator.mediaSession.setActionHandler('previoustrack', () => {
           if (!isContinuousMode && api) api.scrollPrev();
         });
+        
         navigator.mediaSession.setActionHandler('nexttrack', () => {
           if (!isContinuousMode && api) api.scrollNext();
         });
@@ -751,10 +759,10 @@ export default function OfflineSetlistPage() {
                           size="sm" 
                           variant="default" 
                           onClick={toggleAutoScroll}
-                          className="h-8 gap-2 px-6"
+                          className="h-8 gap-2 px-6 w-32"
                       >
                           <Play className="h-4 w-4" />
-                          <span className="text-[10px] md:text-xs font-bold">Rolagem</span>
+                          <span className="text-[10px] md:text-xs font-bold">Iniciar</span>
                       </Button>
                   ) : (
                       <div className="flex items-center gap-2">
@@ -762,7 +770,7 @@ export default function OfflineSetlistPage() {
                               size="icon" 
                               variant={isAutoScrolling ? "destructive" : "default"} 
                               onClick={toggleAutoScroll}
-                              className="h-8 w-16"
+                              className="h-8 w-32"
                           >
                               {isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                           </Button>

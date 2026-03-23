@@ -42,7 +42,8 @@ const ALL_KEYS = [
     'Cm', 'C#m', 'Dbm', 'Dm', 'D#m', 'Ebm', 'Em', 'Fm', 'F#m', 'Gbm', 'Gm', 'G#m', 'Abm', 'Am', 'A#m', 'Bbm', 'Bm'
 ];
 
-const SILENT_AUDIO_BASE64 = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
+// 1 second silent WAV
+const SILENT_AUDIO_BASE64 = 'data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAgD8AAIA/AAABAAgAZGF0YRAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
 export default function SongPage() {
   const params = useParams();
@@ -173,22 +174,21 @@ export default function SongPage() {
           artwork: [{ src: 'https://placehold.co/512x512/9f50e5/ffffff?text=K', sizes: '512x512', type: 'image/png' }]
         });
 
-        const handlePlay = () => {
+        navigator.mediaSession.setActionHandler('play', () => {
           if (silentAudioRef.current) silentAudioRef.current.play().catch(() => {});
           setIsAutoScrolling(true);
           setIsContinuousMode(true);
-        };
+        });
 
-        const handlePause = () => {
+        navigator.mediaSession.setActionHandler('pause', () => {
           setIsAutoScrolling(false);
           if (silentAudioRef.current) silentAudioRef.current.pause();
-        };
+        });
 
-        navigator.mediaSession.setActionHandler('play', handlePlay);
-        navigator.mediaSession.setActionHandler('pause', handlePause);
         navigator.mediaSession.setActionHandler('previoustrack', () => {
           if (!isContinuousMode && api) api.scrollPrev();
         });
+        
         navigator.mediaSession.setActionHandler('nexttrack', () => {
           if (!isContinuousMode && api) api.scrollNext();
         });
@@ -514,6 +514,10 @@ export default function SongPage() {
                 </AlertDescription>
               </Alert>
               <Textarea
+                onFocus={() => {
+                  // Ensure audio keeps playing on edit focus to maintain media session
+                  if (silentAudioRef.current && isAutoScrolling) silentAudioRef.current.play().catch(() => {});
+                }}
                 id="content"
                 value={editedSong?.content || ''}
                 onChange={(e) => setEditedSong(prev => prev ? {...prev, content: e.target.value} : null)}
@@ -593,12 +597,12 @@ export default function SongPage() {
             <div className="max-w-screen-xl mx-auto flex flex-row items-center gap-4 w-full p-2 rounded-md border bg-muted/30 shadow-sm">
                 <div className="flex items-center gap-2">
                     {!isContinuousMode && showChords ? (
-                        <Button size="sm" variant="default" onClick={toggleAutoScroll} className="h-8 gap-2 px-6">
-                            <Play className="h-4 w-4" /><span className="text-[10px] md:text-xs font-bold">Rolagem</span>
+                        <Button size="sm" variant="default" onClick={toggleAutoScroll} className="h-8 gap-2 px-6 w-32">
+                            <Play className="h-4 w-4" /><span className="text-[10px] md:text-xs font-bold">Iniciar</span>
                         </Button>
                     ) : (
                         <div className="flex items-center gap-2">
-                            <Button size="icon" variant={isAutoScrolling ? "destructive" : "default"} onClick={toggleAutoScroll} className="h-8 w-16">
+                            <Button size="icon" variant={isAutoScrolling ? "destructive" : "default"} onClick={toggleAutoScroll} className="h-8 w-32">
                                 {isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                             </Button>
                             {showChords && (
