@@ -17,7 +17,6 @@ import { Carousel, CarouselApi, CarouselContent, CarouselItem } from '@/componen
 import { transposeChord, transposeContent } from '@/lib/music';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog,
@@ -61,7 +60,6 @@ function SongPresenter({
     showChords, 
     colorSettings,
     song,
-    id
 } : { 
     section: Section | undefined, 
     transposeValue: number, 
@@ -69,14 +67,13 @@ function SongPresenter({
     showChords: boolean, 
     colorSettings: ColorSettings | null,
     song: OfflineSong | undefined,
-    id?: string
 }) {
     if (!section || !song) return null;
 
     const content = transposeContent(section.content, transposeValue);
 
     return (
-        <Card id={id} className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none overflow-hidden">
+        <Card className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none overflow-hidden">
             <CardContent className="flex-1 h-full p-0">
                 <ScrollArea className="h-full p-4 md:p-6">
                     <SongDisplay 
@@ -106,13 +103,11 @@ function SongPresenter({
 export default function OfflineSetlistPage() {
   const params = useParams();
   const setlistId = params.id as string;
-  const containerRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const wakeLockRef = useRef<any>(null);
   const requestRef = useRef<number>(null);
   const lastScrollTime = useRef<number>(0);
   const scrollPosRef = useRef<number>(0); 
-  const { toast } = useToast();
   const silentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const [offlineData, setOfflineData] = useState<OfflineSetlist | null>(null);
@@ -122,12 +117,14 @@ export default function OfflineSetlistPage() {
   const [fontSize] = useLocalStorage('song-font-size', 14);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', true);
-  const [keepAwake] = useState(true);
-  const [isWakeLockActive, setIsWakeLockActive] = useState(false);
-
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(10);
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  const [transpositions, setTranspositions] = useState<number[]>([]);
+  const [isClient, setIsClient] = useState(false);
+  const [finalColorSettings, setFinalColorSettings] = useState<ColorSettings | null>(null);
+  const [api, setApi] = useState<CarouselApi>();
 
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', {
     prevPage: ',',
@@ -135,33 +132,13 @@ export default function OfflineSetlistPage() {
     prevSong: '[',
     nextSong: ']',
   });
-  
-  const [api, setApi] = useState<CarouselApi>()
-  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
-  const [transpositions, setTranspositions] = useState<number[]>([]);
-  const [isClient, setIsClient] = useState(false);
-
-  const [finalColorSettings, setFinalColorSettings] = useState<ColorSettings | null>(null);
 
   const requestWakeLock = useCallback(async () => {
-    if (typeof window !== 'undefined' && 'wakeLock' in navigator && keepAwake) {
+    if (typeof window !== 'undefined' && 'wakeLock' in navigator) {
       try {
         wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
-        setIsWakeLockActive(true);
       } catch (err) {
-        setIsWakeLockActive(false);
-      }
-    }
-  }, [keepAwake]);
-
-  const releaseWakeLock = useCallback(async () => {
-    if (wakeLockRef.current) {
-      try {
-        await wakeLockRef.current.release();
-        wakeLockRef.current = null;
-        setIsWakeLockActive(false);
-      } catch (err) {
-        console.warn('Error releasing wake lock:', err);
+        console.warn('Wake Lock request failed');
       }
     }
   }, []);
@@ -194,23 +171,17 @@ export default function OfflineSetlistPage() {
   }, [isAutoScrolling, animateScroll]);
 
   useEffect(() => {
+    setIsClient(true);
+    requestWakeLock();
     if (typeof window !== 'undefined') {
         const audio = new Audio(SILENT_AUDIO_BASE64);
         audio.loop = true;
         silentAudioRef.current = audio;
     }
-  }, []);
-
-  useEffect(() => {
-    if (keepAwake) requestWakeLock();
-    else releaseWakeLock();
-    return () => releaseWakeLock();
-  }, [keepAwake, requestWakeLock, releaseWakeLock]);
-
-  useEffect(() => {
-    setIsClient(true);
-    if (containerRef.current) containerRef.current.focus();
-  }, []);
+    return () => {
+        if (wakeLockRef.current) wakeLockRef.current.release();
+    };
+  }, [requestWakeLock]);
 
   const allSections = useMemo((): Section[] => {
     if (!offlineData) return [];
@@ -248,9 +219,6 @@ export default function OfflineSetlistPage() {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
     if (silentAudioRef.current) silentAudioRef.current.pause();
-    if (typeof window !== 'undefined' && 'mediaSession' in navigator) {
-        navigator.mediaSession.playbackState = 'paused';
-    }
     setTimeout(() => {
         if (api) api.scrollTo(currentSectionIndex, false);
     }, 150);
@@ -267,33 +235,18 @@ export default function OfflineSetlistPage() {
         album: offlineData.name
     });
 
-    navigator.mediaSession.setActionHandler('play', () => {
-        if (silentAudioRef.current) silentAudioRef.current.play().catch(() => {});
-        setIsAutoScrolling(true);
-        setIsContinuousMode(true);
-    });
-    navigator.mediaSession.setActionHandler('pause', () => {
-        setIsAutoScrolling(false);
-        if (silentAudioRef.current) silentAudioRef.current.pause();
-    });
-    navigator.mediaSession.setActionHandler('previoustrack', () => { if (!isContinuousMode && api) api.scrollPrev(); });
-    navigator.mediaSession.setActionHandler('nexttrack', () => { if (!isContinuousMode && api) api.scrollNext(); });
+    navigator.mediaSession.setActionHandler('play', toggleAutoScroll);
+    navigator.mediaSession.setActionHandler('pause', () => setIsAutoScrolling(false));
+    navigator.mediaSession.setActionHandler('previoustrack', () => api?.scrollPrev());
+    navigator.mediaSession.setActionHandler('nexttrack', () => api?.scrollNext());
 
     return () => {
         if ('mediaSession' in navigator) {
             navigator.mediaSession.setActionHandler('play', null);
             navigator.mediaSession.setActionHandler('pause', null);
-            navigator.mediaSession.setActionHandler('previoustrack', null);
-            navigator.mediaSession.setActionHandler('nexttrack', null);
         }
     };
-  }, [isClient, offlineData, currentSectionIndex, api, isContinuousMode, allSections]);
-
-  useEffect(() => {
-    if (isClient && 'mediaSession' in navigator) {
-        navigator.mediaSession.playbackState = isAutoScrolling ? 'playing' : 'paused';
-    }
-  }, [isAutoScrolling, isClient]);
+  }, [isClient, offlineData, currentSectionIndex, api, isContinuousMode, allSections, toggleAutoScroll]);
 
   useEffect(() => {
     if (isClient) {
@@ -366,7 +319,7 @@ export default function OfflineSetlistPage() {
   const currentSong = offlineData.songs[currentSec.songIndex];
 
   return (
-    <div ref={containerRef} className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-24 h-screen outline-none bg-background overflow-hidden relative" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
+    <div className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-24 h-screen outline-none bg-background overflow-hidden relative" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
       <Card className={cn("mb-4 bg-accent/10 transition-all", isPanelVisible ? "p-4 space-y-4" : "p-1.5")}>
         {isPanelVisible ? (
           <div className="flex flex-col gap-4">
@@ -374,7 +327,7 @@ export default function OfflineSetlistPage() {
               <Button asChild variant="outline" size="icon"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
               <div className="text-center flex-1">
                 <h1 className="text-xl font-bold font-headline truncate">{currentSong.title}</h1>
-                <div className="flex items-center justify-center gap-2"><Badge variant="outline">Offline</Badge>{isWakeLockActive ? <Sun className="h-3 w-3 text-yellow-500" /> : <Moon className="h-3 w-3 text-muted-foreground" />}</div>
+                <div className="flex items-center justify-center gap-2"><Badge variant="outline">Offline</Badge></div>
               </div>
               <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon"><PanelTopClose className="h-5 w-5" /></Button>
             </div>
