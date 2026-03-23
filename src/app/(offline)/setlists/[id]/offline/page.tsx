@@ -112,6 +112,7 @@ export default function OfflineSetlistPage() {
   const lastScrollTime = useRef<number>(0);
   const scrollPosRef = useRef<number>(0); 
   const { toast } = useToast();
+  const silentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const [offlineData, setOfflineData] = useState<OfflineSetlist | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -194,9 +195,11 @@ export default function OfflineSetlistPage() {
         lastScrollTime.current = performance.now();
         scrollPosRef.current = 0;
         requestRef.current = requestAnimationFrame(animateScroll);
+        silentAudioRef.current?.play().catch(() => {});
     } else {
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
         lastScrollTime.current = 0;
+        silentAudioRef.current?.pause();
     }
     return () => {
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
@@ -231,7 +234,60 @@ export default function OfflineSetlistPage() {
   useEffect(() => {
     setIsClient(true);
     if (containerRef.current) containerRef.current.focus();
+    // Setup silent audio
+    silentAudioRef.current = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
+    if (silentAudioRef.current) silentAudioRef.current.loop = true;
   }, []);
+
+  // Media Session Control
+  useEffect(() => {
+    if (!isClient || !('mediaSession' in navigator) || !offlineData) return;
+
+    const currentSong = offlineData.songs[currentSectionIndex] || offlineData.songs[0];
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentSong.title,
+      artist: currentSong.artist,
+      album: offlineData.name,
+      artwork: [{ src: 'https://placehold.co/512x512/9f50e5/ffffff?text=K', sizes: '512x512', type: 'image/png' }]
+    });
+
+    navigator.mediaSession.setActionHandler('play', () => {
+      setIsAutoScrolling(true);
+      setIsContinuousMode(true);
+      silentAudioRef.current?.play().catch(() => {});
+    });
+
+    navigator.mediaSession.setActionHandler('pause', () => {
+      setIsAutoScrolling(false);
+      silentAudioRef.current?.pause();
+    });
+
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+      if (!isContinuousMode && api) {
+        api.scrollPrev();
+      }
+    });
+
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+      if (!isContinuousMode && api) {
+        api.scrollNext();
+      }
+    });
+
+    return () => {
+      navigator.mediaSession.setActionHandler('play', null);
+      navigator.mediaSession.setActionHandler('pause', null);
+      navigator.mediaSession.setActionHandler('previoustrack', null);
+      navigator.mediaSession.setActionHandler('nexttrack', null);
+    };
+  }, [isClient, offlineData, currentSectionIndex, api, isContinuousMode]);
+
+  useEffect(() => {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = isAutoScrolling ? 'playing' : 'paused';
+    }
+  }, [isAutoScrolling]);
 
   useEffect(() => {
     if (isClient) {

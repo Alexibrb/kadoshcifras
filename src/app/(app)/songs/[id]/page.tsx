@@ -87,6 +87,7 @@ export default function SongPage() {
   const scrollPosRef = useRef<number>(0);
   const requestRef = useRef<number>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const silentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const [editedSong, setEditedSong] = useState<Song | null>(null);
   
@@ -119,7 +120,58 @@ export default function SongPage() {
     if (containerRef.current) {
         containerRef.current.focus();
     }
+    // Setup silent audio for media session
+    silentAudioRef.current = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
+    if (silentAudioRef.current) silentAudioRef.current.loop = true;
   }, [initialTranspose]);
+
+  // Media Session Control
+  useEffect(() => {
+    if (!isClient || !('mediaSession' in navigator) || !song) return;
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: song.title,
+      artist: song.artist,
+      album: 'CifrasKadosh',
+      artwork: [{ src: 'https://placehold.co/512x512/9f50e5/ffffff?text=K', sizes: '512x512', type: 'image/png' }]
+    });
+
+    navigator.mediaSession.setActionHandler('play', () => {
+      setIsAutoScrolling(true);
+      setIsContinuousMode(true);
+      silentAudioRef.current?.play().catch(() => {});
+    });
+
+    navigator.mediaSession.setActionHandler('pause', () => {
+      setIsAutoScrolling(false);
+      silentAudioRef.current?.pause();
+    });
+
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+      if (!isContinuousMode && api) {
+        api.scrollPrev();
+      }
+    });
+
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+      if (!isContinuousMode && api) {
+        api.scrollNext();
+      }
+    });
+
+    return () => {
+      navigator.mediaSession.setActionHandler('play', null);
+      navigator.mediaSession.setActionHandler('pause', null);
+      navigator.mediaSession.setActionHandler('previoustrack', null);
+      navigator.mediaSession.setActionHandler('nexttrack', null);
+    };
+  }, [isClient, song, api, isContinuousMode]);
+
+  useEffect(() => {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = isAutoScrolling ? 'playing' : 'paused';
+    }
+  }, [isAutoScrolling]);
 
   useEffect(() => {
     if (song) {
@@ -166,9 +218,11 @@ export default function SongPage() {
         lastScrollTime.current = performance.now();
         scrollPosRef.current = 0;
         requestRef.current = requestAnimationFrame(animateScroll);
+        silentAudioRef.current?.play().catch(() => {});
     } else {
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
         lastScrollTime.current = 0;
+        silentAudioRef.current?.pause();
     }
     return () => {
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
