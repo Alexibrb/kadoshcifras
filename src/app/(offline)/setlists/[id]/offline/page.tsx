@@ -31,7 +31,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-// 1 second silent WAV
+// 1 second silent WAV to keep media session active
 const SILENT_AUDIO_BASE64 = 'data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAgD8AAIA/AAABAAgAZGF0YRAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
 interface OfflineSong {
@@ -263,7 +263,7 @@ export default function OfflineSetlistPage() {
   }, [offlineData]);
 
   const toggleAutoScroll = useCallback(() => {
-    // Prime the audio engine on user interaction
+    // Unlock audio context on user interaction to enable media controls
     if (silentAudioRef.current) {
       silentAudioRef.current.play().catch(() => {});
     }
@@ -293,7 +293,7 @@ export default function OfflineSetlistPage() {
     }, 150);
   }, [api, currentSectionIndex]);
 
-  // Media Session Control
+  // Media Session Control for Offline Mode
   useEffect(() => {
     if (!isClient || !('mediaSession' in navigator) || !offlineData || allSections.length === 0) return;
 

@@ -41,7 +41,7 @@ const ALL_KEYS = [
     'Cm', 'C#m', 'Dbm', 'Dm', 'D#m', 'Ebm', 'Em', 'Fm', 'F#m', 'Gbm', 'Gm', 'G#m', 'Abm', 'Am', 'A#m', 'Bbm', 'Bm'
 ];
 
-// 1 second silent WAV
+// 1 second silent WAV to keep media session active
 const SILENT_AUDIO_BASE64 = 'data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAgD8AAIA/AAABAAgAZGF0YRAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
 export default function SongPage() {
@@ -131,7 +131,7 @@ export default function SongPage() {
   }, [initialTranspose]);
 
   const toggleAutoScroll = useCallback(() => {
-    // Crucial: Unlock audio context on user interaction
+    // Unlock audio context on user interaction
     if (silentAudioRef.current) {
       silentAudioRef.current.play().catch(() => {});
     }
@@ -154,6 +154,7 @@ export default function SongPage() {
       navigator.mediaSession.playbackState = 'paused';
     }
     
+    // Pequeno atraso para garantir que o componente re-renderize antes de scrollar
     setTimeout(() => {
       if (api) {
         api.scrollTo(current - 1, false);
@@ -514,7 +515,7 @@ export default function SongPage() {
               </Alert>
               <Textarea
                 onFocus={() => {
-                  // Ensure audio keeps playing on edit focus to maintain media session
+                  // Ensure audio keeps playing on edit focus if it was active
                   if (silentAudioRef.current && isAutoScrolling) silentAudioRef.current.play().catch(() => {});
                 }}
                 id="content"
