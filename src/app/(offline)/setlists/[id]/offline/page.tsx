@@ -238,61 +238,78 @@ export default function OfflineSetlistPage() {
     if (containerRef.current) containerRef.current.focus();
   }, []);
 
+  const allSections = useMemo((): Section[] => {
+    if (!offlineData) return [];
+    const sections: Section[] = [];
+    offlineData.songs.forEach((song, songIndex) => {
+        const normalizedContent = song.content.replace(/\r\n/g, '\n');
+        const parts = normalizedContent.split(/\n[\r\t ]*\n[\r\t ]*\n+/);
+        
+        parts.forEach((part, partIndex) => {
+            const trimmedPart = part.trim();
+            if (trimmedPart) {
+                sections.push({
+                    songIndex: songIndex,
+                    partIndex: partIndex,
+                    content: trimmedPart,
+                    isLastSectionOfSong: partIndex === parts.length - 1,
+                    isLastSectionOfSetlist: partIndex === parts.length - 1 && songIndex === offlineData.songs.length - 1,
+                });
+            }
+        });
+    });
+    return sections;
+  }, [offlineData]);
+
   // Media Session Control
   useEffect(() => {
-    if (!isClient || !('mediaSession' in navigator) || !offlineData) return;
+    if (!isClient || !('mediaSession' in navigator) || !offlineData || allSections.length === 0) return;
 
-    const allSectionsList = ((): Section[] => {
-      const sections: Section[] = [];
-      offlineData.songs.forEach((song, songIndex) => {
-          constNormalized = song.content.replace(/\r\n/g, '\n');
-          const parts = constNormalized.split(/\n[\r\t ]*\n[\r\t ]*\n+/);
-          parts.forEach((part, partIndex) => {
-              if (part.trim()) sections.push({ songIndex, partIndex, content: part, isLastSectionOfSong: partIndex === parts.length - 1, isLastSectionOfSetlist: false });
-          });
-      });
-      return sections;
-    })();
+    try {
+        const currentSection = allSections[currentSectionIndex] || allSections[0];
+        const currentSong = offlineData.songs[currentSection.songIndex];
 
-    const currentSection = allSectionsList[currentSectionIndex] || allSectionsList[0];
-    const currentSong = offlineData.songs[currentSection.songIndex];
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: currentSong.title,
+          artist: currentSong.artist,
+          album: offlineData.name,
+          artwork: [{ src: 'https://placehold.co/512x512/9f50e5/ffffff?text=K', sizes: '512x512', type: 'image/png' }]
+        });
 
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: currentSong.title,
-      artist: currentSong.artist,
-      album: offlineData.name,
-      artwork: [{ src: 'https://placehold.co/512x512/9f50e5/ffffff?text=K', sizes: '512x512', type: 'image/png' }]
-    });
+        const handlePlay = () => {
+          setIsAutoScrolling(true);
+          setIsContinuousMode(true);
+        };
 
-    const handlePlay = () => {
-      setIsAutoScrolling(true);
-      setIsContinuousMode(true);
-    };
+        const handlePause = () => {
+          setIsAutoScrolling(false);
+        };
 
-    const handlePause = () => {
-      setIsAutoScrolling(false);
-    };
-
-    navigator.mediaSession.setActionHandler('play', handlePlay);
-    navigator.mediaSession.setActionHandler('pause', handlePause);
-    navigator.mediaSession.setActionHandler('previoustrack', () => {
-      if (!isContinuousMode && api) api.scrollPrev();
-    });
-    navigator.mediaSession.setActionHandler('nexttrack', () => {
-      if (!isContinuousMode && api) api.scrollNext();
-    });
+        navigator.mediaSession.setActionHandler('play', handlePlay);
+        navigator.mediaSession.setActionHandler('pause', handlePause);
+        navigator.mediaSession.setActionHandler('previoustrack', () => {
+          if (!isContinuousMode && api) api.scrollPrev();
+        });
+        navigator.mediaSession.setActionHandler('nexttrack', () => {
+          if (!isContinuousMode && api) api.scrollNext();
+        });
+    } catch (e) {
+        console.error("Error setting up offline MediaSession:", e);
+    }
 
     return () => {
-      navigator.mediaSession.setActionHandler('play', null);
-      navigator.mediaSession.setActionHandler('pause', null);
-      navigator.mediaSession.setActionHandler('previoustrack', null);
-      navigator.mediaSession.setActionHandler('nexttrack', null);
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.setActionHandler('play', null);
+            navigator.mediaSession.setActionHandler('pause', null);
+            navigator.mediaSession.setActionHandler('previoustrack', null);
+            navigator.mediaSession.setActionHandler('nexttrack', null);
+        }
     };
-  }, [isClient, offlineData, currentSectionIndex, api, isContinuousMode]);
+  }, [isClient, offlineData, currentSectionIndex, api, isContinuousMode, allSections]);
 
   // Update Media Session State
   useEffect(() => {
-    if ('mediaSession' in navigator) {
+    if (isClient && 'mediaSession' in navigator) {
       navigator.mediaSession.playbackState = isAutoScrolling ? 'playing' : 'paused';
       if (isAutoScrolling) {
         silentAudioRef.current?.play().catch(() => {});
@@ -300,7 +317,7 @@ export default function OfflineSetlistPage() {
         silentAudioRef.current?.pause();
       }
     }
-  }, [isAutoScrolling]);
+  }, [isAutoScrolling, isClient]);
 
   useEffect(() => {
     if (isClient) {
@@ -342,29 +359,6 @@ export default function OfflineSetlistPage() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
-
-  const allSections = useMemo((): Section[] => {
-    if (!offlineData) return [];
-    const sections: Section[] = [];
-    offlineData.songs.forEach((song, songIndex) => {
-        const normalizedContent = song.content.replace(/\r\n/g, '\n');
-        const parts = normalizedContent.split(/\n[\r\t ]*\n[\r\t ]*\n+/);
-        
-        parts.forEach((part, partIndex) => {
-            const trimmedPart = part.trim();
-            if (trimmedPart) {
-                sections.push({
-                    songIndex: songIndex,
-                    partIndex: partIndex,
-                    content: trimmedPart,
-                    isLastSectionOfSong: partIndex === parts.length - 1,
-                    isLastSectionOfSetlist: partIndex === parts.length - 1 && songIndex === offlineData.songs.length - 1,
-                });
-            }
-        });
-    });
-    return sections;
-  }, [offlineData]);
 
   useEffect(() => {
     if (!isContinuousMode || !isClient || !offlineData) return;
@@ -455,9 +449,9 @@ export default function OfflineSetlistPage() {
   }, [api, pedalSettings, showChords, isAutoScrolling, isContinuousMode, toggleAutoScroll]);
   
   const changeTranspose = (change: number) => {
-    const currentSection = allSections[currentSectionIndex];
-    if (!currentSection) return;
-    const songIdx = currentSection.songIndex;
+    const currentSec = allSections[currentSectionIndex];
+    if (!currentSec) return;
+    const songIdx = currentSec.songIndex;
     setTranspositions(prev => {
         const newTranspositions = [...prev];
         const currentTranspose = newTranspositions[songIdx] || 0;

@@ -133,42 +133,48 @@ export default function SongPage() {
   useEffect(() => {
     if (!isClient || !('mediaSession' in navigator) || !song) return;
 
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: song.title,
-      artist: song.artist,
-      album: 'CifrasKadosh',
-      artwork: [{ src: 'https://placehold.co/512x512/9f50e5/ffffff?text=K', sizes: '512x512', type: 'image/png' }]
-    });
+    try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: song.title,
+          artist: song.artist,
+          album: 'CifrasKadosh',
+          artwork: [{ src: 'https://placehold.co/512x512/9f50e5/ffffff?text=K', sizes: '512x512', type: 'image/png' }]
+        });
 
-    const handlePlay = () => {
-      setIsAutoScrolling(true);
-      setIsContinuousMode(true);
-    };
+        const handlePlay = () => {
+          setIsAutoScrolling(true);
+          setIsContinuousMode(true);
+        };
 
-    const handlePause = () => {
-      setIsAutoScrolling(false);
-    };
+        const handlePause = () => {
+          setIsAutoScrolling(false);
+        };
 
-    navigator.mediaSession.setActionHandler('play', handlePlay);
-    navigator.mediaSession.setActionHandler('pause', handlePause);
-    navigator.mediaSession.setActionHandler('previoustrack', () => {
-      if (!isContinuousMode && api) api.scrollPrev();
-    });
-    navigator.mediaSession.setActionHandler('nexttrack', () => {
-      if (!isContinuousMode && api) api.scrollNext();
-    });
+        navigator.mediaSession.setActionHandler('play', handlePlay);
+        navigator.mediaSession.setActionHandler('pause', handlePause);
+        navigator.mediaSession.setActionHandler('previoustrack', () => {
+          if (!isContinuousMode && api) api.scrollPrev();
+        });
+        navigator.mediaSession.setActionHandler('nexttrack', () => {
+          if (!isContinuousMode && api) api.scrollNext();
+        });
+    } catch (e) {
+        console.error("Error setting up MediaSession:", e);
+    }
 
     return () => {
-      navigator.mediaSession.setActionHandler('play', null);
-      navigator.mediaSession.setActionHandler('pause', null);
-      navigator.mediaSession.setActionHandler('previoustrack', null);
-      navigator.mediaSession.setActionHandler('nexttrack', null);
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.setActionHandler('play', null);
+            navigator.mediaSession.setActionHandler('pause', null);
+            navigator.mediaSession.setActionHandler('previoustrack', null);
+            navigator.mediaSession.setActionHandler('nexttrack', null);
+        }
     };
   }, [isClient, song, api, isContinuousMode]);
 
   // Update Media Session State
   useEffect(() => {
-    if ('mediaSession' in navigator) {
+    if (isClient && 'mediaSession' in navigator) {
       navigator.mediaSession.playbackState = isAutoScrolling ? 'playing' : 'paused';
       if (isAutoScrolling) {
         silentAudioRef.current?.play().catch(() => {});
@@ -176,7 +182,7 @@ export default function SongPage() {
         silentAudioRef.current?.pause();
       }
     }
-  }, [isAutoScrolling]);
+  }, [isAutoScrolling, isClient]);
 
   useEffect(() => {
     if (song) {
@@ -193,9 +199,13 @@ export default function SongPage() {
     if (!api || isContinuousMode) return;
     setCount(api.scrollSnapList().length)
     setCurrent(api.selectedScrollSnap() + 1)
-    api.on("select", () => {
+    const onSelect = () => {
       setCurrent(api.selectedScrollSnap() + 1)
-    })
+    }
+    api.on("select", onSelect);
+    return () => {
+        api.off("select", onSelect);
+    }
   }, [api, isContinuousMode])
 
   const animateScroll = useCallback((time: number) => {
