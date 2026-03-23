@@ -124,10 +124,42 @@ export default function SongPage() {
     }
     // Setup silent audio for media session keep-alive
     if (typeof window !== 'undefined') {
-      silentAudioRef.current = new Audio(SILENT_AUDIO_BASE64);
-      if (silentAudioRef.current) silentAudioRef.current.loop = true;
+      const audio = new Audio(SILENT_AUDIO_BASE64);
+      audio.loop = true;
+      silentAudioRef.current = audio;
     }
   }, [initialTranspose]);
+
+  const toggleAutoScroll = useCallback(() => {
+    // Crucial: Unlock audio context on user interaction
+    if (silentAudioRef.current) {
+      silentAudioRef.current.play().catch(() => {});
+    }
+
+    if (!isContinuousMode) {
+        setIsContinuousMode(true);
+        setIsAutoScrolling(true);
+    } else {
+        setIsAutoScrolling(!isAutoScrolling);
+    }
+  }, [isContinuousMode, isAutoScrolling]);
+
+  const stopAutoScroll = useCallback(() => {
+    setIsAutoScrolling(false);
+    setIsContinuousMode(false);
+    if (silentAudioRef.current) {
+      silentAudioRef.current.pause();
+    }
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = 'paused';
+    }
+    
+    setTimeout(() => {
+      if (api) {
+        api.scrollTo(current - 1, false);
+      }
+    }, 150);
+  }, [api, current]);
 
   // Media Session Control
   useEffect(() => {
@@ -142,12 +174,14 @@ export default function SongPage() {
         });
 
         const handlePlay = () => {
+          if (silentAudioRef.current) silentAudioRef.current.play().catch(() => {});
           setIsAutoScrolling(true);
           setIsContinuousMode(true);
         };
 
         const handlePause = () => {
           setIsAutoScrolling(false);
+          if (silentAudioRef.current) silentAudioRef.current.pause();
         };
 
         navigator.mediaSession.setActionHandler('play', handlePlay);
@@ -294,30 +328,6 @@ export default function SongPage() {
 
     return () => observer.disconnect();
   }, [isContinuousMode, isClient, songParts]);
-
-  const toggleAutoScroll = useCallback(() => {
-    // Force silent audio unlock on user interaction
-    silentAudioRef.current?.play().catch(() => {});
-    
-    if (!isContinuousMode) {
-        setIsContinuousMode(true);
-        setIsAutoScrolling(true);
-    } else {
-        setIsAutoScrolling(!isAutoScrolling);
-    }
-  }, [isContinuousMode, isAutoScrolling]);
-
-  const stopAutoScroll = useCallback(() => {
-    setIsAutoScrolling(false);
-    setIsContinuousMode(false);
-    silentAudioRef.current?.pause();
-    
-    setTimeout(() => {
-      if (api) {
-        api.scrollTo(current - 1, false);
-      }
-    }, 150);
-  }, [api, current]);
 
   const handleKeyDown = useCallback(
       (event: React.KeyboardEvent<HTMLDivElement>) => {

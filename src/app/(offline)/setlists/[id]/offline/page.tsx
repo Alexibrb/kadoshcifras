@@ -209,8 +209,9 @@ export default function OfflineSetlistPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
         setIsWakeLockSupported('wakeLock' in navigator);
-        silentAudioRef.current = new Audio(SILENT_AUDIO_BASE64);
-        if (silentAudioRef.current) silentAudioRef.current.loop = true;
+        const audio = new Audio(SILENT_AUDIO_BASE64);
+        audio.loop = true;
+        silentAudioRef.current = audio;
     }
   }, []);
 
@@ -261,6 +262,21 @@ export default function OfflineSetlistPage() {
     return sections;
   }, [offlineData]);
 
+  const handlePlayMedia = useCallback(() => {
+    if (silentAudioRef.current) {
+      silentAudioRef.current.play().catch(() => {});
+    }
+    setIsAutoScrolling(true);
+    setIsContinuousMode(true);
+  }, []);
+
+  const handlePauseMedia = useCallback(() => {
+    setIsAutoScrolling(false);
+    if (silentAudioRef.current) {
+      silentAudioRef.current.pause();
+    }
+  }, []);
+
   // Media Session Control
   useEffect(() => {
     if (!isClient || !('mediaSession' in navigator) || !offlineData || allSections.length === 0) return;
@@ -276,17 +292,8 @@ export default function OfflineSetlistPage() {
           artwork: [{ src: 'https://placehold.co/512x512/9f50e5/ffffff?text=K', sizes: '512x512', type: 'image/png' }]
         });
 
-        const handlePlay = () => {
-          setIsAutoScrolling(true);
-          setIsContinuousMode(true);
-        };
-
-        const handlePause = () => {
-          setIsAutoScrolling(false);
-        };
-
-        navigator.mediaSession.setActionHandler('play', handlePlay);
-        navigator.mediaSession.setActionHandler('pause', handlePause);
+        navigator.mediaSession.setActionHandler('play', handlePlayMedia);
+        navigator.mediaSession.setActionHandler('pause', handlePauseMedia);
         navigator.mediaSession.setActionHandler('previoustrack', () => {
           if (!isContinuousMode && api) api.scrollPrev();
         });
@@ -305,7 +312,7 @@ export default function OfflineSetlistPage() {
             navigator.mediaSession.setActionHandler('nexttrack', null);
         }
     };
-  }, [isClient, offlineData, currentSectionIndex, api, isContinuousMode, allSections]);
+  }, [isClient, offlineData, currentSectionIndex, api, isContinuousMode, allSections, handlePlayMedia, handlePauseMedia]);
 
   // Update Media Session State
   useEffect(() => {
@@ -397,8 +404,10 @@ export default function OfflineSetlistPage() {
   }, [api, isContinuousMode]);
 
   const toggleAutoScroll = useCallback(() => {
-    // Force silent audio unlock on user interaction
-    silentAudioRef.current?.play().catch(() => {});
+    // Prime the audio engine on user interaction
+    if (silentAudioRef.current) {
+      silentAudioRef.current.play().catch(() => {});
+    }
 
     if (!isContinuousMode) {
         setIsContinuousMode(true);
@@ -411,7 +420,12 @@ export default function OfflineSetlistPage() {
   const stopAutoScroll = useCallback(() => {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
-    silentAudioRef.current?.pause();
+    if (silentAudioRef.current) {
+      silentAudioRef.current.pause();
+    }
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = 'paused';
+    }
     
     setTimeout(() => {
       if (api) {
