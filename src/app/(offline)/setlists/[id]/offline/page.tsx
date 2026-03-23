@@ -790,8 +790,7 @@ export default function OfflineSetlistPage() {
                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                     <AlertDialogAction onClick={stopAutoScroll}>Confirmar</AlertDialogAction>
                                   </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                                </AlertDialog>
                           )}
                       </div>
                   )}
