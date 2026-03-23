@@ -1,3 +1,4 @@
+
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,8 @@ const ALL_KEYS = [
     'C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B',
     'Cm', 'C#m', 'Dbm', 'Dm', 'D#m', 'Ebm', 'Em', 'Fm', 'F#m', 'Gbm', 'Gm', 'G#m', 'Abm', 'Am', 'A#m', 'Bbm', 'Bm'
 ];
+
+const SILENT_AUDIO_BASE64 = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
 
 export default function SongPage() {
   const params = useParams();
@@ -120,8 +123,10 @@ export default function SongPage() {
         containerRef.current.focus();
     }
     // Setup silent audio for media session keep-alive
-    silentAudioRef.current = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
-    if (silentAudioRef.current) silentAudioRef.current.loop = true;
+    if (typeof window !== 'undefined') {
+      silentAudioRef.current = new Audio(SILENT_AUDIO_BASE64);
+      if (silentAudioRef.current) silentAudioRef.current.loop = true;
+    }
   }, [initialTranspose]);
 
   // Media Session Control
@@ -135,27 +140,22 @@ export default function SongPage() {
       artwork: [{ src: 'https://placehold.co/512x512/9f50e5/ffffff?text=K', sizes: '512x512', type: 'image/png' }]
     });
 
-    navigator.mediaSession.setActionHandler('play', () => {
+    const handlePlay = () => {
       setIsAutoScrolling(true);
       setIsContinuousMode(true);
-      silentAudioRef.current?.play().catch(() => {});
-    });
+    };
 
-    navigator.mediaSession.setActionHandler('pause', () => {
+    const handlePause = () => {
       setIsAutoScrolling(false);
-      silentAudioRef.current?.pause();
-    });
+    };
 
+    navigator.mediaSession.setActionHandler('play', handlePlay);
+    navigator.mediaSession.setActionHandler('pause', handlePause);
     navigator.mediaSession.setActionHandler('previoustrack', () => {
-      if (!isContinuousMode && api) {
-        api.scrollPrev();
-      }
+      if (!isContinuousMode && api) api.scrollPrev();
     });
-
     navigator.mediaSession.setActionHandler('nexttrack', () => {
-      if (!isContinuousMode && api) {
-        api.scrollNext();
-      }
+      if (!isContinuousMode && api) api.scrollNext();
     });
 
     return () => {
@@ -166,9 +166,15 @@ export default function SongPage() {
     };
   }, [isClient, song, api, isContinuousMode]);
 
+  // Update Media Session State
   useEffect(() => {
     if ('mediaSession' in navigator) {
       navigator.mediaSession.playbackState = isAutoScrolling ? 'playing' : 'paused';
+      if (isAutoScrolling) {
+        silentAudioRef.current?.play().catch(() => {});
+      } else {
+        silentAudioRef.current?.pause();
+      }
     }
   }, [isAutoScrolling]);
 
@@ -217,11 +223,9 @@ export default function SongPage() {
         lastScrollTime.current = performance.now();
         scrollPosRef.current = 0;
         requestRef.current = requestAnimationFrame(animateScroll);
-        silentAudioRef.current?.play().catch(() => {});
     } else {
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
         lastScrollTime.current = 0;
-        silentAudioRef.current?.pause();
     }
     return () => {
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
@@ -282,6 +286,9 @@ export default function SongPage() {
   }, [isContinuousMode, isClient, songParts]);
 
   const toggleAutoScroll = useCallback(() => {
+    // Force silent audio unlock on user interaction
+    silentAudioRef.current?.play().catch(() => {});
+    
     if (!isContinuousMode) {
         setIsContinuousMode(true);
         setIsAutoScrolling(true);
@@ -293,6 +300,7 @@ export default function SongPage() {
   const stopAutoScroll = useCallback(() => {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
+    silentAudioRef.current?.pause();
     
     setTimeout(() => {
       if (api) {
@@ -308,12 +316,7 @@ export default function SongPage() {
 
         if (key === pedalSettings.nextSong) {
             event.preventDefault();
-            if (isContinuousMode) {
-                setIsAutoScrolling(!isAutoScrolling);
-            } else {
-                setIsContinuousMode(true);
-                setIsAutoScrolling(true);
-            }
+            toggleAutoScroll();
             return;
         }
 
@@ -335,7 +338,7 @@ export default function SongPage() {
             }
         }
       },
-      [api, isEditing, showChords, pedalSettings, isContinuousMode, isAutoScrolling]
+      [api, isEditing, showChords, pedalSettings, isContinuousMode, isAutoScrolling, toggleAutoScroll]
     )
   
   const handleSave = async () => {

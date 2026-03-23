@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -30,6 +31,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
+const SILENT_AUDIO_BASE64 = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
 
 interface OfflineSong {
     title: string;
@@ -194,11 +197,9 @@ export default function OfflineSetlistPage() {
         lastScrollTime.current = performance.now();
         scrollPosRef.current = 0;
         requestRef.current = requestAnimationFrame(animateScroll);
-        silentAudioRef.current?.play().catch(() => {});
     } else {
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
         lastScrollTime.current = 0;
-        silentAudioRef.current?.pause();
     }
     return () => {
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
@@ -208,6 +209,8 @@ export default function OfflineSetlistPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
         setIsWakeLockSupported('wakeLock' in navigator);
+        silentAudioRef.current = new Audio(SILENT_AUDIO_BASE64);
+        if (silentAudioRef.current) silentAudioRef.current.loop = true;
     }
   }, []);
 
@@ -233,16 +236,26 @@ export default function OfflineSetlistPage() {
   useEffect(() => {
     setIsClient(true);
     if (containerRef.current) containerRef.current.focus();
-    // Setup silent audio for media session keep-alive
-    silentAudioRef.current = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
-    if (silentAudioRef.current) silentAudioRef.current.loop = true;
   }, []);
 
   // Media Session Control
   useEffect(() => {
     if (!isClient || !('mediaSession' in navigator) || !offlineData) return;
 
-    const currentSong = offlineData.songs[currentSectionIndex] || offlineData.songs[0];
+    const allSectionsList = ((): Section[] => {
+      const sections: Section[] = [];
+      offlineData.songs.forEach((song, songIndex) => {
+          constNormalized = song.content.replace(/\r\n/g, '\n');
+          const parts = constNormalized.split(/\n[\r\t ]*\n[\r\t ]*\n+/);
+          parts.forEach((part, partIndex) => {
+              if (part.trim()) sections.push({ songIndex, partIndex, content: part, isLastSectionOfSong: partIndex === parts.length - 1, isLastSectionOfSetlist: false });
+          });
+      });
+      return sections;
+    })();
+
+    const currentSection = allSectionsList[currentSectionIndex] || allSectionsList[0];
+    const currentSong = offlineData.songs[currentSection.songIndex];
 
     navigator.mediaSession.metadata = new MediaMetadata({
       title: currentSong.title,
@@ -251,27 +264,22 @@ export default function OfflineSetlistPage() {
       artwork: [{ src: 'https://placehold.co/512x512/9f50e5/ffffff?text=K', sizes: '512x512', type: 'image/png' }]
     });
 
-    navigator.mediaSession.setActionHandler('play', () => {
+    const handlePlay = () => {
       setIsAutoScrolling(true);
       setIsContinuousMode(true);
-      silentAudioRef.current?.play().catch(() => {});
-    });
+    };
 
-    navigator.mediaSession.setActionHandler('pause', () => {
+    const handlePause = () => {
       setIsAutoScrolling(false);
-      silentAudioRef.current?.pause();
-    });
+    };
 
+    navigator.mediaSession.setActionHandler('play', handlePlay);
+    navigator.mediaSession.setActionHandler('pause', handlePause);
     navigator.mediaSession.setActionHandler('previoustrack', () => {
-      if (!isContinuousMode && api) {
-        api.scrollPrev();
-      }
+      if (!isContinuousMode && api) api.scrollPrev();
     });
-
     navigator.mediaSession.setActionHandler('nexttrack', () => {
-      if (!isContinuousMode && api) {
-        api.scrollNext();
-      }
+      if (!isContinuousMode && api) api.scrollNext();
     });
 
     return () => {
@@ -282,9 +290,15 @@ export default function OfflineSetlistPage() {
     };
   }, [isClient, offlineData, currentSectionIndex, api, isContinuousMode]);
 
+  // Update Media Session State
   useEffect(() => {
     if ('mediaSession' in navigator) {
       navigator.mediaSession.playbackState = isAutoScrolling ? 'playing' : 'paused';
+      if (isAutoScrolling) {
+        silentAudioRef.current?.play().catch(() => {});
+      } else {
+        silentAudioRef.current?.pause();
+      }
     }
   }, [isAutoScrolling]);
 
@@ -388,12 +402,10 @@ export default function OfflineSetlistPage() {
     return () => { api.off("select", handleSelect); }
   }, [api, isContinuousMode]);
 
-  const currentSection = allSections[currentSectionIndex];
-  const currentSongIndex = currentSection?.songIndex;
-  const currentSong = typeof currentSongIndex === 'number' ? offlineData?.songs[currentSongIndex] : undefined;
-  const currentSongTranspose = typeof currentSongIndex === 'number' ? (transpositions[currentSongIndex] ?? 0) : 0;
-  
   const toggleAutoScroll = useCallback(() => {
+    // Force silent audio unlock on user interaction
+    silentAudioRef.current?.play().catch(() => {});
+
     if (!isContinuousMode) {
         setIsContinuousMode(true);
         setIsAutoScrolling(true);
@@ -405,6 +417,7 @@ export default function OfflineSetlistPage() {
   const stopAutoScroll = useCallback(() => {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
+    silentAudioRef.current?.pause();
     
     setTimeout(() => {
       if (api) {
@@ -418,12 +431,7 @@ export default function OfflineSetlistPage() {
         
         if (key === pedalSettings.nextSong) {
             event.preventDefault();
-            if (isContinuousMode) {
-                setIsAutoScrolling(!isAutoScrolling);
-            } else {
-                setIsContinuousMode(true);
-                setIsAutoScrolling(true);
-            }
+            toggleAutoScroll();
             return;
         }
 
@@ -444,15 +452,17 @@ export default function OfflineSetlistPage() {
             api?.scrollNext();
             }
         }
-  }, [api, pedalSettings, showChords, isAutoScrolling, isContinuousMode]);
+  }, [api, pedalSettings, showChords, isAutoScrolling, isContinuousMode, toggleAutoScroll]);
   
   const changeTranspose = (change: number) => {
-    if (typeof currentSongIndex !== 'number') return;
+    const currentSection = allSections[currentSectionIndex];
+    if (!currentSection) return;
+    const songIdx = currentSection.songIndex;
     setTranspositions(prev => {
         const newTranspositions = [...prev];
-        const currentTranspose = newTranspositions[currentSongIndex];
+        const currentTranspose = newTranspositions[songIdx] || 0;
         const newTransposeValue = Math.min(12, Math.max(-12, currentTranspose + change));
-        newTranspositions[currentSongIndex] = newTransposeValue;
+        newTranspositions[songIdx] = newTransposeValue;
         return newTranspositions;
     });
   };
@@ -576,7 +586,7 @@ export default function OfflineSetlistPage() {
     );
   }
 
-  if (error || !offlineData || !currentSong) {
+  if (error || !offlineData) {
      return (
       <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-background">
         <h2 className="text-2xl font-bold text-destructive mb-4">Erro</h2>
@@ -586,6 +596,9 @@ export default function OfflineSetlistPage() {
     );
   }
 
+  const currentSec = allSections[currentSectionIndex] || allSections[0];
+  const currentSong = offlineData.songs[currentSec.songIndex];
+  const currentSongTranspose = transpositions[currentSec.songIndex] || 0;
   const displayedKey = currentSong.key ? transposeChord(currentSong.key, currentSongTranspose) : 'N/A';
   const showContinuous = isContinuousMode || !showChords;
 
@@ -695,9 +708,9 @@ export default function OfflineSetlistPage() {
         ) : (
           <>
             <div className="flex justify-between items-center mb-4 px-2 shrink-0">
-              <div className="text-xs font-semibold flex items-center gap-1.5 p-2 rounded-lg bg-muted/50 border"><Music className="h-3 w-3" />Música {currentSongIndex + 1}/{offlineData?.songs.length ?? 0}</div>
-              {allSections.filter(s => s.songIndex === currentSongIndex).length > 1 && (
-                <div className="text-xs font-semibold flex items-center gap-1.5 p-2 rounded-lg bg-muted/50 border"><File className="h-3 w-3" />Página {currentSection.partIndex + 1}</div>
+              <div className="text-xs font-semibold flex items-center gap-1.5 p-2 rounded-lg bg-muted/50 border"><Music className="h-3 w-3" />Música {(allSections[currentSectionIndex]?.songIndex ?? 0) + 1}/{offlineData?.songs.length ?? 0}</div>
+              {allSections.filter(s => s.songIndex === (allSections[currentSectionIndex]?.songIndex ?? 0)).length > 1 && (
+                <div className="text-xs font-semibold flex items-center gap-1.5 p-2 rounded-lg bg-muted/50 border"><File className="h-3 w-3" />Página {(allSections[currentSectionIndex]?.partIndex ?? 0) + 1}</div>
               )}
             </div>
             <Carousel className="w-full flex-1" setApi={setApi} opts={{ watchDrag: true, loop: false }}>
