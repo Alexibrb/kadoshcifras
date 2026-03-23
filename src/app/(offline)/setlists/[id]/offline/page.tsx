@@ -374,22 +374,37 @@ export default function OfflineSetlistPage() {
               ))}
           </ScrollArea>
         ) : (
-          <Carousel className="w-full flex-1" setApi={setApi}>
-            <CarouselContent>
-              {allSections.map((section, index) => (
-                <CarouselItem key={index}>
-                    <SongPresenter 
-                        section={section} 
-                        transposeValue={transpositions[section.songIndex] || 0} 
-                        fontSize={fontSize} 
-                        showChords={showChords} 
-                        colorSettings={finalColorSettings}
-                        song={offlineData.songs[section.songIndex]}
-                    />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-          </Carousel>
+          <div className="relative flex-1 group">
+             {/* Zonas de Toque para Navegação Offline */}
+             <div className="absolute inset-0 z-10 flex">
+                <div 
+                  className="w-1/3 h-full cursor-w-resize" 
+                  onClick={() => api?.scrollPrev()} 
+                />
+                <div className="w-1/3 h-full" />
+                <div 
+                  className="w-1/3 h-full cursor-e-resize" 
+                  onClick={() => api?.scrollNext()} 
+                />
+             </div>
+
+             <Carousel className="w-full flex-1 h-full" setApi={setApi}>
+                <CarouselContent className="h-full">
+                  {allSections.map((section, index) => (
+                    <CarouselItem key={index} className="h-full">
+                        <SongPresenter 
+                            section={section} 
+                            transposeValue={transpositions[section.songIndex] || 0} 
+                            fontSize={fontSize} 
+                            showChords={showChords} 
+                            colorSettings={finalColorSettings}
+                            song={offlineData.songs[section.songIndex]}
+                        />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+              </Carousel>
+          </div>
         )}
       </div>
 
@@ -405,7 +420,10 @@ export default function OfflineSetlistPage() {
                             <AlertDialogTrigger asChild><Button variant="outline" className="h-9 w-12"><X className="h-4 w-4" /></Button></AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader><AlertDialogTitle>Parar Rolagem?</AlertDialogTitle><AlertDialogDescription>Deseja voltar ao modo de slides exatamente nesta posição?</AlertDialogDescription></AlertDialogHeader>
-                              <AlertDialogFooter><AlertDialogCancel>Não</AlertDialogCancel><AlertDialogAction onClick={stopAutoScroll}>Sim, Parar</AlertDialogAction></AlertDialogFooter>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Não</AlertDialogCancel>
+                                <AlertDialogAction onClick={stopAutoScroll}>Sim, Parar</AlertDialogAction>
+                              </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
                         )}

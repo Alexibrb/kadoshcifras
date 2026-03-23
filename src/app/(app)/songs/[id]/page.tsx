@@ -2,7 +2,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Song, type MetadataItem, Setlist, PedalSettings } from '@/types';
-import { ArrowLeft, Edit, Minus, Plus, PanelTopClose, PanelTopOpen, Play, Pause, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Edit, Minus, Plus, PanelTopClose, PanelTopOpen, Play, Pause, X, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -195,8 +195,24 @@ export default function SongPage() {
             </div>
           </ScrollArea>
         ) : (
-          <div className="relative flex-1">
+          <div className="relative flex-1 group">
              <div className="text-center text-xs text-muted-foreground mb-2">Página {current} de {songParts.length}</div>
+             
+             {/* Zonas de Toque para Navegação */}
+             <div className="absolute inset-0 z-10 flex">
+                <div 
+                  className="w-1/3 h-full cursor-w-resize" 
+                  onClick={() => api?.scrollPrev()} 
+                  title="Página Anterior"
+                />
+                <div className="w-1/3 h-full" /> {/* Zona central livre */}
+                <div 
+                  className="w-1/3 h-full cursor-e-resize" 
+                  onClick={() => api?.scrollNext()} 
+                  title="Próxima Página"
+                />
+             </div>
+
              <Carousel className="w-full h-full" setApi={setApi}>
                 <CarouselContent className="h-full">
                   {songParts.map((part, index) => (
