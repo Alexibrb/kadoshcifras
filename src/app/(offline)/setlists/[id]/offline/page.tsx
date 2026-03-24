@@ -265,7 +265,6 @@ export default function OfflineSetlistPage() {
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     const { nextSong, prevSong, nextPage, prevPage, pedalType } = pedalSettings;
 
-    // Ligar/Desligar modo rolagem (Apenas em pedal de 4 botões)
     if (pedalType === '4-buttons' && e.key === nextSong) {
       e.preventDefault();
       if (isExitDialogOpen) {
@@ -280,7 +279,6 @@ export default function OfflineSetlistPage() {
     }
 
     if (isContinuousMode) {
-        // Pausar/Retomar: Contextual para 2 ou 4 botões
         const isPauseKey = e.key === prevSong || (pedalType === '2-buttons' && e.key === nextPage);
         if (isPauseKey) {
             e.preventDefault();
@@ -288,7 +286,6 @@ export default function OfflineSetlistPage() {
             return;
         }
     } else {
-        // Modo Slides: Navegação
         if (e.key === nextPage || e.key === "ArrowRight") {
             e.preventDefault();
             api?.scrollNext();

@@ -20,7 +20,7 @@ import { Slider } from '@/components/ui/slider';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import html2canvas from 'html2canvas';
-import jsPDF from 'jsPDF';
+import { jsPDF } from 'jspdf';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -69,7 +69,6 @@ export default function SongPage() {
   const scrollPosRef = useRef<number>(0);
   const requestRef = useRef<number>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const pdfRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
   const finalFontSize = appUser?.fontSize ?? 14;
@@ -89,7 +88,6 @@ export default function SongPage() {
   useEffect(() => {
     setIsClient(true);
     requestWakeLock();
-    // Garante foco inicial para o pedal funcionar
     if (containerRef.current) containerRef.current.focus();
     return () => {
       if (wakeLockRef.current) wakeLockRef.current.release();
@@ -100,7 +98,6 @@ export default function SongPage() {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
     setIsExitDialogOpen(false);
-    // Devolve foco ao container após fechar o alerta
     setTimeout(() => { 
       if (api) api.scrollTo(currentPartIndex, false); 
       containerRef.current?.focus();
@@ -172,7 +169,6 @@ export default function SongPage() {
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     const { nextSong, prevSong, nextPage, prevPage, pedalType } = pedalSettings;
 
-    // Tecla de Ligar/Desligar modo rolagem (Apenas se pedal de 4 botões)
     if (pedalType === '4-buttons' && e.key === nextSong) {
       e.preventDefault();
       if (isExitDialogOpen) {
@@ -186,9 +182,7 @@ export default function SongPage() {
       return;
     }
 
-    // Se estiver no modo de ROLAGEM, a prioridade das teclas muda para pausar/retomar
     if (isContinuousMode) {
-        // Pausar/Retomar: Funciona com a tecla dedicada OU com as de navegação se for pedal de 2 botões
         const isPauseAction = e.key === prevSong || (pedalType === '2-buttons' && e.key === nextPage);
         if (isPauseAction) {
             e.preventDefault();
@@ -196,7 +190,6 @@ export default function SongPage() {
             return;
         }
     } else {
-        // Se estiver no modo de SLIDES, teclas de navegação funcionam normalmente
         if (e.key === nextPage || e.key === "ArrowRight") {
             e.preventDefault();
             api?.scrollNext();
@@ -208,17 +201,80 @@ export default function SongPage() {
   }, [api, pedalSettings, isAutoScrolling, isContinuousMode, stopAutoScroll, isExitDialogOpen]);
 
   const handleExportPDF = async () => {
-    if (!pdfRef.current || !song) return;
+    if (!song) return;
     setIsExporting(true);
     try {
-      const canvas = await html2canvas(pdfRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgProps = pdf.getImageProperties(imgData);
+      const lines = contentToDisplay.split('\n');
+      const pageSize = 35;
+      const pages: string[][] = [];
+      
+      // Encontra a maior linha para definir a largura dinâmica
+      const longestLine = Math.max(...lines.map(l => l.length));
+      
+      for (let i = 0; i < lines.length; i += pageSize) {
+        let page = lines.slice(i, i + pageSize);
+        // Preenche com linhas em branco se for menor que 35
+        while (page.length < pageSize) {
+          page.push(' ');
+        }
+        pages.push(page);
+      }
+
+      const pdf = new jsPDF('p', 'pt', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      // Criar container invisível para renderização
+      const container = document.createElement('div');
+      container.style.position = 'fixed';
+      container.style.left = '-9999px';
+      container.style.top = '0';
+      container.style.backgroundColor = '#fff';
+      container.style.color = '#000';
+      container.style.fontFamily = 'monospace';
+      container.style.fontSize = '12pt';
+      container.style.lineHeight = '1.4';
+      container.style.padding = '40pt';
+      // Ajusta largura baseada na maior linha (aprox 8pt por char em monospace 12pt)
+      container.style.width = `${Math.max(450, longestLine * 8 + 100)}pt`; 
+      document.body.appendChild(container);
+
+      for (let i = 0; i < pages.length; i++) {
+        if (i > 0) pdf.addPage();
+        
+        container.innerHTML = `
+          <div style="margin-bottom: 20pt; border-bottom: 1px solid #eee; padding-bottom: 10pt;">
+            <h1 style="font-size: 24pt; margin: 0; color: #000;">${song.title}</h1>
+            <p style="font-size: 14pt; margin: 5pt 0 0 0; color: #666;">${song.artist}</p>
+          </div>
+          <div style="white-space: pre-wrap; font-family: monospace; font-size: 12pt; color: #000;">
+            ${pages[i].join('\n')}
+          </div>
+          <div style="margin-top: 20pt; text-align: right; font-size: 8pt; color: #aaa;">
+            Página ${i + 1} de ${pages.length} • CifrasKadosh
+          </div>
+        `;
+
+        await new Promise(r => setTimeout(r, 150));
+        
+        const canvas = await html2canvas(container, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff'
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = pdfWidth;
+        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        // Se a imagem for maior que a página, centraliza ou ajusta
+        const yOffset = imgHeight > pdfHeight ? 0 : (pdfHeight - imgHeight) / 2;
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      }
+
       pdf.save(`${song.title}.pdf`);
+      document.body.removeChild(container);
+      
       toast({ title: "PDF Gerado", description: "O arquivo foi baixado com sucesso." });
     } catch (err) {
       console.error(err);
@@ -231,13 +287,11 @@ export default function SongPage() {
   const handleStartScrolling = () => {
     setIsContinuousMode(true);
     setIsAutoScrolling(true);
-    // Devolve o foco ao container para o pedal funcionar imediatamente
     setTimeout(() => containerRef.current?.focus(), 50);
   };
 
   const handleToggleScrolling = () => {
     setIsAutoScrolling(!isAutoScrolling);
-    // Devolve o foco ao container para o pedal funcionar imediatamente
     setTimeout(() => containerRef.current?.focus(), 50);
   };
 
@@ -357,16 +411,6 @@ export default function SongPage() {
               </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>
-
-      <div className="hidden">
-        <div ref={pdfRef} className="p-10 bg-white text-black" style={{ width: '210mm' }}>
-          <h1 className="text-3xl font-bold mb-2">{song.title}</h1>
-          <p className="text-xl mb-6">{song.artist}</p>
-          <div className="font-code whitespace-pre-wrap">
-            <SongDisplay content={contentToDisplay} showChords={showChords} style={{ fontSize: '14px', color: '#000' }} />
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
