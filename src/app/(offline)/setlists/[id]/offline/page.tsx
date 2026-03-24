@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -117,6 +118,7 @@ export default function OfflineSetlistPage() {
 
   const [fontSize] = useLocalStorage('song-font-size', 14);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
+  // Por padrão o card vem recolhido
   const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', false);
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
@@ -326,7 +328,7 @@ export default function OfflineSetlistPage() {
     try {
       const pdf = new jsPDF('p', 'pt', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const pageSize = 38; // 38 linhas
 
       const container = document.createElement('div');
       container.style.position = 'fixed';
@@ -347,7 +349,6 @@ export default function OfflineSetlistPage() {
         const content = transposeContent(song.content, transpositions[songIdx] || 0);
         const lines = content.split('\n');
         
-        const pageSize = 35;
         const longestLine = Math.max(...lines.map(l => l.length));
         container.style.width = `${Math.max(450, longestLine * 8 + 100)}pt`;
 
@@ -356,14 +357,15 @@ export default function OfflineSetlistPage() {
         while (currentIdx < lines.length) {
             let pageLines = lines.slice(currentIdx, currentIdx + pageSize);
             
-            // Segurança de cifra: não deixar cifra na última linha se houver mais conteúdo
-            if (pageLines.length === pageSize && isChordLine(pageLines[pageSize - 1]) && currentIdx + pageSize < lines.length) {
+            // Regra de cifra: se a última linha for cifra e não for o fim da música
+            if (pageLines.length === pageSize && isChordLine(pageLines[pageSize - 1]) && (currentIdx + pageSize) < lines.length) {
                 pageLines = lines.slice(currentIdx, currentIdx + pageSize - 1);
                 currentIdx += (pageSize - 1);
             } else {
                 currentIdx += pageSize;
             }
 
+            // Preenche com brancos
             while (pageLines.length < pageSize) {
                 pageLines.push(' ');
             }
@@ -374,6 +376,7 @@ export default function OfflineSetlistPage() {
           if (!firstOverallPage) pdf.addPage();
           firstOverallPage = false;
 
+          // Header apenas na primeira página da música
           const headerHtml = i === 0 ? `
             <div style="margin-bottom: 20pt; border-bottom: 1px solid #eee; padding-bottom: 10pt;">
               <h1 style="font-size: 24pt; margin: 0; color: #000;">${song.title}</h1>
@@ -445,13 +448,15 @@ export default function OfflineSetlistPage() {
                     <Button variant="ghost" size="icon" onClick={() => changeTranspose(1)}><Plus className="h-4 w-4" /></Button>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-full sm:w-40">
-                        <Label className="text-xs">Cifras</Label>
-                        <Switch checked={showChords} onCheckedChange={setShowChords} />
+                    <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-full sm:w-52">
+                        <div className="flex items-center gap-2">
+                            <Label className="text-xs">Cifras</Label>
+                            <Switch checked={showChords} onCheckedChange={setShowChords} />
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 ml-2 border" onClick={handleExportPDF} disabled={isExporting}>
+                            {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                        </Button>
                     </div>
-                    <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={handleExportPDF} disabled={isExporting}>
-                        {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                    </Button>
                 </div>
             </div>
           </div>

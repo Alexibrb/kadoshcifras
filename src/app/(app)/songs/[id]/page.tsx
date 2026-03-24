@@ -1,3 +1,4 @@
+
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -56,6 +57,7 @@ export default function SongPage() {
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [api, setApi] = useState<CarouselApi>();
   const [currentPartIndex, setCurrentPartIndex] = useState(0);
+  // Por padrão o card vem recolhido
   const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', false);
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
@@ -205,22 +207,22 @@ export default function SongPage() {
     setIsExporting(true);
     try {
       const lines = contentToDisplay.split('\n');
-      const pageSize = 35;
+      const pageSize = 38; // 38 linhas conforme solicitado
       const pages: string[][] = [];
       
       let currentIdx = 0;
       while (currentIdx < lines.length) {
         let pageLines = lines.slice(currentIdx, currentIdx + pageSize);
         
-        // Se a última linha for uma cifra e não for o fim da música, move para a próxima página
-        if (pageLines.length === pageSize && isChordLine(pageLines[pageSize - 1]) && currentIdx + pageSize < lines.length) {
+        // Regra: se a última linha for cifra e não for o fim, move para a próxima página
+        if (pageLines.length === pageSize && isChordLine(pageLines[pageSize - 1]) && (currentIdx + pageSize) < lines.length) {
             pageLines = lines.slice(currentIdx, currentIdx + pageSize - 1);
             currentIdx += (pageSize - 1);
         } else {
             currentIdx += pageSize;
         }
 
-        // Preenche com linhas em branco se necessário
+        // Preenche com brancos até 38 linhas
         while (pageLines.length < pageSize) {
           pageLines.push(' ');
         }
@@ -230,7 +232,6 @@ export default function SongPage() {
       const longestLine = Math.max(...lines.map(l => l.length));
       const pdf = new jsPDF('p', 'pt', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
 
       const container = document.createElement('div');
       container.style.position = 'fixed';
@@ -248,7 +249,7 @@ export default function SongPage() {
       for (let i = 0; i < pages.length; i++) {
         if (i > 0) pdf.addPage();
         
-        // Header apenas na primeira página
+        // Título e artista apenas na primeira página
         const headerHtml = i === 0 ? `
           <div style="margin-bottom: 20pt; border-bottom: 1px solid #eee; padding-bottom: 10pt;">
             <h1 style="font-size: 24pt; margin: 0; color: #000;">${song.title}</h1>
@@ -326,13 +327,15 @@ export default function SongPage() {
                       <Button variant="ghost" size="icon" onClick={() => setTranspose(t => Math.min(12, t + 1))} className="h-8 w-8"><Plus className="h-4 w-4" /></Button>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-40">
-                        <Label className="text-xs">Cifras</Label>
-                        <Switch checked={showChords} onCheckedChange={setShowChords} />
+                    <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-52">
+                        <div className="flex items-center gap-2">
+                            <Label className="text-xs">Cifras</Label>
+                            <Switch checked={showChords} onCheckedChange={setShowChords} />
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 ml-2 border" onClick={handleExportPDF} disabled={isExporting}>
+                            {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                        </Button>
                     </div>
-                    <Button variant="outline" size="icon" className="h-10 w-10" onClick={handleExportPDF} disabled={isExporting}>
-                        {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                    </Button>
                   </div>
               </div>
             </div>
@@ -394,7 +397,7 @@ export default function SongPage() {
               )}
               {(isContinuousMode || !showChords) && (
                   <div className="flex-1 flex items-center gap-3">
-                      <Slider value={[scrollSpeed]} onValueChange={(v) => setScrollSpeed(v[0])} max={100} min={1} className="flex-1" />
+                      <Slider id="speed-slider" value={[scrollSpeed]} onValueChange={(v) => setScrollSpeed(v[0])} max={100} min={1} className="flex-1" />
                       <span className="text-[10px] font-mono font-bold w-10 text-primary">{scrollSpeed}</span>
                   </div>
               )}
