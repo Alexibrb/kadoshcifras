@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, File, Sun, Moon, Loader2, Play, Pause, X } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,8 +29,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
-const SILENT_AUDIO_BASE64 = 'data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAgD8AAIA/AAABAAgAZGF0YRAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
 interface OfflineSong {
     title: string;
@@ -108,7 +106,6 @@ export default function OfflineSetlistPage() {
   const requestRef = useRef<number>(null);
   const lastScrollTime = useRef<number>(0);
   const scrollPosRef = useRef<number>(0); 
-  const silentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const [offlineData, setOfflineData] = useState<OfflineSetlist | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -173,11 +170,6 @@ export default function OfflineSetlistPage() {
   useEffect(() => {
     setIsClient(true);
     requestWakeLock();
-    if (typeof window !== 'undefined') {
-        const audio = new Audio(SILENT_AUDIO_BASE64);
-        audio.loop = true;
-        silentAudioRef.current = audio;
-    }
     return () => {
         if (wakeLockRef.current) wakeLockRef.current.release();
     };
@@ -206,7 +198,6 @@ export default function OfflineSetlistPage() {
   }, [offlineData]);
 
   const toggleAutoScroll = useCallback(() => {
-    if (silentAudioRef.current) silentAudioRef.current.play().catch(() => {});
     if (!isContinuousMode) {
         setIsContinuousMode(true);
         setIsAutoScrolling(true);
@@ -218,35 +209,10 @@ export default function OfflineSetlistPage() {
   const stopAutoScroll = useCallback(() => {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
-    if (silentAudioRef.current) silentAudioRef.current.pause();
     setTimeout(() => {
         if (api) api.scrollTo(currentSectionIndex, false);
     }, 150);
   }, [api, currentSectionIndex]);
-
-  useEffect(() => {
-    if (!isClient || !('mediaSession' in navigator) || !offlineData || allSections.length === 0) return;
-    const currentSec = allSections[currentSectionIndex] || allSections[0];
-    const currentSong = offlineData.songs[currentSec.songIndex];
-
-    navigator.mediaSession.metadata = new MediaMetadata({
-        title: currentSong.title,
-        artist: currentSong.artist,
-        album: offlineData.name
-    });
-
-    navigator.mediaSession.setActionHandler('play', toggleAutoScroll);
-    navigator.mediaSession.setActionHandler('pause', () => setIsAutoScrolling(false));
-    navigator.mediaSession.setActionHandler('previoustrack', () => api?.scrollPrev());
-    navigator.mediaSession.setActionHandler('nexttrack', () => api?.scrollNext());
-
-    return () => {
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.setActionHandler('play', null);
-            navigator.mediaSession.setActionHandler('pause', null);
-        }
-    };
-  }, [isClient, offlineData, currentSectionIndex, api, isContinuousMode, allSections, toggleAutoScroll]);
 
   useEffect(() => {
     if (isClient) {
@@ -375,7 +341,6 @@ export default function OfflineSetlistPage() {
           </ScrollArea>
         ) : (
           <div className="relative flex-1 group">
-             {/* Zonas de Toque para Navegação Offline */}
              <div className="absolute inset-0 z-10 flex">
                 <div 
                   className="w-1/3 h-full cursor-w-resize" 

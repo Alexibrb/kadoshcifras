@@ -30,8 +30,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const SILENT_AUDIO_BASE64 = 'data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAgD8AAIA/AAABAAgAZGF0YRAAAAAAAAAAAAAAAAAAAAAAAAAA';
-
 export default function SongPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -57,21 +55,14 @@ export default function SongPage() {
   const scrollPosRef = useRef<number>(0);
   const requestRef = useRef<number>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const silentAudioRef = useRef<HTMLAudioElement | null>(null);
   
   const finalFontSize = appUser?.fontSize ?? 14;
 
   useEffect(() => {
     setIsClient(true);
-    if (typeof window !== 'undefined') {
-        const audio = new Audio(SILENT_AUDIO_BASE64);
-        audio.loop = true;
-        silentAudioRef.current = audio;
-    }
   }, []);
 
   const toggleAutoScroll = useCallback(() => {
-    if (silentAudioRef.current) silentAudioRef.current.play().catch(() => {});
     if (!isContinuousMode) {
         setIsContinuousMode(true);
         setIsAutoScrolling(true);
@@ -83,7 +74,6 @@ export default function SongPage() {
   const stopAutoScroll = useCallback(() => {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
-    if (silentAudioRef.current) silentAudioRef.current.pause();
     setTimeout(() => { if (api) api.scrollTo(current - 1, false); }, 150);
   }, [api, current]);
 
@@ -198,14 +188,13 @@ export default function SongPage() {
           <div className="relative flex-1 group">
              <div className="text-center text-xs text-muted-foreground mb-2">Página {current} de {songParts.length}</div>
              
-             {/* Zonas de Toque para Navegação */}
              <div className="absolute inset-0 z-10 flex">
                 <div 
                   className="w-1/3 h-full cursor-w-resize" 
                   onClick={() => api?.scrollPrev()} 
                   title="Página Anterior"
                 />
-                <div className="w-1/3 h-full" /> {/* Zona central livre */}
+                <div className="w-1/3 h-full" />
                 <div 
                   className="w-1/3 h-full cursor-e-resize" 
                   onClick={() => api?.scrollNext()} 
