@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun, SunOff } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -122,6 +122,7 @@ export default function OfflineSetlistPage() {
   const [isClient, setIsClient] = useState(false);
   const [finalColorSettings, setFinalColorSettings] = useState<ColorSettings | null>(null);
   const [api, setApi] = useState<CarouselApi>();
+  const [isWakeLockActive, setIsWakeLockActive] = useState(false);
 
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', {
     prevPage: ',',
@@ -134,6 +135,8 @@ export default function OfflineSetlistPage() {
     if (typeof window !== 'undefined' && 'wakeLock' in navigator) {
       try {
         wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+        setIsWakeLockActive(true);
+        wakeLockRef.current.addEventListener('release', () => setIsWakeLockActive(false));
       } catch (err) {
         console.warn('Wake Lock request failed');
       }
@@ -283,7 +286,11 @@ export default function OfflineSetlistPage() {
               <Button asChild variant="outline" size="icon"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
               <div className="text-center flex-1">
                 <h1 className="text-xl font-bold font-headline truncate">{currentSong.title}</h1>
-                <div className="flex items-center justify-center gap-2"><Badge variant="outline">Offline</Badge></div>
+                <div className="flex items-center justify-center gap-2 mt-1">
+                  <Badge variant="outline">Offline</Badge>
+                  {isWakeLockActive ? <Sun className="h-3 w-3 text-orange-500" /> : <SunOff className="h-3 w-3 text-muted-foreground" />}
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold">{isWakeLockActive ? 'Tela Ativa' : 'Tela Normal'}</span>
+                </div>
               </div>
               <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon"><PanelTopClose className="h-5 w-5" /></Button>
             </div>
@@ -309,6 +316,23 @@ export default function OfflineSetlistPage() {
       </Card>
 
       <div className="flex-1 flex flex-col min-h-0 relative">
+        {/* Camada de Toque para Passar Slides */}
+        {!isContinuousMode && showChords && (
+          <div className="absolute inset-0 z-10 flex pointer-events-none">
+            <div 
+              className="w-1/4 h-full cursor-pointer pointer-events-auto" 
+              onClick={() => api?.scrollPrev()} 
+              title="Voltar"
+            />
+            <div className="flex-1 h-full" />
+            <div 
+              className="w-1/4 h-full cursor-pointer pointer-events-auto" 
+              onClick={() => api?.scrollNext()} 
+              title="Avançar"
+            />
+          </div>
+        )}
+
         {isContinuousMode || !showChords ? (
           <ScrollArea ref={scrollAreaRef} className="h-full p-4 md:p-6 bg-white dark:bg-black rounded-lg border">
               {offlineData.songs.map((song, songIdx) => (
@@ -330,36 +354,22 @@ export default function OfflineSetlistPage() {
               ))}
           </ScrollArea>
         ) : (
-          <div className="relative flex-1 group">
-             <div className="absolute inset-0 z-10 flex">
-                <div 
-                  className="w-1/3 h-full cursor-w-resize" 
-                  onClick={() => api?.scrollPrev()} 
-                />
-                <div className="w-1/3 h-full" />
-                <div 
-                  className="w-1/3 h-full cursor-e-resize" 
-                  onClick={() => api?.scrollNext()} 
-                />
-             </div>
-
-             <Carousel className="w-full flex-1 h-full" setApi={setApi}>
-                <CarouselContent className="h-full">
-                  {allSections.map((section, index) => (
-                    <CarouselItem key={index} className="h-full">
-                        <SongPresenter 
-                            section={section} 
-                            transposeValue={transpositions[section.songIndex] || 0} 
-                            fontSize={fontSize} 
-                            showChords={showChords} 
-                            colorSettings={finalColorSettings}
-                            song={offlineData.songs[section.songIndex]}
-                        />
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-              </Carousel>
-          </div>
+          <Carousel className="w-full flex-1 h-full" setApi={setApi}>
+            <CarouselContent className="h-full">
+              {allSections.map((section, index) => (
+                <CarouselItem key={index} className="h-full">
+                    <SongPresenter 
+                        section={section} 
+                        transposeValue={transpositions[section.songIndex] || 0} 
+                        fontSize={fontSize} 
+                        showChords={showChords} 
+                        colorSettings={finalColorSettings}
+                        song={offlineData.songs[section.songIndex]}
+                    />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
         )}
       </div>
 

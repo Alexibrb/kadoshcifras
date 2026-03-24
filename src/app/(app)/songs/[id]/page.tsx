@@ -1,12 +1,12 @@
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Song, type MetadataItem, Setlist, PedalSettings } from '@/types';
-import { ArrowLeft, Edit, Minus, Plus, PanelTopClose, PanelTopOpen, Play, Pause, X, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Song, PedalSettings } from '@/types';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Play, Pause, X, Loader2, FileDown, Sun, SunOff } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { transposeContent, transposeChord } from '@/lib/music';
+import { transposeContent } from '@/lib/music';
 import { SongDisplay } from '@/components/song-display';
 import { Card, CardContent } from '@/components/ui/card';
 import { Carousel, CarouselApi, CarouselContent, CarouselItem } from '@/components/ui/carousel';
@@ -18,6 +18,9 @@ import { useFirestoreDocument } from '@/hooks/use-firestore-document';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
 import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +39,7 @@ export default function SongPage() {
   const songId = params.id as string;
   const fromSetlistId = searchParams.get('fromSetlist');
   const initialTranspose = parseInt(searchParams.get('transpose') || '0', 10);
+  const { toast } = useToast();
 
   const { appUser, loading: authLoading } = useAuth();
   const { data: song, loading: loadingSong } = useFirestoreDocument<Song>('songs', appUser?.isApproved ? songId : null);
@@ -50,21 +54,42 @@ export default function SongPage() {
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(10);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isWakeLockActive, setIsWakeLockActive] = useState(false);
   
+  const wakeLockRef = useRef<any>(null);
   const lastScrollTime = useRef<number>(0);
   const scrollPosRef = useRef<number>(0);
   const requestRef = useRef<number>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const pdfRef = useRef<HTMLDivElement>(null);
   
   const finalFontSize = appUser?.fontSize ?? 14;
 
   useEffect(() => {
     setIsClient(true);
+    requestWakeLock();
+    return () => {
+      if (wakeLockRef.current) wakeLockRef.current.release();
+    };
+  }, []);
+
+  const requestWakeLock = useCallback(async () => {
+    if (typeof window !== 'undefined' && 'wakeLock' in navigator) {
+      try {
+        wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+        setIsWakeLockActive(true);
+        wakeLockRef.current.addEventListener('release', () => setIsWakeLockActive(false));
+      } catch (err) {
+        console.warn('Wake Lock request failed');
+      }
+    }
   }, []);
 
   const stopAutoScroll = useCallback(() => {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
+    // Tenta sincronizar o slide do carrossel com a posição atual da rolagem
     setTimeout(() => { if (api) api.scrollTo(current - 1, false); }, 150);
   }, [api, current]);
 
@@ -122,6 +147,31 @@ export default function SongPage() {
     return () => { if (requestRef.current) cancelAnimationFrame(requestRef.current); };
   }, [isAutoScrolling, animateScroll]);
 
+  const handleExportPDF = async () => {
+    if (!pdfRef.current || !song) return;
+    setIsExporting(true);
+    try {
+      const canvas = await html2canvas(pdfRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`${song.title}.pdf`);
+      toast({ title: "PDF Gerado", description: "O arquivo foi baixado com sucesso." });
+    } catch (err) {
+      console.error(err);
+      toast({ variant: "destructive", title: "Erro ao gerar PDF", description: "Ocorreu um problema ao exportar." });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === pedalSettings.nextSong) { e.preventDefault(); setIsAutoScrolling(!isAutoScrolling); }
     else if (!isAutoScrolling && showChords) {
@@ -142,6 +192,10 @@ export default function SongPage() {
                 <Button asChild variant="outline" size="icon"><Link href={fromSetlistId ? `/setlists/${fromSetlistId}` : '/songs'}><ArrowLeft className="h-4 w-4" /></Link></Button>
                 <div className="text-center flex-1">
                   <h1 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">{song.title}</h1>
+                  <div className="flex items-center justify-center gap-2 mt-1">
+                    {isWakeLockActive ? <Sun className="h-3 w-3 text-orange-500" /> : <SunOff className="h-3 w-3 text-muted-foreground" />}
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold">{isWakeLockActive ? 'Tela Ativa' : 'Tela Normal'}</span>
+                  </div>
                 </div>
                 <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon"><PanelTopClose className="h-5 w-5" /></Button>
               </div>
@@ -155,11 +209,14 @@ export default function SongPage() {
                       <Label className="text-xs">Cifras</Label>
                       <Switch checked={showChords} onCheckedChange={setShowChords} />
                   </div>
+                  <Button variant="outline" size="icon" className="h-10 w-10" onClick={handleExportPDF} disabled={isExporting}>
+                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                  </Button>
               </div>
             </div>
           ) : (
             <div className="flex items-center justify-between h-8">
-              <Button asChild variant="outline" size="icon" className="h-8 w-8"><Link href="/songs"><ArrowLeft className="h-4 w-4" /></Link></Button>
+              <Button asChild variant="outline" size="icon" className="h-8 w-8"><Link href={fromSetlistId ? `/setlists/${fromSetlistId}` : '/songs'}><ArrowLeft className="h-4 w-4" /></Link></Button>
               <h1 className="text-sm font-bold truncate flex-1 text-center">{song.title}</h1>
               <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8"><PanelTopOpen className="h-5 w-5" /></Button>
             </div>
@@ -168,6 +225,23 @@ export default function SongPage() {
       </Card>
 
       <div className="flex-1 flex flex-col min-h-0 relative">
+        {/* Camada de Toque para Passar Slides */}
+        {!isContinuousMode && showChords && (
+          <div className="absolute inset-0 z-10 flex pointer-events-none">
+            <div 
+              className="w-1/4 h-full cursor-pointer pointer-events-auto" 
+              onClick={() => api?.scrollPrev()} 
+              title="Voltar"
+            />
+            <div className="flex-1 h-full" />
+            <div 
+              className="w-1/4 h-full cursor-pointer pointer-events-auto" 
+              onClick={() => api?.scrollNext()} 
+              title="Avançar"
+            />
+          </div>
+        )}
+
         {isContinuousMode || !showChords ? (
           <ScrollArea ref={scrollAreaRef} className="h-full bg-white dark:bg-black rounded-lg">
             <div className="p-4 md:p-8">
@@ -175,33 +249,17 @@ export default function SongPage() {
             </div>
           </ScrollArea>
         ) : (
-          <div className="relative flex-1 group">
-             <div className="absolute inset-0 z-10 flex">
-                <div 
-                  className="w-1/3 h-full cursor-w-resize" 
-                  onClick={() => api?.scrollPrev()} 
-                  title="Página Anterior"
-                />
-                <div className="w-1/3 h-full" />
-                <div 
-                  className="w-1/3 h-full cursor-e-resize" 
-                  onClick={() => api?.scrollNext()} 
-                  title="Próxima Página"
-                />
-             </div>
-
-             <Carousel className="w-full h-full" setApi={setApi}>
-                <CarouselContent className="h-full">
-                  {songParts.map((part, index) => (
-                    <CarouselItem key={index} className="h-full">
-                      <ScrollArea className="h-full p-4 md:p-8 bg-white dark:bg-black rounded-lg border">
-                        <SongDisplay content={part} showChords={showChords} style={{ fontSize: `${finalFontSize}px` }} />
-                      </ScrollArea>
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-              </Carousel>
-          </div>
+          <Carousel className="w-full h-full" setApi={setApi}>
+            <CarouselContent className="h-full">
+              {songParts.map((part, index) => (
+                <CarouselItem key={index} className="h-full">
+                  <ScrollArea className="h-full p-4 md:p-8 bg-white dark:bg-black rounded-lg border">
+                    <SongDisplay content={part} showChords={showChords} style={{ fontSize: `${finalFontSize}px` }} />
+                  </ScrollArea>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
         )}
       </div>
 
@@ -230,6 +288,17 @@ export default function SongPage() {
                   </div>
               )}
           </div>
+      </div>
+
+      {/* Elemento oculto para geração de PDF */}
+      <div className="hidden">
+        <div ref={pdfRef} className="p-10 bg-white text-black" style={{ width: '210mm' }}>
+          <h1 className="text-3xl font-bold mb-2">{song.title}</h1>
+          <p className="text-xl mb-6">{song.artist}</p>
+          <div className="font-code whitespace-pre-wrap">
+            <SongDisplay content={contentToDisplay} showChords={showChords} style={{ fontSize: '14px', color: '#000' }} />
+          </div>
+        </div>
       </div>
     </div>
   );
