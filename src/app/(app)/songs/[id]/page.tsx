@@ -1,4 +1,3 @@
-
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,7 @@ import { Slider } from '@/components/ui/slider';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import jsPDF from 'jsPDF';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -90,6 +89,7 @@ export default function SongPage() {
   useEffect(() => {
     setIsClient(true);
     requestWakeLock();
+    // Garante foco inicial para o pedal funcionar
     if (containerRef.current) containerRef.current.focus();
     return () => {
       if (wakeLockRef.current) wakeLockRef.current.release();
@@ -100,8 +100,11 @@ export default function SongPage() {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
     setIsExitDialogOpen(false);
-    // Pequeno atraso para garantir que o carrossel re-renderize antes de fazer o scroll
-    setTimeout(() => { if (api) api.scrollTo(currentPartIndex, false); }, 100);
+    // Devolve foco ao container após fechar o alerta
+    setTimeout(() => { 
+      if (api) api.scrollTo(currentPartIndex, false); 
+      containerRef.current?.focus();
+    }, 100);
   }, [api, currentPartIndex]);
 
   const contentToDisplay = useMemo(() => {
@@ -167,10 +170,10 @@ export default function SongPage() {
   }, [isAutoScrolling, animateScroll]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    const { nextSong, prevSong, nextPage, prevPage } = pedalSettings;
+    const { nextSong, prevSong, nextPage, prevPage, pedalType } = pedalSettings;
 
     // Tecla de Ligar/Desligar modo rolagem (Apenas se pedal de 4 botões)
-    if (pedalSettings.pedalType === '4-buttons' && e.key === nextSong) {
+    if (pedalType === '4-buttons' && e.key === nextSong) {
       e.preventDefault();
       if (isExitDialogOpen) {
         stopAutoScroll();
@@ -186,7 +189,8 @@ export default function SongPage() {
     // Se estiver no modo de ROLAGEM, a prioridade das teclas muda para pausar/retomar
     if (isContinuousMode) {
         // Pausar/Retomar: Funciona com a tecla dedicada OU com as de navegação se for pedal de 2 botões
-        if (e.key === prevSong || (pedalSettings.pedalType === '2-buttons' && (e.key === nextPage || e.key === prevPage))) {
+        const isPauseAction = e.key === prevSong || (pedalType === '2-buttons' && e.key === nextPage);
+        if (isPauseAction) {
             e.preventDefault();
             setIsAutoScrolling(!isAutoScrolling);
             return;
@@ -222,6 +226,19 @@ export default function SongPage() {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const handleStartScrolling = () => {
+    setIsContinuousMode(true);
+    setIsAutoScrolling(true);
+    // Devolve o foco ao container para o pedal funcionar imediatamente
+    setTimeout(() => containerRef.current?.focus(), 50);
+  };
+
+  const handleToggleScrolling = () => {
+    setIsAutoScrolling(!isAutoScrolling);
+    // Devolve o foco ao container para o pedal funcionar imediatamente
+    setTimeout(() => containerRef.current?.focus(), 50);
   };
 
   if (!isClient || authLoading || loadingSong || !song) return <div className="flex-1 flex items-center justify-center h-screen"><Loader2 className="animate-spin" /></div>;
@@ -310,12 +327,12 @@ export default function SongPage() {
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t z-50">
           <div className="max-w-xl mx-auto flex items-center gap-4 p-2 rounded-lg border bg-muted/20">
               {!isContinuousMode && showChords ? (
-                  <Button onClick={() => { setIsContinuousMode(true); setIsAutoScrolling(true); }} className="h-9 gap-2 px-8 w-36"><Play className="h-4 w-4" /><span className="text-xs font-bold uppercase tracking-wider">Iniciar</span></Button>
+                  <Button onClick={handleStartScrolling} className="h-9 gap-2 px-8 w-36"><Play className="h-4 w-4" /><span className="text-xs font-bold uppercase tracking-wider">Iniciar</span></Button>
               ) : (
                   <div className="flex gap-2">
-                      <Button variant={isAutoScrolling ? "destructive" : "default"} onClick={() => setIsAutoScrolling(!isAutoScrolling)} className="h-9 w-36">{isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
+                      <Button variant={isAutoScrolling ? "destructive" : "default"} onClick={handleToggleScrolling} className="h-9 w-36">{isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
                       {showChords && (
-                        <Button variant="outline" onClick={() => setIsExitDialogOpen(true)} className="h-9 w-12"><X className="h-4 w-4" /></Button>
+                        <Button variant="outline" onClick={() => { setIsExitDialogOpen(true); setTimeout(() => containerRef.current?.focus(), 50); }} className="h-9 w-12"><X className="h-4 w-4" /></Button>
                       )}
                   </div>
               )}
@@ -335,7 +352,7 @@ export default function SongPage() {
                   <AlertDialogDescription>Deseja voltar ao modo de slides exatamente nesta posição?</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                  <AlertDialogCancel onClick={() => setIsExitDialogOpen(false)}>Não</AlertDialogCancel>
+                  <AlertDialogCancel onClick={() => { setIsExitDialogOpen(false); containerRef.current?.focus(); }}>Não</AlertDialogCancel>
                   <AlertDialogAction onClick={stopAutoScroll}>Sim, Confirmar</AlertDialogAction>
               </AlertDialogFooter>
           </AlertDialogContent>

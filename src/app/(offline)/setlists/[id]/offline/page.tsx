@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -209,6 +208,7 @@ export default function OfflineSetlistPage() {
     setIsExitDialogOpen(false);
     setTimeout(() => {
         if (api) api.scrollTo(currentSectionIndex, false);
+        containerRef.current?.focus();
     }, 100);
   }, [api, currentSectionIndex]);
 
@@ -279,17 +279,8 @@ export default function OfflineSetlistPage() {
       return;
     }
 
-    // No Alerta, a tecla de ligar/desligar confirma (4 botões)
-    if (isExitDialogOpen && pedalType === '4-buttons' && e.key === nextSong) {
-        e.preventDefault();
-        stopAutoScroll();
-        return;
-    }
-
     if (isContinuousMode) {
-        // Pausar/Retomar: 
-        // No modo 2 botões, usamos a tecla de "Próxima Página" ou a de Pausa
-        // No modo 4 botões, usamos apenas a de Pausa
+        // Pausar/Retomar: Contextual para 2 ou 4 botões
         const isPauseKey = e.key === prevSong || (pedalType === '2-buttons' && e.key === nextPage);
         if (isPauseKey) {
             e.preventDefault();
@@ -316,6 +307,17 @@ export default function OfflineSetlistPage() {
         next[cur.songIndex] = Math.min(12, Math.max(-12, (next[cur.songIndex] || 0) + change));
         return next;
     });
+  };
+
+  const handleStartScrolling = () => {
+    setIsContinuousMode(true);
+    setIsAutoScrolling(true);
+    setTimeout(() => containerRef.current?.focus(), 50);
+  };
+
+  const handleToggleScrolling = () => {
+    setIsAutoScrolling(!isAutoScrolling);
+    setTimeout(() => containerRef.current?.focus(), 50);
   };
 
   if (loading || !isClient || !finalColorSettings) return <div className="flex items-center justify-center h-screen"><Loader2 className="animate-spin" /></div>;
@@ -421,12 +423,12 @@ export default function OfflineSetlistPage() {
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t z-50">
           <div className="max-w-xl mx-auto flex items-center gap-4 p-2 rounded-lg border bg-muted/20">
                 {!isContinuousMode && showChords ? (
-                    <Button onClick={() => { setIsContinuousMode(true); setIsAutoScrolling(true); }} className="h-9 w-36 gap-2"><Play className="h-4 w-4" />Iniciar</Button>
+                    <Button onClick={handleStartScrolling} className="h-9 w-36 gap-2"><Play className="h-4 w-4" />Iniciar</Button>
                 ) : (
                     <div className="flex gap-2">
-                        <Button variant={isAutoScrolling ? "destructive" : "default"} onClick={() => setIsAutoScrolling(!isAutoScrolling)} className="h-9 w-36">{isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
+                        <Button variant={isAutoScrolling ? "destructive" : "default"} onClick={handleToggleScrolling} className="h-9 w-36">{isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
                         {showChords && (
-                          <Button variant="outline" onClick={() => setIsExitDialogOpen(true)} className="h-9 w-12"><X className="h-4 w-4" /></Button>
+                          <Button variant="outline" onClick={() => { setIsExitDialogOpen(true); setTimeout(() => containerRef.current?.focus(), 50); }} className="h-9 w-12"><X className="h-4 w-4" /></Button>
                         )}
                     </div>
                 )}
@@ -446,7 +448,7 @@ export default function OfflineSetlistPage() {
                   <AlertDialogDescription>Deseja voltar ao modo de slides exatamente nesta posição?</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                  <AlertDialogCancel onClick={() => setIsExitDialogOpen(false)}>Não</AlertDialogCancel>
+                  <AlertDialogCancel onClick={() => { setIsExitDialogOpen(false); containerRef.current?.focus(); }}>Não</AlertDialogCancel>
                   <AlertDialogAction onClick={stopAutoScroll}>Sim, Confirmar</AlertDialogAction>
               </AlertDialogFooter>
           </AlertDialogContent>
