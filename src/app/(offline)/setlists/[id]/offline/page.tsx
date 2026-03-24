@@ -197,15 +197,6 @@ export default function OfflineSetlistPage() {
     return sections;
   }, [offlineData]);
 
-  const toggleAutoScroll = useCallback(() => {
-    if (!isContinuousMode) {
-        setIsContinuousMode(true);
-        setIsAutoScrolling(true);
-    } else {
-        setIsAutoScrolling(!isAutoScrolling);
-    }
-  }, [isContinuousMode, isAutoScrolling]);
-
   const stopAutoScroll = useCallback(() => {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
@@ -260,13 +251,12 @@ export default function OfflineSetlistPage() {
   }, [api, isContinuousMode]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === pedalSettings.nextSong) { e.preventDefault(); toggleAutoScroll(); }
-    else if (e.key === pedalSettings.prevSong) { e.preventDefault(); if (isContinuousMode) setIsAutoScrolling(false); }
+    if (e.key === pedalSettings.nextSong) { e.preventDefault(); setIsAutoScrolling(!isAutoScrolling); }
     else if (showChords && !isAutoScrolling) {
         if (e.key === "ArrowLeft" || e.key === pedalSettings.prevPage) { e.preventDefault(); api?.scrollPrev(); }
         else if (e.key === "ArrowRight" || e.key === pedalSettings.nextPage) { e.preventDefault(); api?.scrollNext(); }
     }
-  }, [api, pedalSettings, showChords, isAutoScrolling, isContinuousMode, toggleAutoScroll]);
+  }, [api, pedalSettings, showChords, isAutoScrolling]);
   
   const changeTranspose = (change: number) => {
     const cur = allSections[currentSectionIndex];
@@ -376,10 +366,10 @@ export default function OfflineSetlistPage() {
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/90 backdrop-blur border-t z-50">
           <div className="max-w-xl mx-auto flex items-center gap-4 p-2 rounded-lg border bg-muted/20">
                 {!isContinuousMode && showChords ? (
-                    <Button onClick={toggleAutoScroll} className="h-9 w-36 gap-2"><Play className="h-4 w-4" />Iniciar</Button>
+                    <Button onClick={() => { setIsContinuousMode(true); setIsAutoScrolling(true); }} className="h-9 w-36 gap-2"><Play className="h-4 w-4" />Iniciar</Button>
                 ) : (
                     <div className="flex gap-2">
-                        <Button variant={isAutoScrolling ? "destructive" : "default"} onClick={toggleAutoScroll} className="h-9 w-36">{isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
+                        <Button variant={isAutoScrolling ? "destructive" : "default"} onClick={() => setIsAutoScrolling(!isAutoScrolling)} className="h-9 w-36">{isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
                         {showChords && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild><Button variant="outline" className="h-9 w-12"><X className="h-4 w-4" /></Button></AlertDialogTrigger>

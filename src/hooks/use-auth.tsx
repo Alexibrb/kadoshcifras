@@ -1,5 +1,3 @@
-
-// src/hooks/use-auth.tsx
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
@@ -46,24 +44,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const userData = docSnap.data();
             
             // Sincroniza as configurações com o localStorage para uso offline
-            if (userData.colorSettings) {
-                localStorage.setItem('user-color-settings', JSON.stringify(userData.colorSettings));
-            } else {
-                localStorage.removeItem('user-color-settings');
-            }
-            if (userData.fontSize) {
-                localStorage.setItem('song-font-size', JSON.stringify(userData.fontSize));
-            } else {
-                localStorage.setItem('song-font-size', '14'); // Padrão
+            if (typeof window !== 'undefined') {
+                if (userData.colorSettings) {
+                    localStorage.setItem('user-color-settings', JSON.stringify(userData.colorSettings));
+                }
+                if (userData.fontSize) {
+                    localStorage.setItem('song-font-size', JSON.stringify(userData.fontSize));
+                }
             }
 
             const convertedData = convertTimestampsInObject(userData);
             setAppUser({ id: docSnap.id, ...convertedData } as AppUser);
           } else {
             setAppUser(null);
-            // Limpa o localStorage se o usuário não for encontrado no Firestore
-            localStorage.removeItem('user-color-settings');
-            localStorage.removeItem('song-font-size');
           }
           setLoading(false);
         }, (error) => {
@@ -75,9 +68,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setUser(null);
         setAppUser(null);
-        // Limpa o localStorage no logout
-        localStorage.removeItem('user-color-settings');
-        localStorage.removeItem('song-font-size');
         setLoading(false);
       }
     });
@@ -100,49 +90,28 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
     const pathname = usePathname();
 
     useEffect(() => {
-        // Não faz nada enquanto os dados de autenticação estão carregando
-        if (loading) {
-            return;
-        }
+        if (loading) return;
 
         const isAuthPage = pathname === redirectUrl || pathname === '/signup' || pathname === '/';
         const isPendingApprovalPage = pathname === '/pending-approval';
         const isAdminPage = pathname.startsWith('/users');
 
-        // Se não há usuário logado (user), redireciona para a página de login
         if (!user) {
-            if (!isAuthPage) {
-                router.push(redirectUrl);
-            }
+            if (!isAuthPage) router.push(redirectUrl);
             return;
         }
 
-        // Se há um usuário logado (user) mas não há um documento de usuário no Firestore (appUser)
         if (!appUser) {
-            // Se ele não estiver na página de pendente, redireciona para lá.
-            // Isso acontece logo após o cadastro, antes do documento ser criado.
-            if (!isPendingApprovalPage) {
-                router.push('/pending-approval');
-            }
+            if (!isPendingApprovalPage) router.push('/pending-approval');
             return;
         }
 
-        // Se há um usuário logado (user) E um documento de usuário (appUser)
         if (appUser) {
-            // Se o usuário não está aprovado
             if (!appUser.isApproved) {
-                if (!isPendingApprovalPage) {
-                    router.push('/pending-approval');
-                }
-            } else { // Se o usuário ESTÁ APROVADO
-                // Se ele está na página de login ou pendente, vai para o dashboard
-                if (isAuthPage || isPendingApprovalPage) {
-                    router.push('/dashboard');
-                }
-                // Se não é admin e tenta acessar a página de usuários, vai para o dashboard
-                if (appUser.role !== 'admin' && isAdminPage) {
-                    router.push('/dashboard');
-                }
+                if (!isPendingApprovalPage) router.push('/pending-approval');
+            } else {
+                if (isAuthPage || isPendingApprovalPage) router.push('/dashboard');
+                if (appUser.role !== 'admin' && isAdminPage) router.push('/dashboard');
             }
         }
     }, [user, appUser, loading, router, redirectUrl, pathname]);

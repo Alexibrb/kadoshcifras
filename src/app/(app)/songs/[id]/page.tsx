@@ -62,15 +62,6 @@ export default function SongPage() {
     setIsClient(true);
   }, []);
 
-  const toggleAutoScroll = useCallback(() => {
-    if (!isContinuousMode) {
-        setIsContinuousMode(true);
-        setIsAutoScrolling(true);
-    } else {
-        setIsAutoScrolling(!isAutoScrolling);
-    }
-  }, [isContinuousMode, isAutoScrolling]);
-
   const stopAutoScroll = useCallback(() => {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
@@ -132,13 +123,12 @@ export default function SongPage() {
   }, [isAutoScrolling, animateScroll]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === pedalSettings.nextSong) { e.preventDefault(); toggleAutoScroll(); }
-    else if (e.key === pedalSettings.prevSong) { e.preventDefault(); if (isContinuousMode) setIsAutoScrolling(false); }
+    if (e.key === pedalSettings.nextSong) { e.preventDefault(); setIsAutoScrolling(!isAutoScrolling); }
     else if (!isAutoScrolling && showChords) {
         if (e.key === pedalSettings.nextPage) api?.scrollNext();
         else if (e.key === pedalSettings.prevPage) api?.scrollPrev();
     }
-  }, [api, pedalSettings, isAutoScrolling, isContinuousMode, toggleAutoScroll, showChords]);
+  }, [api, pedalSettings, isAutoScrolling, showChords]);
 
   if (!isClient || authLoading || loadingSong || !song) return <div className="flex-1 flex items-center justify-center h-screen"><Loader2 className="animate-spin" /></div>;
 
@@ -186,8 +176,6 @@ export default function SongPage() {
           </ScrollArea>
         ) : (
           <div className="relative flex-1 group">
-             <div className="text-center text-xs text-muted-foreground mb-2">Página {current} de {songParts.length}</div>
-             
              <div className="absolute inset-0 z-10 flex">
                 <div 
                   className="w-1/3 h-full cursor-w-resize" 
@@ -220,10 +208,10 @@ export default function SongPage() {
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t z-50">
           <div className="max-w-xl mx-auto flex items-center gap-4 p-2 rounded-lg border bg-muted/20">
               {!isContinuousMode && showChords ? (
-                  <Button onClick={toggleAutoScroll} className="h-9 gap-2 px-8 w-36"><Play className="h-4 w-4" /><span className="text-xs font-bold uppercase tracking-wider">Iniciar</span></Button>
+                  <Button onClick={() => { setIsContinuousMode(true); setIsAutoScrolling(true); }} className="h-9 gap-2 px-8 w-36"><Play className="h-4 w-4" /><span className="text-xs font-bold uppercase tracking-wider">Iniciar</span></Button>
               ) : (
                   <div className="flex gap-2">
-                      <Button variant={isAutoScrolling ? "destructive" : "default"} onClick={toggleAutoScroll} className="h-9 w-36">{isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
+                      <Button variant={isAutoScrolling ? "destructive" : "default"} onClick={() => setIsAutoScrolling(!isAutoScrolling)} className="h-9 w-36">{isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
                       {showChords && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild><Button variant="outline" className="h-9 w-12"><X className="h-4 w-4" /></Button></AlertDialogTrigger>
