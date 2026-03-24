@@ -66,14 +66,6 @@ export default function SongPage() {
   
   const finalFontSize = appUser?.fontSize ?? 14;
 
-  useEffect(() => {
-    setIsClient(true);
-    requestWakeLock();
-    return () => {
-      if (wakeLockRef.current) wakeLockRef.current.release();
-    };
-  }, []);
-
   const requestWakeLock = useCallback(async () => {
     if (typeof window !== 'undefined' && 'wakeLock' in navigator) {
       try {
@@ -86,10 +78,17 @@ export default function SongPage() {
     }
   }, []);
 
+  useEffect(() => {
+    setIsClient(true);
+    requestWakeLock();
+    return () => {
+      if (wakeLockRef.current) wakeLockRef.current.release();
+    };
+  }, [requestWakeLock]);
+
   const stopAutoScroll = useCallback(() => {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
-    // Tenta sincronizar o slide do carrossel com a posição atual da rolagem
     setTimeout(() => { if (api) api.scrollTo(current - 1, false); }, 150);
   }, [api, current]);
 
@@ -151,11 +150,7 @@ export default function SongPage() {
     if (!pdfRef.current || !song) return;
     setIsExporting(true);
     try {
-      const canvas = await html2canvas(pdfRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff'
-      });
+      const canvas = await html2canvas(pdfRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgProps = pdf.getImageProperties(imgData);
@@ -225,20 +220,11 @@ export default function SongPage() {
       </Card>
 
       <div className="flex-1 flex flex-col min-h-0 relative">
-        {/* Camada de Toque para Passar Slides */}
         {!isContinuousMode && showChords && (
           <div className="absolute inset-0 z-10 flex pointer-events-none">
-            <div 
-              className="w-1/4 h-full cursor-pointer pointer-events-auto" 
-              onClick={() => api?.scrollPrev()} 
-              title="Voltar"
-            />
+            <div className="w-1/4 h-full cursor-pointer pointer-events-auto" onClick={() => api?.scrollPrev()} />
             <div className="flex-1 h-full" />
-            <div 
-              className="w-1/4 h-full cursor-pointer pointer-events-auto" 
-              onClick={() => api?.scrollNext()} 
-              title="Avançar"
-            />
+            <div className="w-1/4 h-full cursor-pointer pointer-events-auto" onClick={() => api?.scrollNext()} />
           </div>
         )}
 
@@ -290,7 +276,6 @@ export default function SongPage() {
           </div>
       </div>
 
-      {/* Elemento oculto para geração de PDF */}
       <div className="hidden">
         <div ref={pdfRef} className="p-10 bg-white text-black" style={{ width: '210mm' }}>
           <h1 className="text-3xl font-bold mb-2">{song.title}</h1>

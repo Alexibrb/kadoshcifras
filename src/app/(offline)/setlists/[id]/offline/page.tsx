@@ -67,7 +67,6 @@ function SongPresenter({
     song: OfflineSong | undefined,
 }) {
     if (!section || !song) return null;
-
     const content = transposeContent(section.content, transposeValue);
 
     return (
@@ -182,8 +181,7 @@ export default function OfflineSetlistPage() {
     if (!offlineData) return [];
     const sections: Section[] = [];
     offlineData.songs.forEach((song, songIndex) => {
-        const normalizedContent = song.content.replace(/\r\n/g, '\n');
-        const parts = normalizedContent.split(/\n[\r\t ]*\n[\r\t ]*\n+/);
+        const parts = song.content.split(/\n\s*\n\s*\n/);
         parts.forEach((part, partIndex) => {
             const trimmedPart = part.trim();
             if (trimmedPart) {
@@ -316,20 +314,11 @@ export default function OfflineSetlistPage() {
       </Card>
 
       <div className="flex-1 flex flex-col min-h-0 relative">
-        {/* Camada de Toque para Passar Slides */}
         {!isContinuousMode && showChords && (
           <div className="absolute inset-0 z-10 flex pointer-events-none">
-            <div 
-              className="w-1/4 h-full cursor-pointer pointer-events-auto" 
-              onClick={() => api?.scrollPrev()} 
-              title="Voltar"
-            />
+            <div className="w-1/4 h-full cursor-pointer pointer-events-auto" onClick={() => api?.scrollPrev()} />
             <div className="flex-1 h-full" />
-            <div 
-              className="w-1/4 h-full cursor-pointer pointer-events-auto" 
-              onClick={() => api?.scrollNext()} 
-              title="Avançar"
-            />
+            <div className="w-1/4 h-full cursor-pointer pointer-events-auto" onClick={() => api?.scrollNext()} />
           </div>
         )}
 
