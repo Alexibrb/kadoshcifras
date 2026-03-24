@@ -154,6 +154,40 @@ export default function SongPage() {
     return () => { if (requestRef.current) cancelAnimationFrame(requestRef.current); };
   }, [isAutoScrolling, animateScroll]);
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Tecla 1: Ligar/Desligar modo rolagem
+    if (e.key === pedalSettings.nextSong) {
+      e.preventDefault();
+      if (isExitDialogOpen) {
+        stopAutoScroll();
+      } else if (!isContinuousMode) {
+        setIsContinuousMode(true);
+        setIsAutoScrolling(true);
+      } else {
+        setIsExitDialogOpen(true);
+      }
+      return;
+    }
+
+    // Tecla 2: Pausar/Retomar (Apenas no modo contínuo)
+    if (isContinuousMode && e.key === pedalSettings.prevSong) {
+      e.preventDefault();
+      setIsAutoScrolling(!isAutoScrolling);
+      return;
+    }
+
+    // Navegação de Slides Manual (Apenas se NÃO estiver em modo contínuo)
+    if (!isContinuousMode && showChords && !isExitDialogOpen) {
+      if (e.key === pedalSettings.nextPage || e.key === "ArrowRight") {
+        e.preventDefault();
+        api?.scrollNext();
+      } else if (e.key === pedalSettings.prevPage || e.key === "ArrowLeft") {
+        e.preventDefault();
+        api?.scrollPrev();
+      }
+    }
+  }, [api, pedalSettings, isAutoScrolling, isContinuousMode, showChords, stopAutoScroll, isExitDialogOpen]);
+
   const handleExportPDF = async () => {
     if (!pdfRef.current || !song) return;
     setIsExporting(true);
@@ -174,33 +208,6 @@ export default function SongPage() {
       setIsExporting(false);
     }
   };
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === pedalSettings.nextSong) {
-      e.preventDefault();
-      if (isExitDialogOpen) {
-        stopAutoScroll();
-      } else if (!isContinuousMode) {
-        setIsContinuousMode(true);
-        setIsAutoScrolling(true);
-      } else {
-        setIsExitDialogOpen(true);
-      }
-    } 
-    else if (e.key === pedalSettings.prevSong) {
-      e.preventDefault();
-      if (isContinuousMode && !isExitDialogOpen) {
-        setIsAutoScrolling(!isAutoScrolling);
-      }
-    } 
-    else if (!isContinuousMode && showChords && !isExitDialogOpen) {
-        if (e.key === pedalSettings.nextPage || e.key === "ArrowRight") {
-            api?.scrollNext();
-        } else if (e.key === pedalSettings.prevPage || e.key === "ArrowLeft") {
-            api?.scrollPrev();
-        }
-    }
-  }, [api, pedalSettings, isAutoScrolling, isContinuousMode, showChords, stopAutoScroll, isExitDialogOpen]);
 
   if (!isClient || authLoading || loadingSong || !song) return <div className="flex-1 flex items-center justify-center h-screen"><Loader2 className="animate-spin" /></div>;
 

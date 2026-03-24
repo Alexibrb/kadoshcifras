@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun, FileDown } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -184,19 +184,16 @@ export default function OfflineSetlistPage() {
     if (!offlineData) return [];
     const sections: Section[] = [];
     offlineData.songs.forEach((song, songIndex) => {
-        const parts = song.content.split(/\n\s*\n\s*\n/);
+        const parts = song.content.split(/\n\s*\n\s*\n/).filter(p => p.trim());
         parts.forEach((part, partIndex) => {
-            const trimmedPart = part.trim();
-            if (trimmedPart) {
-                sections.push({
-                    id: `${songIndex}-${partIndex}`,
-                    songIndex: songIndex,
-                    partIndex: partIndex,
-                    content: trimmedPart,
-                    isLastSectionOfSong: partIndex === parts.length - 1,
-                    isLastSectionOfSetlist: partIndex === parts.length - 1 && songIndex === offlineData.songs.length - 1,
-                });
-            }
+            sections.push({
+                id: `${songIndex}-${partIndex}`,
+                songIndex: songIndex,
+                partIndex: partIndex,
+                content: part.trim(),
+                isLastSectionOfSong: partIndex === parts.length - 1,
+                isLastSectionOfSetlist: partIndex === parts.length - 1 && songIndex === offlineData.songs.length - 1,
+            });
         });
     });
     return sections;
@@ -257,7 +254,7 @@ export default function OfflineSetlistPage() {
   }, [api, isContinuousMode]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    // Tecla 1: Ligar/Desligar Modo Rolagem (com Alerta de Saída)
+    // Tecla 1: Ligar/Desligar modo rolagem
     if (e.key === pedalSettings.nextSong) {
       e.preventDefault();
       if (isExitDialogOpen) {
@@ -268,23 +265,25 @@ export default function OfflineSetlistPage() {
       } else {
         setIsExitDialogOpen(true);
       }
-    } 
-    // Tecla 2: Pausar/Retomar Movimento (Dentro do Modo Rolagem)
-    else if (e.key === pedalSettings.prevSong) {
+      return;
+    }
+
+    // Tecla 2: Pausar/Retomar (Apenas no modo contínuo)
+    if (isContinuousMode && e.key === pedalSettings.prevSong) {
       e.preventDefault();
-      if (isContinuousMode && !isExitDialogOpen) {
-        setIsAutoScrolling(!isAutoScrolling);
+      setIsAutoScrolling(!isAutoScrolling);
+      return;
+    }
+
+    // Navegação de Slides Manual (Apenas se NÃO estiver em modo contínuo)
+    if (!isContinuousMode && showChords && !isExitDialogOpen) {
+      if (e.key === pedalSettings.nextPage || e.key === "ArrowRight") {
+        e.preventDefault();
+        api?.scrollNext();
+      } else if (e.key === pedalSettings.prevPage || e.key === "ArrowLeft") {
+        e.preventDefault();
+        api?.scrollPrev();
       }
-    } 
-    // Navegação nos Slides (Toque/Setas/Pedal)
-    else if (showChords && !isAutoScrolling && !isContinuousMode) {
-        if (e.key === "ArrowLeft" || e.key === pedalSettings.prevPage) { 
-          e.preventDefault(); 
-          api?.scrollPrev(); 
-        } else if (e.key === "ArrowRight" || e.key === pedalSettings.nextPage) { 
-          e.preventDefault(); 
-          api?.scrollNext(); 
-        }
     }
   }, [api, pedalSettings, showChords, isAutoScrolling, isContinuousMode, stopAutoScroll, isExitDialogOpen]);
   
@@ -348,7 +347,6 @@ export default function OfflineSetlistPage() {
       </Card>
 
       <div className="flex-1 flex flex-col min-h-0 relative">
-        {/* Zonas de Toque Laterais para Slides */}
         {!isContinuousMode && showChords && (
           <div className="absolute inset-0 z-10 flex pointer-events-none">
             <div className="w-1/4 h-full cursor-pointer pointer-events-auto" onClick={() => api?.scrollPrev()} title="Página Anterior" />
