@@ -1,4 +1,3 @@
-
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -57,7 +56,7 @@ export default function SongPage() {
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [api, setApi] = useState<CarouselApi>();
   const [currentPartIndex, setCurrentPartIndex] = useState(0);
-  const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', false);
+  const [isPanelVisible, setIsPanelVisible] = useState(false); // Inicia recolhido por padrão
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(10);
@@ -170,6 +169,7 @@ export default function SongPage() {
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     const { nextSong, prevSong, nextPage, prevPage, pedalType } = pedalSettings;
 
+    // Lógica para ligar/desligar rolagem (Apenas se for 4 botões)
     if (pedalType === '4-buttons' && e.key === nextSong) {
       e.preventDefault();
       if (isExitDialogOpen) {
@@ -183,6 +183,7 @@ export default function SongPage() {
       return;
     }
 
+    // Se estiver no modo contínuo (Rolagem), as teclas de "Pausa" ou "Próximo" controlam a pausa
     if (isContinuousMode) {
         const isPauseAction = e.key === prevSong || (pedalType === '2-buttons' && e.key === nextPage);
         if (isPauseAction) {
@@ -191,6 +192,7 @@ export default function SongPage() {
             return;
         }
     } else {
+        // Modo Slides (Navegação Normal)
         if (e.key === nextPage || e.key === "ArrowRight") {
             e.preventDefault();
             api?.scrollNext();
@@ -215,9 +217,12 @@ export default function SongPage() {
         let remainingLinesTotal = lines.length - currentIdx;
         let currentPageSize = standardPageSize;
 
+        // Se o que resta cabe no limite (38 + 3), coloca tudo nesta página
         if (remainingLinesTotal <= standardPageSize + tolerance) {
             currentPageSize = remainingLinesTotal;
         } else {
+            // Regra da cifra: Se a última linha (38) for cifra, joga ela pra próxima
+            // Apenas se ainda houver mais conteúdo depois
             if (isChordLine(lines[currentIdx + standardPageSize - 1])) {
                 currentPageSize = standardPageSize - 1;
             }
@@ -226,6 +231,7 @@ export default function SongPage() {
         let pageLines = lines.slice(currentIdx, currentIdx + currentPageSize);
         currentIdx += currentPageSize;
 
+        // Preenche com linhas em branco para manter a altura de 38-41 linhas
         while (pageLines.length < standardPageSize) {
           pageLines.push(' ');
         }
@@ -254,6 +260,7 @@ export default function SongPage() {
       for (let i = 0; i < pages.length; i++) {
         if (i > 0) pdf.addPage([ptWidth, ptHeight]);
         
+        // Título apenas na primeira página
         const headerHtml = i === 0 ? `
           <div style="margin-bottom: 20pt; border-bottom: 1px solid #eee; padding-bottom: 10pt;">
             <h1 style="font-size: 24pt; margin: 0; color: #000;">${song.title}</h1>

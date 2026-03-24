@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -118,7 +117,7 @@ export default function OfflineSetlistPage() {
 
   const [fontSize] = useLocalStorage('song-font-size', 14);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
-  const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', false);
+  const [isPanelVisible, setIsPanelVisible] = useState(false); // Inicia recolhido por padrão
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(10);
