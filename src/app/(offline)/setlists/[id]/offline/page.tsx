@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun, FileDown } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,6 +19,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -126,6 +128,7 @@ export default function OfflineSetlistPage() {
   const [api, setApi] = useState<CarouselApi>();
   const [isWakeLockActive, setIsWakeLockActive] = useState(false);
   const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', {
     pedalType: '4-buttons',
@@ -317,6 +320,78 @@ export default function OfflineSetlistPage() {
     setTimeout(() => containerRef.current?.focus(), 50);
   };
 
+  const handleExportPDF = async () => {
+    if (!offlineData) return;
+    setIsExporting(true);
+    try {
+      const pdf = new jsPDF('p', 'pt', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      const container = document.createElement('div');
+      container.style.position = 'fixed';
+      container.style.left = '-9999px';
+      container.style.top = '0';
+      container.style.backgroundColor = '#fff';
+      container.style.color = '#000';
+      container.style.fontFamily = 'monospace';
+      container.style.fontSize = '12pt';
+      container.style.lineHeight = '1.4';
+      container.style.padding = '40pt';
+      document.body.appendChild(container);
+
+      let firstPage = true;
+
+      for (let songIdx = 0; songIdx < offlineData.songs.length; songIdx++) {
+        const song = offlineData.songs[songIdx];
+        const content = transposeContent(song.content, transpositions[songIdx] || 0);
+        const lines = content.split('\n');
+        
+        const pageSize = 35;
+        const longestLine = Math.max(...lines.map(l => l.length));
+        container.style.width = `${Math.max(450, longestLine * 8 + 100)}pt`;
+
+        for (let i = 0; i < lines.length; i += pageSize) {
+          if (!firstPage) pdf.addPage();
+          firstPage = false;
+
+          let pageLines = lines.slice(i, i + pageSize);
+          while (pageLines.length < pageSize) {
+            pageLines.push(' ');
+          }
+
+          container.innerHTML = `
+            <div style="margin-bottom: 20pt; border-bottom: 1px solid #eee; padding-bottom: 10pt;">
+              <h1 style="font-size: 24pt; margin: 0; color: #000;">${song.title}</h1>
+              <p style="font-size: 14pt; margin: 5pt 0 0 0; color: #666;">${song.artist}</p>
+            </div>
+            <div style="white-space: pre-wrap; font-family: monospace; font-size: 12pt; color: #000;">
+              ${pageLines.join('\n')}
+            </div>
+            <div style="margin-top: 20pt; text-align: right; font-size: 8pt; color: #aaa;">
+              ${offlineData.name} • Música ${songIdx + 1} de ${offlineData.songs.length} • CifrasKadosh
+            </div>
+          `;
+
+          await new Promise(r => setTimeout(r, 150));
+          const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+          const imgData = canvas.toDataURL('image/png');
+          const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+        }
+      }
+
+      pdf.save(`${offlineData.name}.pdf`);
+      document.body.removeChild(container);
+      toast({ title: "Repertório Exportado", description: "O PDF do repertório completo foi gerado com sucesso." });
+    } catch (err) {
+      console.error(err);
+      toast({ variant: "destructive", title: "Erro ao gerar PDF", description: "Ocorreu um problema ao exportar o repertório." });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (loading || !isClient || !finalColorSettings) return <div className="flex items-center justify-center h-screen"><Loader2 className="animate-spin" /></div>;
   if (error || !offlineData) return <div className="flex flex-col items-center justify-center h-screen"><p className="text-destructive mb-4">{error}</p><Button asChild><Link href={`/setlists/${setlistId}`}><ArrowLeft className="mr-2" />Voltar</Link></Button></div>;
 
@@ -355,6 +430,9 @@ export default function OfflineSetlistPage() {
                     <Label className="text-xs">Cifras</Label>
                     <Switch checked={showChords} onCheckedChange={setShowChords} />
                 </div>
+                <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={handleExportPDF} disabled={isExporting}>
+                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                </Button>
             </div>
           </div>
         ) : (
