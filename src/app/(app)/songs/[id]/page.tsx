@@ -6,7 +6,7 @@ import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Play, Pause, X, Lo
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { transposeContent } from '@/lib/music';
+import { transposeContent, isChordLine } from '@/lib/music';
 import { SongDisplay } from '@/components/song-display';
 import { Card, CardContent } from '@/components/ui/card';
 import { Carousel, CarouselApi, CarouselContent, CarouselItem } from '@/components/ui/carousel';
@@ -56,7 +56,7 @@ export default function SongPage() {
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [api, setApi] = useState<CarouselApi>();
   const [currentPartIndex, setCurrentPartIndex] = useState(0);
-  const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', true);
+  const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', false);
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(10);
@@ -208,23 +208,30 @@ export default function SongPage() {
       const pageSize = 35;
       const pages: string[][] = [];
       
-      // Encontra a maior linha para definir a largura dinâmica
-      const longestLine = Math.max(...lines.map(l => l.length));
-      
-      for (let i = 0; i < lines.length; i += pageSize) {
-        let page = lines.slice(i, i + pageSize);
-        // Preenche com linhas em branco se for menor que 35
-        while (page.length < pageSize) {
-          page.push(' ');
+      let currentIdx = 0;
+      while (currentIdx < lines.length) {
+        let pageLines = lines.slice(currentIdx, currentIdx + pageSize);
+        
+        // Se a última linha for uma cifra e não for o fim da música, move para a próxima página
+        if (pageLines.length === pageSize && isChordLine(pageLines[pageSize - 1]) && currentIdx + pageSize < lines.length) {
+            pageLines = lines.slice(currentIdx, currentIdx + pageSize - 1);
+            currentIdx += (pageSize - 1);
+        } else {
+            currentIdx += pageSize;
         }
-        pages.push(page);
+
+        // Preenche com linhas em branco se necessário
+        while (pageLines.length < pageSize) {
+          pageLines.push(' ');
+        }
+        pages.push(pageLines);
       }
 
+      const longestLine = Math.max(...lines.map(l => l.length));
       const pdf = new jsPDF('p', 'pt', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      // Criar container invisível para renderização
       const container = document.createElement('div');
       container.style.position = 'fixed';
       container.style.left = '-9999px';
@@ -235,18 +242,22 @@ export default function SongPage() {
       container.style.fontSize = '12pt';
       container.style.lineHeight = '1.4';
       container.style.padding = '40pt';
-      // Ajusta largura baseada na maior linha (aprox 8pt por char em monospace 12pt)
       container.style.width = `${Math.max(450, longestLine * 8 + 100)}pt`; 
       document.body.appendChild(container);
 
       for (let i = 0; i < pages.length; i++) {
         if (i > 0) pdf.addPage();
         
-        container.innerHTML = `
+        // Header apenas na primeira página
+        const headerHtml = i === 0 ? `
           <div style="margin-bottom: 20pt; border-bottom: 1px solid #eee; padding-bottom: 10pt;">
             <h1 style="font-size: 24pt; margin: 0; color: #000;">${song.title}</h1>
             <p style="font-size: 14pt; margin: 5pt 0 0 0; color: #666;">${song.artist}</p>
           </div>
+        ` : '';
+
+        container.innerHTML = `
+          ${headerHtml}
           <div style="white-space: pre-wrap; font-family: monospace; font-size: 12pt; color: #000;">
             ${pages[i].join('\n')}
           </div>
@@ -256,25 +267,14 @@ export default function SongPage() {
         `;
 
         await new Promise(r => setTimeout(r, 150));
-        
-        const canvas = await html2canvas(container, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#ffffff'
-        });
-        
+        const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
         const imgData = canvas.toDataURL('image/png');
-        const imgWidth = pdfWidth;
         const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-        
-        // Se a imagem for maior que a página, centraliza ou ajusta
-        const yOffset = imgHeight > pdfHeight ? 0 : (pdfHeight - imgHeight) / 2;
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
       }
 
       pdf.save(`${song.title}.pdf`);
       document.body.removeChild(container);
-      
       toast({ title: "PDF Gerado", description: "O arquivo foi baixado com sucesso." });
     } catch (err) {
       console.error(err);
@@ -325,13 +325,15 @@ export default function SongPage() {
                       <Badge variant="secondary" className="flex-1 text-center justify-center">Tom: {transpose > 0 ? '+' : ''}{transpose}</Badge>
                       <Button variant="ghost" size="icon" onClick={() => setTranspose(t => Math.min(12, t + 1))} className="h-8 w-8"><Plus className="h-4 w-4" /></Button>
                   </div>
-                  <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-40">
-                      <Label className="text-xs">Cifras</Label>
-                      <Switch checked={showChords} onCheckedChange={setShowChords} />
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-40">
+                        <Label className="text-xs">Cifras</Label>
+                        <Switch checked={showChords} onCheckedChange={setShowChords} />
+                    </div>
+                    <Button variant="outline" size="icon" className="h-10 w-10" onClick={handleExportPDF} disabled={isExporting}>
+                        {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                    </Button>
                   </div>
-                  <Button variant="outline" size="icon" className="h-10 w-10" onClick={handleExportPDF} disabled={isExporting}>
-                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                  </Button>
               </div>
             </div>
           ) : (

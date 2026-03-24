@@ -14,7 +14,7 @@ import { Slider } from '@/components/ui/slider';
 import Link from 'next/link';
 import { PedalSettings, ColorSettings } from '@/types';
 import { Carousel, CarouselApi, CarouselContent, CarouselItem } from '@/components/ui/carousel';
-import { transposeChord, transposeContent } from '@/lib/music';
+import { transposeChord, transposeContent, isChordLine } from '@/lib/music';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -117,7 +117,7 @@ export default function OfflineSetlistPage() {
 
   const [fontSize] = useLocalStorage('song-font-size', 14);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
-  const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', true);
+  const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', false);
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(10);
@@ -340,7 +340,7 @@ export default function OfflineSetlistPage() {
       container.style.padding = '40pt';
       document.body.appendChild(container);
 
-      let firstPage = true;
+      let firstOverallPage = true;
 
       for (let songIdx = 0; songIdx < offlineData.songs.length; songIdx++) {
         const song = offlineData.songs[songIdx];
@@ -351,25 +351,43 @@ export default function OfflineSetlistPage() {
         const longestLine = Math.max(...lines.map(l => l.length));
         container.style.width = `${Math.max(450, longestLine * 8 + 100)}pt`;
 
-        for (let i = 0; i < lines.length; i += pageSize) {
-          if (!firstPage) pdf.addPage();
-          firstPage = false;
+        const songPages: string[][] = [];
+        let currentIdx = 0;
+        while (currentIdx < lines.length) {
+            let pageLines = lines.slice(currentIdx, currentIdx + pageSize);
+            
+            // Segurança de cifra: não deixar cifra na última linha se houver mais conteúdo
+            if (pageLines.length === pageSize && isChordLine(pageLines[pageSize - 1]) && currentIdx + pageSize < lines.length) {
+                pageLines = lines.slice(currentIdx, currentIdx + pageSize - 1);
+                currentIdx += (pageSize - 1);
+            } else {
+                currentIdx += pageSize;
+            }
 
-          let pageLines = lines.slice(i, i + pageSize);
-          while (pageLines.length < pageSize) {
-            pageLines.push(' ');
-          }
+            while (pageLines.length < pageSize) {
+                pageLines.push(' ');
+            }
+            songPages.push(pageLines);
+        }
 
-          container.innerHTML = `
+        for (let i = 0; i < songPages.length; i++) {
+          if (!firstOverallPage) pdf.addPage();
+          firstOverallPage = false;
+
+          const headerHtml = i === 0 ? `
             <div style="margin-bottom: 20pt; border-bottom: 1px solid #eee; padding-bottom: 10pt;">
               <h1 style="font-size: 24pt; margin: 0; color: #000;">${song.title}</h1>
               <p style="font-size: 14pt; margin: 5pt 0 0 0; color: #666;">${song.artist}</p>
             </div>
+          ` : '';
+
+          container.innerHTML = `
+            ${headerHtml}
             <div style="white-space: pre-wrap; font-family: monospace; font-size: 12pt; color: #000;">
-              ${pageLines.join('\n')}
+              ${songPages[i].join('\n')}
             </div>
             <div style="margin-top: 20pt; text-align: right; font-size: 8pt; color: #aaa;">
-              ${offlineData.name} • Música ${songIdx + 1} de ${offlineData.songs.length} • CifrasKadosh
+              ${offlineData.name} • Música ${songIdx + 1} de ${offlineData.songs.length} • Página ${i + 1} • CifrasKadosh
             </div>
           `;
 
@@ -420,19 +438,21 @@ export default function OfflineSetlistPage() {
               </div>
               <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon"><PanelTopClose className="h-5 w-5" /></Button>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-                <div className="flex items-center gap-1 border rounded-md p-1 flex-1 bg-background h-10">
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                <div className="flex items-center gap-1 border rounded-md p-1 bg-background h-10 w-full sm:w-48">
                     <Button variant="ghost" size="icon" onClick={() => changeTranspose(-1)}><Minus className="h-4 w-4" /></Button>
                     <Badge variant="secondary" className="flex-1 text-center justify-center">Tom: {currentSong.key ? transposeChord(currentSong.key, transpositions[currentSec.songIndex]) : 'N/A'}</Badge>
                     <Button variant="ghost" size="icon" onClick={() => changeTranspose(1)}><Plus className="h-4 w-4" /></Button>
                 </div>
-                <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 flex-1">
-                    <Label className="text-xs">Cifras</Label>
-                    <Switch checked={showChords} onCheckedChange={setShowChords} />
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-full sm:w-40">
+                        <Label className="text-xs">Cifras</Label>
+                        <Switch checked={showChords} onCheckedChange={setShowChords} />
+                    </div>
+                    <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={handleExportPDF} disabled={isExporting}>
+                        {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                    </Button>
                 </div>
-                <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={handleExportPDF} disabled={isExporting}>
-                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                </Button>
             </div>
           </div>
         ) : (
