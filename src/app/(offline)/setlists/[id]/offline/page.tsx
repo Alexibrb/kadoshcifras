@@ -188,7 +188,7 @@ export default function OfflineSetlistPage() {
     if (!offlineData) return [];
     const sections: Section[] = [];
     offlineData.songs.forEach((song, songIndex) => {
-        const parts = song.content.split(/\n\s*\n\s*\n/).filter(p => p.trim());
+        const parts = song.content.split(/\n\s*\n\s*\n+/).filter(p => p.trim());
         parts.forEach((part, partIndex) => {
             sections.push({
                 id: `${songIndex}-${partIndex}`,
@@ -263,10 +263,10 @@ export default function OfflineSetlistPage() {
   }, [api, isContinuousMode]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    const { nextSong, prevSong, nextPage, prevPage } = pedalSettings;
+    const { nextSong, prevSong, nextPage, prevPage, pedalType } = pedalSettings;
 
-    // Ligar/Desligar modo rolagem
-    if (pedalSettings.pedalType === '4-buttons' && e.key === nextSong) {
+    // Ligar/Desligar modo rolagem (Apenas em pedal de 4 botões)
+    if (pedalType === '4-buttons' && e.key === nextSong) {
       e.preventDefault();
       if (isExitDialogOpen) {
         stopAutoScroll();
@@ -279,16 +279,19 @@ export default function OfflineSetlistPage() {
       return;
     }
 
-    // No Alerta, a mesma tecla confirma
-    if (isExitDialogOpen && e.key === nextSong) {
+    // No Alerta, a tecla de ligar/desligar confirma (4 botões)
+    if (isExitDialogOpen && pedalType === '4-buttons' && e.key === nextSong) {
         e.preventDefault();
         stopAutoScroll();
         return;
     }
 
     if (isContinuousMode) {
-        // Pausar/Retomar: Prioridade no modo de rolagem
-        if (e.key === prevSong || (pedalSettings.pedalType === '2-buttons' && (e.key === nextPage || e.key === prevPage))) {
+        // Pausar/Retomar: 
+        // No modo 2 botões, usamos a tecla de "Próxima Página" ou a de Pausa
+        // No modo 4 botões, usamos apenas a de Pausa
+        const isPauseKey = e.key === prevSong || (pedalType === '2-buttons' && e.key === nextPage);
+        if (isPauseKey) {
             e.preventDefault();
             setIsAutoScrolling(!isAutoScrolling);
             return;
@@ -396,7 +399,7 @@ export default function OfflineSetlistPage() {
               </div>
           </ScrollArea>
         ) : (
-          <Carousel className="w-full h-full" setApi={setApi}>
+          <Carousel className="w-full h-full" setApi={setApi} opts={{ loop: false }}>
             <CarouselContent className="h-full">
               {allSections.map((section, index) => (
                 <CarouselItem key={section.id} className="h-full">

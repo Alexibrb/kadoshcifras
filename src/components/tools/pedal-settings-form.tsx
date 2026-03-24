@@ -132,7 +132,7 @@ export function PedalSettingsForm() {
                 id="nextSongKey"
                 value={nextSongKey || ''}
                 onKeyDown={(e) => handleKeyPress(e, 'nextSong')}
-                readOnly={pedalType === '4-buttons'}
+                readOnly
                 disabled={pedalType === '2-buttons'}
                 placeholder={pedalType === '2-buttons' ? "Desativado" : "Pressione"}
                 />
