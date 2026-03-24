@@ -1,8 +1,9 @@
+
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Song, PedalSettings } from '@/types';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Play, Pause, X, Loader2, FileDown, Sun, Edit, Youtube } from 'lucide-react';
+import { Song, PedalSettings, Setlist } from '@/types';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Play, Pause, X, Loader2, FileDown, Sun, Edit, Youtube, Save, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -37,11 +38,16 @@ export default function SongPage() {
   const searchParams = useSearchParams();
   const songId = params.id as string;
   const fromSetlistId = searchParams.get('fromSetlist');
-  const initialTranspose = parseInt(searchParams.get('transpose') || '0', 10);
   const { toast } = useToast();
 
   const { appUser, loading: authLoading } = useAuth();
   const { data: song, loading: loadingSong } = useFirestoreDocument<Song>('songs', appUser?.isApproved ? songId : null);
+  
+  // Hook para o repertório caso venha de um
+  const { data: setlist, updateDocument: updateSetlist } = useFirestoreDocument<Setlist>('setlists', fromSetlistId);
+  
+  // Persistência local de tons por música (não afeta o banco global)
+  const [localTranspositions, setLocalTranspositions] = useLocalStorage<Record<string, number>>('user-song-transpositions', {});
   
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', { 
     pedalType: '4-buttons',
@@ -52,15 +58,16 @@ export default function SongPage() {
   });
   
   const [isClient, setIsClient] = useState(false);
-  const [transpose, setTranspose] = useState(initialTranspose);
+  const [transpose, setTranspose] = useState(0);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [api, setApi] = useState<CarouselApi>();
   const [currentPartIndex, setCurrentPartIndex] = useState(0);
-  const [isPanelVisible, setIsPanelVisible] = useState(false); // Inicia recolhido por padrão
+  const [isPanelVisible, setIsPanelVisible] = useState(false);
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(10);
   const [isExporting, setIsExporting] = useState(false);
+  const [isSavingTranspose, setIsSavingTranspose] = useState(false);
   const [isWakeLockActive, setIsWakeLockActive] = useState(false);
   const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
   
@@ -72,6 +79,18 @@ export default function SongPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   
   const finalFontSize = appUser?.fontSize ?? 14;
+
+  // Inicializa o tom com base no contexto (Repertório -> LocalStorage -> Zero)
+  useEffect(() => {
+    if (isClient && song) {
+        const setlistTranspose = searchParams.get('transpose');
+        if (setlistTranspose !== null) {
+            setTranspose(parseInt(setlistTranspose, 10));
+        } else if (localTranspositions[songId] !== undefined) {
+            setTranspose(localTranspositions[songId]);
+        }
+    }
+  }, [isClient, song, songId, searchParams, localTranspositions]);
 
   const requestWakeLock = useCallback(async () => {
     if (typeof window !== 'undefined' && 'wakeLock' in navigator) {
@@ -117,6 +136,39 @@ export default function SongPage() {
     if (!contentToDisplay) return [];
     return contentToDisplay.split(/\n\s*\n\s*\n/).filter(p => p.trim());
   }, [contentToDisplay]);
+
+  // Salva o tom atual no contexto apropriado
+  const handleSaveTranspose = async () => {
+    if (!song) return;
+    setIsSavingTranspose(true);
+    
+    try {
+        // 1. Salva localmente para o usuário (Sempre acontece)
+        setLocalTranspositions(prev => ({ ...prev, [songId]: transpose }));
+
+        // 2. Se estiver em um repertório e tiver permissão, salva no repertório
+        if (setlist && fromSetlistId && (appUser?.role === 'admin' || setlist.creatorId === appUser?.id || setlist.isPublic)) {
+            const updatedSongs = (setlist.songs || []).map(s => {
+                if (s.songId === songId) return { ...s, transpose };
+                return s;
+            });
+            await updateSetlist({ songs: updatedSongs });
+        }
+
+        toast({
+            title: "Tom Salvo",
+            description: `O tom ${currentKey} foi definido como seu preferido para esta música.`,
+        });
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Erro ao salvar",
+            description: "Não foi possível salvar a preferência de tom."
+        });
+    } finally {
+        setIsSavingTranspose(false);
+    }
+  };
 
   useEffect(() => {
     if (!isContinuousMode || !isClient) return;
@@ -219,11 +271,9 @@ export default function SongPage() {
         let remainingLinesTotal = lines.length - currentIdx;
         let currentPageSize = standardPageSize;
 
-        // Regra de tolerância: se sobrar até 3 linhas extras, coloca na mesma página
         if (remainingLinesTotal <= standardPageSize + tolerance) {
             currentPageSize = remainingLinesTotal;
         } else {
-            // Se a última linha (38) for cifra e a música continua, joga para a próxima
             if (isChordLine(lines[currentIdx + standardPageSize - 1])) {
                 currentPageSize = standardPageSize - 1;
             }
@@ -346,10 +396,21 @@ export default function SongPage() {
                 </div>
               </div>
               <div className="flex flex-wrap justify-center gap-2">
-                  <div className="flex items-center gap-1 border rounded-md p-1 bg-background h-10 w-48">
+                  <div className="flex items-center gap-1 border rounded-md p-1 bg-background h-10 w-64">
                       <Button variant="ghost" size="icon" onClick={() => setTranspose(t => Math.max(-12, t - 1))} className="h-8 w-8"><Minus className="h-4 w-4" /></Button>
-                      <Badge variant="secondary" className="flex-1 text-center justify-center">Tom: {transpose > 0 ? '+' : ''}{transpose}</Badge>
+                      <Badge variant="secondary" className="flex-1 text-center justify-center">Tom: {currentKey || transpose}</Badge>
                       <Button variant="ghost" size="icon" onClick={() => setTranspose(t => Math.min(12, t + 1))} className="h-8 w-8"><Plus className="h-4 w-4" /></Button>
+                      <Separator orientation="vertical" className="h-6 mx-1" />
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={handleSaveTranspose} 
+                        className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10" 
+                        title="Salvar Tom Preferido"
+                        disabled={isSavingTranspose}
+                      >
+                        {isSavingTranspose ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                      </Button>
                   </div>
                   <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-56">
                       <div className="flex items-center gap-2">
