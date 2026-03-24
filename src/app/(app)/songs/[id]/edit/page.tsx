@@ -1,26 +1,22 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { Song, MetadataItem } from '@/types';
-import { ArrowLeft, AlertCircle, Save, Loader2, Plus } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Save, Loader2, Settings2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useMemo, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Alert, AlertDescription } from '@/components/ui/alert';
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useFirestoreDocument } from '@/hooks/use-firestore-document';
 import { useAuth } from '@/hooks/use-auth';
@@ -38,9 +34,9 @@ export default function EditSongPage() {
   
   const { data: song, loading: loadingSong, updateDocument: updateSong } = useFirestoreDocument<Song>('songs', songId);
   
-  const { data: categories } = useFirestoreCollection<MetadataItem>('categories', 'name');
-  const { data: genres } = useFirestoreCollection<MetadataItem>('genres', 'name');
-  const { data: artists } = useFirestoreCollection<MetadataItem>('artists', 'name');
+  const { data: categories, loading: loadingCategories } = useFirestoreCollection<MetadataItem>('categories', 'name');
+  const { data: genres, loading: loadingGenres } = useFirestoreCollection<MetadataItem>('genres', 'name');
+  const { data: artists, loading: loadingArtists } = useFirestoreCollection<MetadataItem>('artists', 'name');
 
   const [title, setTitle] = useState('');
   const [selectedArtist, setSelectedArtist] = useState('');
@@ -52,7 +48,38 @@ export default function EditSongPage() {
 
   const [isSaving, setIsSaving] = useState(false);
 
-  // Carrega os dados existentes de forma robusta
+  // Deduplicação robusta para evitar erros de renderização e inconsistência no Select
+  const uniqueArtists = useMemo(() => {
+    const seen = new Set();
+    return artists.filter(item => {
+      if (!item.name) return false;
+      const duplicate = seen.has(item.name);
+      seen.add(item.name);
+      return !duplicate;
+    });
+  }, [artists]);
+
+  const uniqueCategories = useMemo(() => {
+    const seen = new Set();
+    return categories.filter(item => {
+      if (!item.name) return false;
+      const duplicate = seen.has(item.name);
+      seen.add(item.name);
+      return !duplicate;
+    });
+  }, [categories]);
+
+  const uniqueGenres = useMemo(() => {
+    const seen = new Set();
+    return genres.filter(item => {
+      if (!item.name) return false;
+      const duplicate = seen.has(item.name);
+      seen.add(item.name);
+      return !duplicate;
+    });
+  }, [genres]);
+
+  // Carrega os dados da música apenas quando ela e os metadados estiverem prontos
   useEffect(() => {
     if (song) {
       setTitle(song.title || '');
@@ -65,8 +92,8 @@ export default function EditSongPage() {
     }
   }, [song]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!title || !selectedArtist) return;
     
     setIsSaving(true);
@@ -88,7 +115,9 @@ export default function EditSongPage() {
     }
   };
 
-  if (loadingSong || !appUser) {
+  const isLoading = loadingSong || loadingArtists || loadingCategories || loadingGenres || !appUser;
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="animate-spin h-8 w-8 text-primary" />
@@ -105,105 +134,105 @@ export default function EditSongPage() {
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h2 className="text-2xl font-bold font-headline tracking-tight truncate max-w-[200px] md:max-w-none">
-            Editar: {song?.title}
+          <h2 className="text-2xl font-bold font-headline tracking-tight truncate">
+            Editar Música
           </h2>
         </div>
-        <Button onClick={handleSubmit} disabled={isSaving} size="sm">
+        <Button onClick={() => handleSubmit()} disabled={isSaving}>
           {isSaving ? <Loader2 className="animate-spin h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
           Salvar
         </Button>
       </div>
 
-      <Card className="border-none shadow-none bg-accent/5">
-        <CardContent className="p-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Grid Compacta de Metadados */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="title" className="text-xs uppercase text-muted-foreground font-bold">Título</Label>
-                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required className="h-9 bg-background" />
+      <div className="space-y-4">
+        {/* Acordeão de Metadados - Recolhido por padrão */}
+        <Accordion type="single" collapsible className="w-full border rounded-lg bg-card">
+          <AccordionItem value="details" className="border-none px-4">
+            <AccordionTrigger className="hover:no-underline py-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                <Settings2 className="h-4 w-4" />
+                Informações da Música (Título, Artista, Tom...)
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="artist" className="text-xs uppercase text-muted-foreground font-bold">Artista</Label>
-                <Select value={selectedArtist} onValueChange={setSelectedArtist} required>
-                  <SelectTrigger className="h-9 bg-background">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {artists.map(art => <SelectItem key={art.id} value={art.name}>{art.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="key" className="text-xs uppercase text-muted-foreground font-bold">Tom Original</Label>
-                <Select value={key} onValueChange={setKey}>
-                  <SelectTrigger className="h-9 bg-background">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ALL_KEYS.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="category" className="text-xs uppercase text-muted-foreground font-bold">Categoria</Label>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="h-9 bg-background">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="genre" className="text-xs uppercase text-muted-foreground font-bold">Gênero</Label>
-                <Select value={selectedGenre} onValueChange={setSelectedGenre}>
-                  <SelectTrigger className="h-9 bg-background">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {genres.map(g => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="url" className="text-xs uppercase text-muted-foreground font-bold">URL YouTube</Label>
-                <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} className="h-9 bg-background" placeholder="https://..." />
-              </div>
-            </div>
-
-            {/* Área de Conteúdo - Expandida */}
-            <div className="space-y-2 pt-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="content" className="text-xs uppercase text-muted-foreground font-bold">Letra & Cifras</Label>
-                <div className="flex items-center gap-2 text-[10px] text-muted-foreground bg-background px-2 py-0.5 rounded border border-dashed">
-                  <AlertCircle className="h-3 w-3" />
-                  Duas linhas em branco = Nova Página no PDF
+            </AccordionTrigger>
+            <AccordionContent className="pt-2 pb-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="title" className="text-xs font-bold uppercase">Título</Label>
+                  <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required className="h-9 bg-background" />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="artist" className="text-xs font-bold uppercase">Artista</Label>
+                  <Select value={selectedArtist} onValueChange={setSelectedArtist} required>
+                    <SelectTrigger className="h-9 bg-background">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uniqueArtists.map(art => <SelectItem key={art.id} value={art.name}>{art.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="key" className="text-xs font-bold uppercase">Tom Original</Label>
+                  <Select value={key} onValueChange={setKey}>
+                    <SelectTrigger className="h-9 bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ALL_KEYS.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="category" className="text-xs font-bold uppercase">Categoria</Label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger className="h-9 bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uniqueCategories.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="genre" className="text-xs font-bold uppercase">Gênero</Label>
+                  <Select value={selectedGenre} onValueChange={setSelectedGenre}>
+                    <SelectTrigger className="h-9 bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uniqueGenres.map(g => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="url" className="text-xs font-bold uppercase">URL YouTube</Label>
+                  <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} className="h-9 bg-background" placeholder="https://..." />
                 </div>
               </div>
-              <Textarea
-                id="content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="font-code min-h-[500px] whitespace-pre bg-background leading-relaxed shadow-inner"
-                required
-              />
-            </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
-            <div className="flex justify-end pt-2">
-               <Button type="submit" disabled={isSaving} className="w-full md:w-auto font-bold uppercase tracking-wider">
-                {isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="mr-2 h-4 w-4" />}
-                Salvar Alterações
-              </Button>
+        {/* Área de Conteúdo - Principal */}
+        <Card className="border-none shadow-none bg-accent/5">
+          <CardContent className="p-0 space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <Label htmlFor="content" className="text-xs font-bold uppercase text-muted-foreground">Letra & Cifras</Label>
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                <AlertCircle className="h-3 w-3" />
+                2 linhas em branco = Nova Página no PDF
+              </div>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+            <Textarea
+              id="content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="font-code min-h-[600px] whitespace-pre bg-background leading-relaxed shadow-inner text-base"
+              required
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
