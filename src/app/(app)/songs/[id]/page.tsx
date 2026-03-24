@@ -1,3 +1,4 @@
+
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,7 @@ export default function SongPage() {
   const { data: song, loading: loadingSong } = useFirestoreDocument<Song>('songs', appUser?.isApproved ? songId : null);
   
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', { 
+    pedalType: '4-buttons',
     prevPage: ',', 
     nextPage: '.', 
     prevSong: '[', 
@@ -98,6 +100,7 @@ export default function SongPage() {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
     setIsExitDialogOpen(false);
+    // Pequeno atraso para garantir que o carrossel re-renderize antes de fazer o scroll
     setTimeout(() => { if (api) api.scrollTo(currentPartIndex, false); }, 100);
   }, [api, currentPartIndex]);
 
@@ -105,7 +108,10 @@ export default function SongPage() {
     return song?.content ? transposeContent(song.content, transpose) : '';
   }, [song, transpose]);
 
-  const songParts = useMemo(() => contentToDisplay.split(/\n\s*\n\s*\n/).filter(p => p.trim()), [contentToDisplay]);
+  const songParts = useMemo(() => {
+    if (!contentToDisplay) return [];
+    return contentToDisplay.split(/\n\s*\n\s*\n/).filter(p => p.trim());
+  }, [contentToDisplay]);
 
   useEffect(() => {
     if (!isContinuousMode || !isClient) return;
@@ -161,8 +167,10 @@ export default function SongPage() {
   }, [isAutoScrolling, animateScroll]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    // Tecla 1: Ligar/Desligar modo rolagem ou Confirmar Saída
-    if (e.key === pedalSettings.nextSong) {
+    const { nextSong, prevSong, nextPage, prevPage } = pedalSettings;
+
+    // Tecla de Ligar/Desligar modo rolagem (Apenas se pedal de 4 botões)
+    if (pedalSettings.pedalType === '4-buttons' && e.key === nextSong) {
       e.preventDefault();
       if (isExitDialogOpen) {
         stopAutoScroll();
@@ -175,20 +183,20 @@ export default function SongPage() {
       return;
     }
 
-    // Se estiver no modo de ROLAGEM, a prioridade das teclas muda
+    // Se estiver no modo de ROLAGEM, a prioridade das teclas muda para pausar/retomar
     if (isContinuousMode) {
-        // Tecla 2 (Pausar/Retomar) OU a tecla de Próxima Página (se configurada igual)
-        if (e.key === pedalSettings.prevSong || e.key === pedalSettings.nextPage) {
+        // Pausar/Retomar: Funciona com a tecla dedicada OU com as de navegação se for pedal de 2 botões
+        if (e.key === prevSong || (pedalSettings.pedalType === '2-buttons' && (e.key === nextPage || e.key === prevPage))) {
             e.preventDefault();
             setIsAutoScrolling(!isAutoScrolling);
             return;
         }
     } else {
         // Se estiver no modo de SLIDES, teclas de navegação funcionam normalmente
-        if (e.key === pedalSettings.nextPage || e.key === "ArrowRight") {
+        if (e.key === nextPage || e.key === "ArrowRight") {
             e.preventDefault();
             api?.scrollNext();
-        } else if (e.key === pedalSettings.prevPage || e.key === "ArrowLeft") {
+        } else if (e.key === prevPage || e.key === "ArrowLeft") {
             e.preventDefault();
             api?.scrollPrev();
         }
@@ -277,7 +285,11 @@ export default function SongPage() {
         {isContinuousMode || !showChords ? (
           <ScrollArea ref={scrollAreaRef} className="h-full bg-white dark:bg-black rounded-lg border">
             <div className="p-4 md:p-8 pb-32">
-              {songParts.map((part, idx) => <div key={idx} data-part-index={idx}><SongDisplay content={part} showChords={showChords} style={{ fontSize: `${finalFontSize}px` }} /></div>)}
+              {songParts.map((part, idx) => (
+                <div key={idx} data-part-index={idx}>
+                  <SongDisplay content={part} showChords={showChords} style={{ fontSize: `${finalFontSize}px` }} />
+                </div>
+              ))}
             </div>
           </ScrollArea>
         ) : (

@@ -61,8 +61,9 @@ export interface MetadataItem {
 }
 
 export interface PedalSettings {
+    pedalType: '2-buttons' | '4-buttons';
     prevPage: string;
     nextPage: string;
-    prevSong: string;
-    nextSong: string;
+    prevSong: string; // Usado para Pausar/Retomar
+    nextSong: string; // Usado para Ligar/Desligar modo rolagem
 }

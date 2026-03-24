@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun, FileDown } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -128,6 +129,7 @@ export default function OfflineSetlistPage() {
   const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
 
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', {
+    pedalType: '4-buttons',
     prevPage: ',',
     nextPage: '.',
     prevSong: '[',
@@ -205,7 +207,6 @@ export default function OfflineSetlistPage() {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
     setIsExitDialogOpen(false);
-    // Pequeno atraso para garantir que o carrossel renderize antes de fazer o scroll
     setTimeout(() => {
         if (api) api.scrollTo(currentSectionIndex, false);
     }, 100);
@@ -262,8 +263,10 @@ export default function OfflineSetlistPage() {
   }, [api, isContinuousMode]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    // Tecla 1: Ligar/Desligar modo rolagem ou Confirmar Saída
-    if (e.key === pedalSettings.nextSong) {
+    const { nextSong, prevSong, nextPage, prevPage } = pedalSettings;
+
+    // Ligar/Desligar modo rolagem (Apenas se pedal de 4 botões)
+    if (pedalSettings.pedalType === '4-buttons' && e.key === nextSong) {
       e.preventDefault();
       if (isExitDialogOpen) {
         stopAutoScroll();
@@ -276,20 +279,19 @@ export default function OfflineSetlistPage() {
       return;
     }
 
-    // Se estiver no modo de ROLAGEM, a prioridade das teclas muda
+    // Se estiver no modo de ROLAGEM, a prioridade das teclas muda para pausar/retomar
     if (isContinuousMode) {
-        // Tecla 2 (Pausar/Retomar) OU a tecla de Próxima Página (se configurada igual)
-        if (e.key === pedalSettings.prevSong || e.key === pedalSettings.nextPage) {
+        if (e.key === prevSong || (pedalSettings.pedalType === '2-buttons' && (e.key === nextPage || e.key === prevPage))) {
             e.preventDefault();
             setIsAutoScrolling(!isAutoScrolling);
             return;
         }
     } else {
-        // Se estiver no modo de SLIDES, teclas de navegação funcionam normalmente
-        if (e.key === pedalSettings.nextPage || e.key === "ArrowRight") {
+        // Se estiver no modo de SLIDES, navegação normal
+        if (e.key === nextPage || e.key === "ArrowRight") {
             e.preventDefault();
             api?.scrollNext();
-        } else if (e.key === pedalSettings.prevPage || e.key === "ArrowLeft") {
+        } else if (e.key === prevPage || e.key === "ArrowLeft") {
             e.preventDefault();
             api?.scrollPrev();
         }
