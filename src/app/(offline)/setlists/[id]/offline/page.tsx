@@ -265,7 +265,7 @@ export default function OfflineSetlistPage() {
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     const { nextSong, prevSong, nextPage, prevPage } = pedalSettings;
 
-    // Ligar/Desligar modo rolagem (Apenas se pedal de 4 botões)
+    // Ligar/Desligar modo rolagem
     if (pedalSettings.pedalType === '4-buttons' && e.key === nextSong) {
       e.preventDefault();
       if (isExitDialogOpen) {
@@ -279,15 +279,22 @@ export default function OfflineSetlistPage() {
       return;
     }
 
-    // Se estiver no modo de ROLAGEM, a prioridade das teclas muda para pausar/retomar
+    // No Alerta, a mesma tecla confirma
+    if (isExitDialogOpen && e.key === nextSong) {
+        e.preventDefault();
+        stopAutoScroll();
+        return;
+    }
+
     if (isContinuousMode) {
+        // Pausar/Retomar: Prioridade no modo de rolagem
         if (e.key === prevSong || (pedalSettings.pedalType === '2-buttons' && (e.key === nextPage || e.key === prevPage))) {
             e.preventDefault();
             setIsAutoScrolling(!isAutoScrolling);
             return;
         }
     } else {
-        // Se estiver no modo de SLIDES, navegação normal
+        // Modo Slides: Navegação
         if (e.key === nextPage || e.key === "ArrowRight") {
             e.preventDefault();
             api?.scrollNext();
