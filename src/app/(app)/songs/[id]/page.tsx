@@ -206,23 +206,27 @@ export default function SongPage() {
     setIsExporting(true);
     try {
       const lines = contentToDisplay.split('\n');
-      const pageSize = 38;
+      const standardPageSize = 38;
+      const tolerance = 3;
       const pages: string[][] = [];
       
       let currentIdx = 0;
       while (currentIdx < lines.length) {
-        let pageLines = lines.slice(currentIdx, currentIdx + pageSize);
-        const isLastLineOfSong = (currentIdx + pageLines.length) >= lines.length;
-        
-        // Se a última linha da página for uma cifra E não for a última linha da música, move para a próxima página
-        if (!isLastLineOfSong && pageLines.length === pageSize && isChordLine(pageLines[pageSize - 1])) {
-            pageLines = lines.slice(currentIdx, currentIdx + pageSize - 1);
-            currentIdx += (pageSize - 1);
+        let remainingLinesTotal = lines.length - currentIdx;
+        let currentPageSize = standardPageSize;
+
+        if (remainingLinesTotal <= standardPageSize + tolerance) {
+            currentPageSize = remainingLinesTotal;
         } else {
-            currentIdx += pageSize;
+            if (isChordLine(lines[currentIdx + standardPageSize - 1])) {
+                currentPageSize = standardPageSize - 1;
+            }
         }
 
-        while (pageLines.length < pageSize) {
+        let pageLines = lines.slice(currentIdx, currentIdx + currentPageSize);
+        currentIdx += currentPageSize;
+
+        while (pageLines.length < standardPageSize) {
           pageLines.push(' ');
         }
         pages.push(pageLines);
@@ -230,7 +234,7 @@ export default function SongPage() {
 
       const longestLineCount = Math.max(...lines.map(l => l.length));
       const ptWidth = Math.max(400, longestLineCount * 7.5 + 100);
-      const ptHeight = pageSize * 12 * 1.5 + 150;
+      const ptHeight = (standardPageSize + tolerance) * 12 * 1.5 + 150;
 
       const pdf = new jsPDF('p', 'pt', [ptWidth, ptHeight]);
 
