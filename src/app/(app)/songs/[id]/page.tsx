@@ -1,4 +1,3 @@
-
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,6 +13,7 @@ import { Carousel, CarouselApi, CarouselContent, CarouselItem } from '@/componen
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useFirestoreDocument } from '@/hooks/use-firestore-document';
 import { cn } from '@/lib/utils';
@@ -43,10 +43,8 @@ export default function SongPage() {
   const { appUser, loading: authLoading } = useAuth();
   const { data: song, loading: loadingSong } = useFirestoreDocument<Song>('songs', appUser?.isApproved ? songId : null);
   
-  // Hook para o repertório caso venha de um
   const { data: setlist, updateDocument: updateSetlist } = useFirestoreDocument<Setlist>('setlists', fromSetlistId);
   
-  // Persistência local de tons por música (não afeta o banco global)
   const [localTranspositions, setLocalTranspositions] = useLocalStorage<Record<string, number>>('user-song-transpositions', {});
   
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', { 
@@ -80,7 +78,6 @@ export default function SongPage() {
   
   const finalFontSize = appUser?.fontSize ?? 14;
 
-  // Inicializa o tom com base no contexto (Repertório -> LocalStorage -> Zero)
   useEffect(() => {
     if (isClient && song) {
         const setlistTranspose = searchParams.get('transpose');
@@ -137,16 +134,13 @@ export default function SongPage() {
     return contentToDisplay.split(/\n\s*\n\s*\n/).filter(p => p.trim());
   }, [contentToDisplay]);
 
-  // Salva o tom atual no contexto apropriado
   const handleSaveTranspose = async () => {
     if (!song) return;
     setIsSavingTranspose(true);
     
     try {
-        // 1. Salva localmente para o usuário (Sempre acontece)
         setLocalTranspositions(prev => ({ ...prev, [songId]: transpose }));
 
-        // 2. Se estiver em um repertório e tiver permissão, salva no repertório
         if (setlist && fromSetlistId && (appUser?.role === 'admin' || setlist.creatorId === appUser?.id || setlist.isPublic)) {
             const updatedSongs = (setlist.songs || []).map(s => {
                 if (s.songId === songId) return { ...s, transpose };
