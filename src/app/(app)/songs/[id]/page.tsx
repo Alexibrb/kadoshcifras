@@ -63,6 +63,7 @@ export default function SongPage() {
   const requestRef = useRef<number>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const pdfRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const finalFontSize = appUser?.fontSize ?? 14;
 
@@ -81,6 +82,8 @@ export default function SongPage() {
   useEffect(() => {
     setIsClient(true);
     requestWakeLock();
+    // Força o foco no container para que o pedal funcione imediatamente
+    if (containerRef.current) containerRef.current.focus();
     return () => {
       if (wakeLockRef.current) wakeLockRef.current.release();
     };
@@ -168,17 +171,32 @@ export default function SongPage() {
   };
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === pedalSettings.nextSong) { e.preventDefault(); setIsAutoScrolling(!isAutoScrolling); }
-    else if (!isAutoScrolling && showChords) {
+    if (e.key === pedalSettings.nextSong) {
+      e.preventDefault();
+      if (!isContinuousMode) {
+        setIsContinuousMode(true);
+        setIsAutoScrolling(true);
+      } else {
+        setIsAutoScrolling(!isAutoScrolling);
+      }
+    } else if (e.key === pedalSettings.prevSong) {
+      e.preventDefault();
+      setIsAutoScrolling(!isAutoScrolling);
+    } else if (!isAutoScrolling && showChords) {
         if (e.key === pedalSettings.nextPage) api?.scrollNext();
         else if (e.key === pedalSettings.prevPage) api?.scrollPrev();
     }
-  }, [api, pedalSettings, isAutoScrolling, showChords]);
+  }, [api, pedalSettings, isAutoScrolling, isContinuousMode, showChords]);
 
   if (!isClient || authLoading || loadingSong || !song) return <div className="flex-1 flex items-center justify-center h-screen"><Loader2 className="animate-spin" /></div>;
 
   return (
-    <div className="flex-1 flex flex-col p-4 md:p-8 h-screen outline-none overflow-hidden relative" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
+    <div 
+      ref={containerRef}
+      className="flex-1 flex flex-col p-4 md:p-8 h-screen outline-none overflow-hidden relative" 
+      onKeyDownCapture={handleKeyDown} 
+      tabIndex={0}
+    >
       <Card className="mb-4 bg-accent/5">
         <CardContent className={cn("transition-all", isPanelVisible ? "p-4 space-y-4" : "p-1.5")}>
           {isPanelVisible ? (
@@ -188,7 +206,7 @@ export default function SongPage() {
                 <div className="text-center flex-1">
                   <h1 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">{song.title}</h1>
                   <div className="flex items-center justify-center gap-2 mt-1">
-                    <Sun className={cn("h-3 w-3", isWakeLockActive ? "text-orange-500" : "text-muted-foreground opacity-30")} />
+                    <Sun className={cn("h-3 w-3 transition-opacity", isWakeLockActive ? "text-orange-500 opacity-100" : "text-muted-foreground opacity-30")} />
                     <span className="text-[10px] text-muted-foreground uppercase font-bold">{isWakeLockActive ? 'Tela Ativa' : 'Tela Normal'}</span>
                   </div>
                 </div>

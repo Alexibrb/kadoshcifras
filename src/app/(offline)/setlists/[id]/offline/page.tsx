@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun, MonitorPlay } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -105,6 +105,7 @@ export default function OfflineSetlistPage() {
   const requestRef = useRef<number>(null);
   const lastScrollTime = useRef<number>(0);
   const scrollPosRef = useRef<number>(0); 
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const [offlineData, setOfflineData] = useState<OfflineSetlist | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -172,6 +173,7 @@ export default function OfflineSetlistPage() {
   useEffect(() => {
     setIsClient(true);
     requestWakeLock();
+    if (containerRef.current) containerRef.current.focus();
     return () => {
         if (wakeLockRef.current) wakeLockRef.current.release();
     };
@@ -252,12 +254,22 @@ export default function OfflineSetlistPage() {
   }, [api, isContinuousMode]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === pedalSettings.nextSong) { e.preventDefault(); setIsAutoScrolling(!isAutoScrolling); }
-    else if (showChords && !isAutoScrolling) {
+    if (e.key === pedalSettings.nextSong) {
+      e.preventDefault();
+      if (!isContinuousMode) {
+        setIsContinuousMode(true);
+        setIsAutoScrolling(true);
+      } else {
+        setIsAutoScrolling(!isAutoScrolling);
+      }
+    } else if (e.key === pedalSettings.prevSong) {
+      e.preventDefault();
+      setIsAutoScrolling(!isAutoScrolling);
+    } else if (showChords && !isAutoScrolling) {
         if (e.key === "ArrowLeft" || e.key === pedalSettings.prevPage) { e.preventDefault(); api?.scrollPrev(); }
         else if (e.key === "ArrowRight" || e.key === pedalSettings.nextPage) { e.preventDefault(); api?.scrollNext(); }
     }
-  }, [api, pedalSettings, showChords, isAutoScrolling]);
+  }, [api, pedalSettings, showChords, isAutoScrolling, isContinuousMode]);
   
   const changeTranspose = (change: number) => {
     const cur = allSections[currentSectionIndex];
@@ -276,7 +288,12 @@ export default function OfflineSetlistPage() {
   const currentSong = offlineData.songs[currentSec.songIndex];
 
   return (
-    <div className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-24 h-screen outline-none bg-background overflow-hidden relative" onKeyDownCapture={handleKeyDown} tabIndex={-1}>
+    <div 
+      ref={containerRef}
+      className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-24 h-screen outline-none bg-background overflow-hidden relative" 
+      onKeyDownCapture={handleKeyDown} 
+      tabIndex={0}
+    >
       <Card className={cn("mb-4 bg-accent/10 transition-all", isPanelVisible ? "p-4 space-y-4" : "p-1.5")}>
         {isPanelVisible ? (
           <div className="flex flex-col gap-4">
@@ -286,7 +303,7 @@ export default function OfflineSetlistPage() {
                 <h1 className="text-xl font-bold font-headline truncate">{currentSong.title}</h1>
                 <div className="flex items-center justify-center gap-2 mt-1">
                   <Badge variant="outline">Offline</Badge>
-                  <Sun className={cn("h-3 w-3", isWakeLockActive ? "text-orange-500" : "text-muted-foreground opacity-30")} />
+                  <Sun className={cn("h-3 w-3 transition-opacity", isWakeLockActive ? "text-orange-500 opacity-100" : "text-muted-foreground opacity-30")} />
                   <span className="text-[10px] text-muted-foreground uppercase font-bold">{isWakeLockActive ? 'Tela Ativa' : 'Tela Normal'}</span>
                 </div>
               </div>
