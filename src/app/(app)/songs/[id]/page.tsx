@@ -1,4 +1,3 @@
-
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Play, Pause, X, Lo
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { transposeContent, isChordLine } from '@/lib/music';
+import { transposeContent, isChordLine, transposeChord } from '@/lib/music';
 import { SongDisplay } from '@/components/song-display';
 import { Card, CardContent } from '@/components/ui/card';
 import { Carousel, CarouselApi, CarouselContent, CarouselItem } from '@/components/ui/carousel';
@@ -108,6 +107,11 @@ export default function SongPage() {
   const contentToDisplay = useMemo(() => {
     return song?.content ? transposeContent(song.content, transpose) : '';
   }, [song, transpose]);
+
+  const currentKey = useMemo(() => {
+    if (!song?.key) return null;
+    return transposeChord(song.key, transpose);
+  }, [song?.key, transpose]);
 
   const songParts = useMemo(() => {
     if (!contentToDisplay) return [];
@@ -215,9 +219,11 @@ export default function SongPage() {
         let remainingLinesTotal = lines.length - currentIdx;
         let currentPageSize = standardPageSize;
 
+        // Regra de tolerância: se sobrar até 3 linhas extras, coloca na mesma página
         if (remainingLinesTotal <= standardPageSize + tolerance) {
             currentPageSize = remainingLinesTotal;
         } else {
+            // Se a última linha (38) for cifra e a música continua, joga para a próxima
             if (isChordLine(lines[currentIdx + standardPageSize - 1])) {
                 currentPageSize = standardPageSize - 1;
             }
@@ -279,7 +285,7 @@ export default function SongPage() {
 
       pdf.save(`${song.title}.pdf`);
       document.body.removeChild(container);
-      toast({ title: "PDF Gerado", description: "O arquivo sob medida foi baixado com sucesso." });
+      toast({ title: "PDF Gerado", description: "O arquivo foi baixado com sucesso." });
     } catch (err) {
       console.error(err);
       toast({ variant: "destructive", title: "Erro ao gerar PDF", description: "Ocorreu um problema ao exportar." });
@@ -315,7 +321,9 @@ export default function SongPage() {
               <div className="flex items-start justify-between">
                 <Button asChild variant="outline" size="icon"><Link href={fromSetlistId ? `/setlists/${fromSetlistId}` : '/songs'}><ArrowLeft className="h-4 w-4" /></Link></Button>
                 <div className="text-center flex-1 px-4">
-                  <h1 className="text-sm font-bold uppercase tracking-widest text-muted-foreground truncate">{song.title}</h1>
+                  <h1 className="text-sm font-bold uppercase tracking-widest text-muted-foreground truncate">
+                    {song.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
+                  </h1>
                   <div className="flex items-center justify-center gap-2 mt-1">
                     <Sun className={cn("h-3 w-3 transition-opacity", isWakeLockActive ? "text-orange-500 opacity-100" : "text-muted-foreground opacity-30")} />
                     <span className="text-[10px] text-muted-foreground uppercase font-bold">{isWakeLockActive ? 'Tela Ativa' : 'Tela Normal'}</span>
@@ -357,7 +365,9 @@ export default function SongPage() {
           ) : (
             <div className="flex items-center justify-between h-8">
               <Button asChild variant="outline" size="icon" className="h-8 w-8"><Link href={fromSetlistId ? `/setlists/${fromSetlistId}` : '/songs'}><ArrowLeft className="h-4 w-4" /></Link></Button>
-              <h1 className="text-sm font-bold truncate flex-1 text-center">{song.title}</h1>
+              <h1 className="text-sm font-bold truncate flex-1 text-center">
+                {song.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
+              </h1>
               <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8"><PanelTopOpen className="h-5 w-5" /></Button>
             </div>
           )}

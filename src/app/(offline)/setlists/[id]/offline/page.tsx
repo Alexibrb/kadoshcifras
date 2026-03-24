@@ -410,7 +410,7 @@ export default function OfflineSetlistPage() {
 
       pdf.save(`${offlineData.name}.pdf`);
       document.body.removeChild(container);
-      toast({ title: "Repertório Exportado", description: "O PDF sob medida foi gerado com sucesso." });
+      toast({ title: "Repertório Exportado", description: "O PDF foi gerado com sucesso." });
     } catch (err) {
       console.error(err);
       toast({ variant: "destructive", title: "Erro ao gerar PDF", description: "Ocorreu um problema ao exportar o repertório." });
@@ -424,6 +424,7 @@ export default function OfflineSetlistPage() {
 
   const currentSec = allSections[currentSectionIndex] || allSections[0];
   const currentSong = offlineData.songs[currentSec.songIndex];
+  const currentKey = currentSong.key ? transposeChord(currentSong.key, transpositions[currentSec.songIndex]) : null;
 
   return (
     <div 
@@ -438,7 +439,9 @@ export default function OfflineSetlistPage() {
             <div className="flex items-start justify-between">
               <Button asChild variant="outline" size="icon"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
               <div className="text-center flex-1">
-                <h1 className="text-xl font-bold font-headline truncate">{currentSong.title}</h1>
+                <h1 className="text-xl font-bold font-headline truncate">
+                  {currentSong.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
+                </h1>
                 <div className="flex items-center justify-center gap-2 mt-1">
                   <Badge variant="outline">Offline</Badge>
                   <Sun className={cn("h-3 w-3 transition-opacity", isWakeLockActive ? "text-orange-500 opacity-100" : "text-muted-foreground opacity-30")} />
@@ -450,7 +453,7 @@ export default function OfflineSetlistPage() {
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
                 <div className="flex items-center gap-1 border rounded-md p-1 bg-background h-10 w-full sm:w-48">
                     <Button variant="ghost" size="icon" onClick={() => changeTranspose(-1)}><Minus className="h-4 w-4" /></Button>
-                    <Badge variant="secondary" className="flex-1 text-center justify-center">Tom: {currentSong.key ? transposeChord(currentSong.key, transpositions[currentSec.songIndex]) : 'N/A'}</Badge>
+                    <Badge variant="secondary" className="flex-1 text-center justify-center">Tom: {currentKey || 'N/A'}</Badge>
                     <Button variant="ghost" size="icon" onClick={() => changeTranspose(1)}><Plus className="h-4 w-4" /></Button>
                 </div>
                 <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-full sm:w-56">
@@ -467,7 +470,9 @@ export default function OfflineSetlistPage() {
         ) : (
           <div className="flex items-center justify-between h-8">
             <Button asChild variant="outline" size="icon" className="h-8 w-8"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
-            <h1 className="text-sm font-bold truncate flex-1 text-center">{currentSong.title}</h1>
+            <h1 className="text-sm font-bold truncate flex-1 text-center">
+              {currentSong.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
+            </h1>
             <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8"><PanelTopOpen className="h-5 w-5" /></Button>
           </div>
         )}
