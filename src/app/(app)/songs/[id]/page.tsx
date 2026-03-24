@@ -30,7 +30,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 export default function SongPage() {
@@ -56,6 +55,7 @@ export default function SongPage() {
   const [scrollSpeed, setScrollSpeed] = useState(10);
   const [isExporting, setIsExporting] = useState(false);
   const [isWakeLockActive, setIsWakeLockActive] = useState(false);
+  const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
   
   const wakeLockRef = useRef<any>(null);
   const lastScrollTime = useRef<number>(0);
@@ -82,7 +82,6 @@ export default function SongPage() {
   useEffect(() => {
     setIsClient(true);
     requestWakeLock();
-    // Força o foco no container para que o pedal funcione imediatamente
     if (containerRef.current) containerRef.current.focus();
     return () => {
       if (wakeLockRef.current) wakeLockRef.current.release();
@@ -92,7 +91,7 @@ export default function SongPage() {
   const stopAutoScroll = useCallback(() => {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
-    // Volta para o carrossel no slide atual
+    setIsExitDialogOpen(false);
     setTimeout(() => { if (api) api.scrollTo(current - 1, false); }, 150);
   }, [api, current]);
 
@@ -100,9 +99,8 @@ export default function SongPage() {
     return song?.content ? transposeContent(song.content, transpose) : '';
   }, [song, transpose]);
 
-  const songParts = useMemo(() => contentToDisplay.split(/\n\s*\n\s*\n/), [contentToDisplay]);
+  const songParts = useMemo(() => contentToDisplay.split(/\n\s*\n\s*\n/).filter(p => p.trim()), [contentToDisplay]);
 
-  // Observer para rastrear qual parte está visível na rolagem
   useEffect(() => {
     if (!isContinuousMode || !isClient) return;
     const observer = new IntersectionObserver((entries) => {
@@ -178,32 +176,31 @@ export default function SongPage() {
   };
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    // Tecla para Ligar/Desligar Rolagem (Alterna modo)
     if (e.key === pedalSettings.nextSong) {
       e.preventDefault();
-      if (!isContinuousMode) {
+      if (isExitDialogOpen) {
+        stopAutoScroll();
+      } else if (!isContinuousMode) {
         setIsContinuousMode(true);
         setIsAutoScrolling(true);
       } else {
-        stopAutoScroll();
+        setIsExitDialogOpen(true);
       }
     } 
-    // Tecla para Pausar/Retomar (Só funciona no modo rolagem)
     else if (e.key === pedalSettings.prevSong) {
       e.preventDefault();
-      if (isContinuousMode) {
+      if (isContinuousMode && !isExitDialogOpen) {
         setIsAutoScrolling(!isAutoScrolling);
       }
     } 
-    // Navegação de páginas (slides)
-    else if (!isContinuousMode && showChords) {
+    else if (!isContinuousMode && showChords && !isExitDialogOpen) {
         if (e.key === pedalSettings.nextPage || e.key === "ArrowRight") {
             api?.scrollNext();
         } else if (e.key === pedalSettings.prevPage || e.key === "ArrowLeft") {
             api?.scrollPrev();
         }
     }
-  }, [api, pedalSettings, isAutoScrolling, isContinuousMode, showChords, stopAutoScroll]);
+  }, [api, pedalSettings, isAutoScrolling, isContinuousMode, showChords, stopAutoScroll, isExitDialogOpen]);
 
   if (!isClient || authLoading || loadingSong || !song) return <div className="flex-1 flex items-center justify-center h-screen"><Loader2 className="animate-spin" /></div>;
 
@@ -255,7 +252,6 @@ export default function SongPage() {
       </Card>
 
       <div className="flex-1 flex flex-col min-h-0 relative">
-        {/* Zonas de Toque Laterais para Slides */}
         {!isContinuousMode && showChords && (
           <div className="absolute inset-0 z-10 flex pointer-events-none">
             <div className="w-1/4 h-full cursor-pointer pointer-events-auto" onClick={() => api?.scrollPrev()} title="Página Anterior" />
@@ -293,13 +289,7 @@ export default function SongPage() {
                   <div className="flex gap-2">
                       <Button variant={isAutoScrolling ? "destructive" : "default"} onClick={() => setIsAutoScrolling(!isAutoScrolling)} className="h-9 w-36">{isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
                       {showChords && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild><Button variant="outline" className="h-9 w-12"><X className="h-4 w-4" /></Button></AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Sair da Rolagem?</AlertDialogTitle><AlertDialogDescription>Deseja voltar ao modo de slides exatamente nesta posição?</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter><AlertDialogCancel>Não</AlertDialogCancel><AlertDialogAction onClick={stopAutoScroll}>Sim, Sair</AlertDialogAction></AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <Button variant="outline" onClick={() => setIsExitDialogOpen(true)} className="h-9 w-12"><X className="h-4 w-4" /></Button>
                       )}
                   </div>
               )}
@@ -311,6 +301,19 @@ export default function SongPage() {
               )}
           </div>
       </div>
+
+      <AlertDialog open={isExitDialogOpen} onOpenChange={setIsExitDialogOpen}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Sair do Modo Rolagem?</AlertDialogTitle>
+                  <AlertDialogDescription>Deseja voltar ao modo de slides exatamente nesta posição?</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setIsExitDialogOpen(false)}>Não</AlertDialogCancel>
+                  <AlertDialogAction onClick={stopAutoScroll}>Sim, Confirmar</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
 
       <div className="hidden">
         <div ref={pdfRef} className="p-10 bg-white text-black" style={{ width: '210mm' }}>

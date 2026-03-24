@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun, FileDown } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,7 +27,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 interface OfflineSong {
@@ -44,6 +43,7 @@ interface OfflineSetlist {
 }
 
 interface Section {
+    id: string;
     songIndex: number;
     partIndex: number;
     content: string;
@@ -83,7 +83,7 @@ function SongPresenter({
                         showChords={showChords} 
                     />
                     {section.isLastSectionOfSong && !section.isLastSectionOfSetlist && (
-                        <div className="mt-8 text-center text-muted-foreground">
+                        <div className="mt-8 text-center text-muted-foreground pb-20">
                             <Separator className="my-4" />
                             <div className="flex items-center justify-center gap-2 text-sm">
                                 <Music className="h-4 w-4" />
@@ -123,6 +123,7 @@ export default function OfflineSetlistPage() {
   const [finalColorSettings, setFinalColorSettings] = useState<ColorSettings | null>(null);
   const [api, setApi] = useState<CarouselApi>();
   const [isWakeLockActive, setIsWakeLockActive] = useState(false);
+  const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
 
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', {
     prevPage: ',',
@@ -188,6 +189,7 @@ export default function OfflineSetlistPage() {
             const trimmedPart = part.trim();
             if (trimmedPart) {
                 sections.push({
+                    id: `${songIndex}-${partIndex}`,
                     songIndex: songIndex,
                     partIndex: partIndex,
                     content: trimmedPart,
@@ -203,6 +205,7 @@ export default function OfflineSetlistPage() {
   const stopAutoScroll = useCallback(() => {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
+    setIsExitDialogOpen(false);
     setTimeout(() => {
         if (api) api.scrollTo(currentSectionIndex, false);
     }, 150);
@@ -254,24 +257,26 @@ export default function OfflineSetlistPage() {
   }, [api, isContinuousMode]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    // Tecla para Ligar/Desligar Rolagem (Alterna modo)
+    // Tecla 1: Ligar/Desligar Modo Rolagem (com Alerta de Saída)
     if (e.key === pedalSettings.nextSong) {
       e.preventDefault();
-      if (!isContinuousMode) {
+      if (isExitDialogOpen) {
+        stopAutoScroll();
+      } else if (!isContinuousMode) {
         setIsContinuousMode(true);
         setIsAutoScrolling(true);
       } else {
-        stopAutoScroll();
+        setIsExitDialogOpen(true);
       }
     } 
-    // Tecla para Pausar/Retomar (Só no modo rolagem)
+    // Tecla 2: Pausar/Retomar Movimento (Dentro do Modo Rolagem)
     else if (e.key === pedalSettings.prevSong) {
       e.preventDefault();
-      if (isContinuousMode) {
+      if (isContinuousMode && !isExitDialogOpen) {
         setIsAutoScrolling(!isAutoScrolling);
       }
     } 
-    // Navegação nos Slides
+    // Navegação nos Slides (Toque/Setas/Pedal)
     else if (showChords && !isAutoScrolling && !isContinuousMode) {
         if (e.key === "ArrowLeft" || e.key === pedalSettings.prevPage) { 
           e.preventDefault(); 
@@ -281,7 +286,7 @@ export default function OfflineSetlistPage() {
           api?.scrollNext(); 
         }
     }
-  }, [api, pedalSettings, showChords, isAutoScrolling, isContinuousMode, stopAutoScroll]);
+  }, [api, pedalSettings, showChords, isAutoScrolling, isContinuousMode, stopAutoScroll, isExitDialogOpen]);
   
   const changeTranspose = (change: number) => {
     const cur = allSections[currentSectionIndex];
@@ -302,7 +307,7 @@ export default function OfflineSetlistPage() {
   return (
     <div 
       ref={containerRef}
-      className="flex-1 flex flex-col p-4 md:p-8 pt-6 pb-24 h-screen outline-none bg-background overflow-hidden relative" 
+      className="flex-1 flex flex-col p-4 md:p-8 pt-6 h-screen outline-none bg-background overflow-hidden relative" 
       onKeyDownCapture={handleKeyDown} 
       tabIndex={0}
     >
@@ -357,19 +362,19 @@ export default function OfflineSetlistPage() {
               <div className="pb-32">
                 {offlineData.songs.map((song, songIdx) => (
                     <div key={songIdx} className="flex flex-col mb-12">
-                    <div className="mb-6 border-l-4 border-primary/20 pl-4">
-                        <h2 className="text-2xl font-bold text-primary">{song.title}</h2>
-                        <p className="text-sm text-muted-foreground">{song.artist}</p>
-                    </div>
-                    {allSections.filter(s => s.songIndex === songIdx).map((sec) => (
-                        <div key={allSections.indexOf(sec)} data-section-index={allSections.indexOf(sec)}>
-                            <SongDisplay 
-                                style={{ fontSize: `${fontSize}px`, '--lyrics-color': finalColorSettings.lyricsColor, '--chords-color': finalColorSettings.chordsColor } as React.CSSProperties}
-                                content={transposeContent(sec.content, transpositions[songIdx] || 0)}
-                                showChords={showChords} 
-                            />
+                        <div className="mb-6 border-l-4 border-primary/20 pl-4">
+                            <h2 className="text-2xl font-bold text-primary">{song.title}</h2>
+                            <p className="text-sm text-muted-foreground">{song.artist}</p>
                         </div>
-                    ))}
+                        {allSections.filter(s => s.songIndex === songIdx).map((sec) => (
+                            <div key={sec.id} data-section-index={allSections.findIndex(s => s.id === sec.id)}>
+                                <SongDisplay 
+                                    style={{ fontSize: `${fontSize}px`, '--lyrics-color': finalColorSettings.lyricsColor, '--chords-color': finalColorSettings.chordsColor } as React.CSSProperties}
+                                    content={transposeContent(sec.content, transpositions[songIdx] || 0)}
+                                    showChords={showChords} 
+                                />
+                            </div>
+                        ))}
                     </div>
                 ))}
               </div>
@@ -378,7 +383,7 @@ export default function OfflineSetlistPage() {
           <Carousel className="w-full flex-1 h-full" setApi={setApi}>
             <CarouselContent className="h-full">
               {allSections.map((section, index) => (
-                <CarouselItem key={index} className="h-full">
+                <CarouselItem key={section.id} className="h-full">
                     <SongPresenter 
                         section={section} 
                         transposeValue={transpositions[section.songIndex] || 0} 
@@ -402,16 +407,7 @@ export default function OfflineSetlistPage() {
                     <div className="flex gap-2">
                         <Button variant={isAutoScrolling ? "destructive" : "default"} onClick={() => setIsAutoScrolling(!isAutoScrolling)} className="h-9 w-36">{isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
                         {showChords && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild><Button variant="outline" className="h-9 w-12"><X className="h-4 w-4" /></Button></AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader><AlertDialogTitle>Sair da Rolagem?</AlertDialogTitle><AlertDialogDescription>Deseja voltar ao modo de slides exatamente nesta posição?</AlertDialogDescription></AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Não</AlertDialogCancel>
-                                <AlertDialogAction onClick={stopAutoScroll}>Sim, Sair</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          <Button variant="outline" onClick={() => setIsExitDialogOpen(true)} className="h-9 w-12"><X className="h-4 w-4" /></Button>
                         )}
                     </div>
                 )}
@@ -423,6 +419,19 @@ export default function OfflineSetlistPage() {
               )}
           </div>
       </div>
+
+      <AlertDialog open={isExitDialogOpen} onOpenChange={setIsExitDialogOpen}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Sair do Modo Rolagem?</AlertDialogTitle>
+                  <AlertDialogDescription>Deseja voltar ao modo de slides exatamente nesta posição?</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setIsExitDialogOpen(false)}>Não</AlertDialogCancel>
+                  <AlertDialogAction onClick={stopAutoScroll}>Sim, Confirmar</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
