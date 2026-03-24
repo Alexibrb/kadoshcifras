@@ -254,22 +254,34 @@ export default function OfflineSetlistPage() {
   }, [api, isContinuousMode]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Tecla para Ligar/Desligar Rolagem (Alterna modo)
     if (e.key === pedalSettings.nextSong) {
       e.preventDefault();
       if (!isContinuousMode) {
         setIsContinuousMode(true);
         setIsAutoScrolling(true);
       } else {
+        stopAutoScroll();
+      }
+    } 
+    // Tecla para Pausar/Retomar (Só no modo rolagem)
+    else if (e.key === pedalSettings.prevSong) {
+      e.preventDefault();
+      if (isContinuousMode) {
         setIsAutoScrolling(!isAutoScrolling);
       }
-    } else if (e.key === pedalSettings.prevSong) {
-      e.preventDefault();
-      setIsAutoScrolling(!isAutoScrolling);
-    } else if (showChords && !isAutoScrolling) {
-        if (e.key === "ArrowLeft" || e.key === pedalSettings.prevPage) { e.preventDefault(); api?.scrollPrev(); }
-        else if (e.key === "ArrowRight" || e.key === pedalSettings.nextPage) { e.preventDefault(); api?.scrollNext(); }
+    } 
+    // Navegação nos Slides
+    else if (showChords && !isAutoScrolling && !isContinuousMode) {
+        if (e.key === "ArrowLeft" || e.key === pedalSettings.prevPage) { 
+          e.preventDefault(); 
+          api?.scrollPrev(); 
+        } else if (e.key === "ArrowRight" || e.key === pedalSettings.nextPage) { 
+          e.preventDefault(); 
+          api?.scrollNext(); 
+        }
     }
-  }, [api, pedalSettings, showChords, isAutoScrolling, isContinuousMode]);
+  }, [api, pedalSettings, showChords, isAutoScrolling, isContinuousMode, stopAutoScroll]);
   
   const changeTranspose = (change: number) => {
     const cur = allSections[currentSectionIndex];
@@ -331,33 +343,36 @@ export default function OfflineSetlistPage() {
       </Card>
 
       <div className="flex-1 flex flex-col min-h-0 relative">
+        {/* Zonas de Toque Laterais para Slides */}
         {!isContinuousMode && showChords && (
           <div className="absolute inset-0 z-10 flex pointer-events-none">
-            <div className="w-1/4 h-full cursor-pointer pointer-events-auto" onClick={() => api?.scrollPrev()} />
+            <div className="w-1/4 h-full cursor-pointer pointer-events-auto" onClick={() => api?.scrollPrev()} title="Página Anterior" />
             <div className="flex-1 h-full" />
-            <div className="w-1/4 h-full cursor-pointer pointer-events-auto" onClick={() => api?.scrollNext()} />
+            <div className="w-1/4 h-full cursor-pointer pointer-events-auto" onClick={() => api?.scrollNext()} title="Próxima Página" />
           </div>
         )}
 
         {isContinuousMode || !showChords ? (
           <ScrollArea ref={scrollAreaRef} className="h-full p-4 md:p-6 bg-white dark:bg-black rounded-lg border">
-              {offlineData.songs.map((song, songIdx) => (
-                <div key={songIdx} className="flex flex-col mb-12">
-                  <div className="mb-6 border-l-4 border-primary/20 pl-4">
-                      <h2 className="text-2xl font-bold text-primary">{song.title}</h2>
-                      <p className="text-sm text-muted-foreground">{song.artist}</p>
-                  </div>
-                  {allSections.filter(s => s.songIndex === songIdx).map((sec) => (
-                    <div key={allSections.indexOf(sec)} data-section-index={allSections.indexOf(sec)}>
-                        <SongDisplay 
-                            style={{ fontSize: `${fontSize}px`, '--lyrics-color': finalColorSettings.lyricsColor, '--chords-color': finalColorSettings.chordsColor } as React.CSSProperties}
-                            content={transposeContent(sec.content, transpositions[songIdx] || 0)}
-                            showChords={showChords} 
-                        />
+              <div className="pb-32">
+                {offlineData.songs.map((song, songIdx) => (
+                    <div key={songIdx} className="flex flex-col mb-12">
+                    <div className="mb-6 border-l-4 border-primary/20 pl-4">
+                        <h2 className="text-2xl font-bold text-primary">{song.title}</h2>
+                        <p className="text-sm text-muted-foreground">{song.artist}</p>
                     </div>
-                  ))}
-                </div>
-              ))}
+                    {allSections.filter(s => s.songIndex === songIdx).map((sec) => (
+                        <div key={allSections.indexOf(sec)} data-section-index={allSections.indexOf(sec)}>
+                            <SongDisplay 
+                                style={{ fontSize: `${fontSize}px`, '--lyrics-color': finalColorSettings.lyricsColor, '--chords-color': finalColorSettings.chordsColor } as React.CSSProperties}
+                                content={transposeContent(sec.content, transpositions[songIdx] || 0)}
+                                showChords={showChords} 
+                            />
+                        </div>
+                    ))}
+                    </div>
+                ))}
+              </div>
           </ScrollArea>
         ) : (
           <Carousel className="w-full flex-1 h-full" setApi={setApi}>
@@ -390,10 +405,10 @@ export default function OfflineSetlistPage() {
                           <AlertDialog>
                             <AlertDialogTrigger asChild><Button variant="outline" className="h-9 w-12"><X className="h-4 w-4" /></Button></AlertDialogTrigger>
                             <AlertDialogContent>
-                              <AlertDialogHeader><AlertDialogTitle>Parar Rolagem?</AlertDialogTitle><AlertDialogDescription>Deseja voltar ao modo de slides exatamente nesta posição?</AlertDialogDescription></AlertDialogHeader>
+                              <AlertDialogHeader><AlertDialogTitle>Sair da Rolagem?</AlertDialogTitle><AlertDialogDescription>Deseja voltar ao modo de slides exatamente nesta posição?</AlertDialogDescription></AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Não</AlertDialogCancel>
-                                <AlertDialogAction onClick={stopAutoScroll}>Sim, Parar</AlertDialogAction>
+                                <AlertDialogAction onClick={stopAutoScroll}>Sim, Sair</AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>

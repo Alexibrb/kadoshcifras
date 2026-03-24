@@ -92,6 +92,7 @@ export default function SongPage() {
   const stopAutoScroll = useCallback(() => {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
+    // Volta para o carrossel no slide atual
     setTimeout(() => { if (api) api.scrollTo(current - 1, false); }, 150);
   }, [api, current]);
 
@@ -101,6 +102,7 @@ export default function SongPage() {
 
   const songParts = useMemo(() => contentToDisplay.split(/\n\s*\n\s*\n/), [contentToDisplay]);
 
+  // Observer para rastrear qual parte está visível na rolagem
   useEffect(() => {
     if (!isContinuousMode || !isClient) return;
     const observer = new IntersectionObserver((entries) => {
@@ -110,7 +112,12 @@ export default function SongPage() {
           setCurrent(idx + 1);
         }
       });
-    }, { root: scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]'), threshold: 0, rootMargin: '-10% 0px -85% 0px' });
+    }, { 
+      root: scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]'), 
+      threshold: 0, 
+      rootMargin: '-10% 0px -85% 0px' 
+    });
+    
     document.querySelectorAll('[data-part-index]').forEach(p => observer.observe(p));
     return () => observer.disconnect();
   }, [isContinuousMode, isClient, songParts]);
@@ -171,22 +178,32 @@ export default function SongPage() {
   };
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Tecla para Ligar/Desligar Rolagem (Alterna modo)
     if (e.key === pedalSettings.nextSong) {
       e.preventDefault();
       if (!isContinuousMode) {
         setIsContinuousMode(true);
         setIsAutoScrolling(true);
       } else {
+        stopAutoScroll();
+      }
+    } 
+    // Tecla para Pausar/Retomar (Só funciona no modo rolagem)
+    else if (e.key === pedalSettings.prevSong) {
+      e.preventDefault();
+      if (isContinuousMode) {
         setIsAutoScrolling(!isAutoScrolling);
       }
-    } else if (e.key === pedalSettings.prevSong) {
-      e.preventDefault();
-      setIsAutoScrolling(!isAutoScrolling);
-    } else if (!isAutoScrolling && showChords) {
-        if (e.key === pedalSettings.nextPage) api?.scrollNext();
-        else if (e.key === pedalSettings.prevPage) api?.scrollPrev();
+    } 
+    // Navegação de páginas (slides)
+    else if (!isContinuousMode && showChords) {
+        if (e.key === pedalSettings.nextPage || e.key === "ArrowRight") {
+            api?.scrollNext();
+        } else if (e.key === pedalSettings.prevPage || e.key === "ArrowLeft") {
+            api?.scrollPrev();
+        }
     }
-  }, [api, pedalSettings, isAutoScrolling, isContinuousMode, showChords]);
+  }, [api, pedalSettings, isAutoScrolling, isContinuousMode, showChords, stopAutoScroll]);
 
   if (!isClient || authLoading || loadingSong || !song) return <div className="flex-1 flex items-center justify-center h-screen"><Loader2 className="animate-spin" /></div>;
 
@@ -238,17 +255,18 @@ export default function SongPage() {
       </Card>
 
       <div className="flex-1 flex flex-col min-h-0 relative">
+        {/* Zonas de Toque Laterais para Slides */}
         {!isContinuousMode && showChords && (
           <div className="absolute inset-0 z-10 flex pointer-events-none">
-            <div className="w-1/4 h-full cursor-pointer pointer-events-auto" onClick={() => api?.scrollPrev()} />
+            <div className="w-1/4 h-full cursor-pointer pointer-events-auto" onClick={() => api?.scrollPrev()} title="Página Anterior" />
             <div className="flex-1 h-full" />
-            <div className="w-1/4 h-full cursor-pointer pointer-events-auto" onClick={() => api?.scrollNext()} />
+            <div className="w-1/4 h-full cursor-pointer pointer-events-auto" onClick={() => api?.scrollNext()} title="Próxima Página" />
           </div>
         )}
 
         {isContinuousMode || !showChords ? (
           <ScrollArea ref={scrollAreaRef} className="h-full bg-white dark:bg-black rounded-lg">
-            <div className="p-4 md:p-8">
+            <div className="p-4 md:p-8 pb-32">
               {songParts.map((part, idx) => <div key={idx} data-part-index={idx}><SongDisplay content={part} showChords={showChords} style={{ fontSize: `${finalFontSize}px` }} /></div>)}
             </div>
           </ScrollArea>
@@ -278,8 +296,8 @@ export default function SongPage() {
                         <AlertDialog>
                           <AlertDialogTrigger asChild><Button variant="outline" className="h-9 w-12"><X className="h-4 w-4" /></Button></AlertDialogTrigger>
                           <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Parar Rolagem?</AlertDialogTitle><AlertDialogDescription>Deseja voltar ao modo de slides na página atual?</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter><AlertDialogCancel>Não</AlertDialogCancel><AlertDialogAction onClick={stopAutoScroll}>Sim, Parar</AlertDialogAction></AlertDialogFooter>
+                            <AlertDialogHeader><AlertDialogTitle>Sair da Rolagem?</AlertDialogTitle><AlertDialogDescription>Deseja voltar ao modo de slides exatamente nesta posição?</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter><AlertDialogCancel>Não</AlertDialogCancel><AlertDialogAction onClick={stopAutoScroll}>Sim, Sair</AlertDialogAction></AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
                       )}
