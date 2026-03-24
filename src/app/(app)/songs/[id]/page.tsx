@@ -43,12 +43,18 @@ export default function SongPage() {
   const { appUser, loading: authLoading } = useAuth();
   const { data: song, loading: loadingSong } = useFirestoreDocument<Song>('songs', appUser?.isApproved ? songId : null);
   
-  const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', { prevPage: ',', nextPage: '.', prevSong: '[', nextSong: ']' });
+  const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', { 
+    prevPage: ',', 
+    nextPage: '.', 
+    prevSong: '[', 
+    nextSong: ']' 
+  });
+  
   const [isClient, setIsClient] = useState(false);
   const [transpose, setTranspose] = useState(initialTranspose);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [api, setApi] = useState<CarouselApi>();
-  const [current, setCurrent] = useState(1);
+  const [currentPartIndex, setCurrentPartIndex] = useState(0);
   const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', true);
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
@@ -92,8 +98,8 @@ export default function SongPage() {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
     setIsExitDialogOpen(false);
-    setTimeout(() => { if (api) api.scrollTo(current - 1, false); }, 150);
-  }, [api, current]);
+    setTimeout(() => { if (api) api.scrollTo(currentPartIndex, false); }, 100);
+  }, [api, currentPartIndex]);
 
   const contentToDisplay = useMemo(() => {
     return song?.content ? transposeContent(song.content, transpose) : '';
@@ -107,7 +113,7 @@ export default function SongPage() {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           const idx = parseInt(entry.target.getAttribute('data-part-index') || '0', 10);
-          setCurrent(idx + 1);
+          setCurrentPartIndex(idx);
         }
       });
     }, { 
@@ -122,7 +128,7 @@ export default function SongPage() {
 
   useEffect(() => {
     if (!api || isContinuousMode) return;
-    const onSelect = () => setCurrent(api.selectedScrollSnap() + 1);
+    const onSelect = () => setCurrentPartIndex(api.selectedScrollSnap());
     api.on("select", onSelect);
     return () => { api.off("select", onSelect); }
   }, [api, isContinuousMode]);
@@ -134,9 +140,9 @@ export default function SongPage() {
             const deltaTime = (time - lastScrollTime.current) / 1000;
             const pixelsToMove = (scrollSpeed * 2) * deltaTime;
             scrollPosRef.current += pixelsToMove;
-            if (scrollPosRef.current >= 0.5) {
-                viewport.scrollTop += scrollPosRef.current;
-                scrollPosRef.current = 0;
+            if (scrollPosRef.current >= 1) {
+                viewport.scrollTop += Math.floor(scrollPosRef.current);
+                scrollPosRef.current -= Math.floor(scrollPosRef.current);
             }
         }
     }
@@ -155,7 +161,7 @@ export default function SongPage() {
   }, [isAutoScrolling, animateScroll]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    // Tecla 1: Ligar/Desligar modo rolagem
+    // Tecla 1: Ligar/Desligar modo rolagem ou Confirmar Saída
     if (e.key === pedalSettings.nextSong) {
       e.preventDefault();
       if (isExitDialogOpen) {
@@ -169,24 +175,25 @@ export default function SongPage() {
       return;
     }
 
-    // Tecla 2: Pausar/Retomar (Apenas no modo contínuo)
-    if (isContinuousMode && e.key === pedalSettings.prevSong) {
-      e.preventDefault();
-      setIsAutoScrolling(!isAutoScrolling);
-      return;
+    // Se estiver no modo de ROLAGEM, a prioridade das teclas muda
+    if (isContinuousMode) {
+        // Tecla 2 (Pausar/Retomar) OU a tecla de Próxima Página (se configurada igual)
+        if (e.key === pedalSettings.prevSong || e.key === pedalSettings.nextPage) {
+            e.preventDefault();
+            setIsAutoScrolling(!isAutoScrolling);
+            return;
+        }
+    } else {
+        // Se estiver no modo de SLIDES, teclas de navegação funcionam normalmente
+        if (e.key === pedalSettings.nextPage || e.key === "ArrowRight") {
+            e.preventDefault();
+            api?.scrollNext();
+        } else if (e.key === pedalSettings.prevPage || e.key === "ArrowLeft") {
+            e.preventDefault();
+            api?.scrollPrev();
+        }
     }
-
-    // Navegação de Slides Manual (Apenas se NÃO estiver em modo contínuo)
-    if (!isContinuousMode && showChords && !isExitDialogOpen) {
-      if (e.key === pedalSettings.nextPage || e.key === "ArrowRight") {
-        e.preventDefault();
-        api?.scrollNext();
-      } else if (e.key === pedalSettings.prevPage || e.key === "ArrowLeft") {
-        e.preventDefault();
-        api?.scrollPrev();
-      }
-    }
-  }, [api, pedalSettings, isAutoScrolling, isContinuousMode, showChords, stopAutoScroll, isExitDialogOpen]);
+  }, [api, pedalSettings, isAutoScrolling, isContinuousMode, stopAutoScroll, isExitDialogOpen]);
 
   const handleExportPDF = async () => {
     if (!pdfRef.current || !song) return;
@@ -268,7 +275,7 @@ export default function SongPage() {
         )}
 
         {isContinuousMode || !showChords ? (
-          <ScrollArea ref={scrollAreaRef} className="h-full bg-white dark:bg-black rounded-lg">
+          <ScrollArea ref={scrollAreaRef} className="h-full bg-white dark:bg-black rounded-lg border">
             <div className="p-4 md:p-8 pb-32">
               {songParts.map((part, idx) => <div key={idx} data-part-index={idx}><SongDisplay content={part} showChords={showChords} style={{ fontSize: `${finalFontSize}px` }} /></div>)}
             </div>

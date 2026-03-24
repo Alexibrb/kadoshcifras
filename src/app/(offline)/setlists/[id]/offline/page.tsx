@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun, FileDown } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,6 +18,7 @@ import { transposeChord, transposeContent } from '@/lib/music';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -72,7 +73,7 @@ function SongPresenter({
     return (
         <Card className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none overflow-hidden relative">
             <CardContent className="flex-1 h-full p-0">
-                <ScrollArea className="h-full p-4 md:p-6">
+                <ScrollArea className="h-full p-4 md:p-8">
                     <SongDisplay 
                         style={{ 
                             fontSize: `${fontSize}px`,
@@ -100,6 +101,7 @@ function SongPresenter({
 export default function OfflineSetlistPage() {
   const params = useParams();
   const setlistId = params.id as string;
+  const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const wakeLockRef = useRef<any>(null);
   const requestRef = useRef<number>(null);
@@ -151,9 +153,9 @@ export default function OfflineSetlistPage() {
             const deltaTime = (time - lastScrollTime.current) / 1000;
             const pixelsToMove = (scrollSpeed * 2) * deltaTime;
             scrollPosRef.current += pixelsToMove;
-            if (scrollPosRef.current >= 0.5) {
-                viewport.scrollTop += scrollPosRef.current;
-                scrollPosRef.current = 0;
+            if (scrollPosRef.current >= 1) {
+                viewport.scrollTop += Math.floor(scrollPosRef.current);
+                scrollPosRef.current -= Math.floor(scrollPosRef.current);
             }
         }
     }
@@ -203,9 +205,10 @@ export default function OfflineSetlistPage() {
     setIsAutoScrolling(false);
     setIsContinuousMode(false);
     setIsExitDialogOpen(false);
+    // Pequeno atraso para garantir que o carrossel renderize antes de fazer o scroll
     setTimeout(() => {
         if (api) api.scrollTo(currentSectionIndex, false);
-    }, 150);
+    }, 100);
   }, [api, currentSectionIndex]);
 
   useEffect(() => {
@@ -241,7 +244,12 @@ export default function OfflineSetlistPage() {
                 setCurrentSectionIndex(idx);
             }
         });
-    }, { root: scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]'), threshold: 0, rootMargin: '-10% 0px -85% 0px' });
+    }, { 
+        root: scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]'), 
+        threshold: 0, 
+        rootMargin: '-10% 0px -85% 0px' 
+    });
+    
     document.querySelectorAll('[data-section-index]').forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, [isContinuousMode, isClient, offlineData, allSections]);
@@ -254,7 +262,7 @@ export default function OfflineSetlistPage() {
   }, [api, isContinuousMode]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    // Tecla 1: Ligar/Desligar modo rolagem
+    // Tecla 1: Ligar/Desligar modo rolagem ou Confirmar Saída
     if (e.key === pedalSettings.nextSong) {
       e.preventDefault();
       if (isExitDialogOpen) {
@@ -268,24 +276,25 @@ export default function OfflineSetlistPage() {
       return;
     }
 
-    // Tecla 2: Pausar/Retomar (Apenas no modo contínuo)
-    if (isContinuousMode && e.key === pedalSettings.prevSong) {
-      e.preventDefault();
-      setIsAutoScrolling(!isAutoScrolling);
-      return;
+    // Se estiver no modo de ROLAGEM, a prioridade das teclas muda
+    if (isContinuousMode) {
+        // Tecla 2 (Pausar/Retomar) OU a tecla de Próxima Página (se configurada igual)
+        if (e.key === pedalSettings.prevSong || e.key === pedalSettings.nextPage) {
+            e.preventDefault();
+            setIsAutoScrolling(!isAutoScrolling);
+            return;
+        }
+    } else {
+        // Se estiver no modo de SLIDES, teclas de navegação funcionam normalmente
+        if (e.key === pedalSettings.nextPage || e.key === "ArrowRight") {
+            e.preventDefault();
+            api?.scrollNext();
+        } else if (e.key === pedalSettings.prevPage || e.key === "ArrowLeft") {
+            e.preventDefault();
+            api?.scrollPrev();
+        }
     }
-
-    // Navegação de Slides Manual (Apenas se NÃO estiver em modo contínuo)
-    if (!isContinuousMode && showChords && !isExitDialogOpen) {
-      if (e.key === pedalSettings.nextPage || e.key === "ArrowRight") {
-        e.preventDefault();
-        api?.scrollNext();
-      } else if (e.key === pedalSettings.prevPage || e.key === "ArrowLeft") {
-        e.preventDefault();
-        api?.scrollPrev();
-      }
-    }
-  }, [api, pedalSettings, showChords, isAutoScrolling, isContinuousMode, stopAutoScroll, isExitDialogOpen]);
+  }, [api, pedalSettings, isAutoScrolling, isContinuousMode, stopAutoScroll, isExitDialogOpen]);
   
   const changeTranspose = (change: number) => {
     const cur = allSections[currentSectionIndex];
@@ -356,11 +365,11 @@ export default function OfflineSetlistPage() {
         )}
 
         {isContinuousMode || !showChords ? (
-          <ScrollArea ref={scrollAreaRef} className="h-full p-4 md:p-6 bg-white dark:bg-black rounded-lg border">
-              <div className="pb-32">
+          <ScrollArea ref={scrollAreaRef} className="h-full bg-white dark:bg-black rounded-lg border">
+              <div className="p-4 md:p-8 pb-48">
                 {offlineData.songs.map((song, songIdx) => (
-                    <div key={songIdx} className="flex flex-col mb-12">
-                        <div className="mb-6 border-l-4 border-primary/20 pl-4">
+                    <div key={songIdx} className="flex flex-col mb-16">
+                        <div className="mb-8 border-l-4 border-primary/20 pl-4">
                             <h2 className="text-2xl font-bold text-primary">{song.title}</h2>
                             <p className="text-sm text-muted-foreground">{song.artist}</p>
                         </div>
@@ -378,7 +387,7 @@ export default function OfflineSetlistPage() {
               </div>
           </ScrollArea>
         ) : (
-          <Carousel className="w-full flex-1 h-full" setApi={setApi}>
+          <Carousel className="w-full h-full" setApi={setApi}>
             <CarouselContent className="h-full">
               {allSections.map((section, index) => (
                 <CarouselItem key={section.id} className="h-full">
@@ -397,7 +406,7 @@ export default function OfflineSetlistPage() {
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/90 backdrop-blur border-t z-50">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t z-50">
           <div className="max-w-xl mx-auto flex items-center gap-4 p-2 rounded-lg border bg-muted/20">
                 {!isContinuousMode && showChords ? (
                     <Button onClick={() => { setIsContinuousMode(true); setIsAutoScrolling(true); }} className="h-9 w-36 gap-2"><Play className="h-4 w-4" />Iniciar</Button>
