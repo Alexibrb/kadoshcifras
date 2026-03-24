@@ -118,7 +118,6 @@ export default function OfflineSetlistPage() {
 
   const [fontSize] = useLocalStorage('song-font-size', 14);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
-  // Por padrão o card vem recolhido
   const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', false);
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
@@ -326,9 +325,18 @@ export default function OfflineSetlistPage() {
     if (!offlineData) return;
     setIsExporting(true);
     try {
-      const pdf = new jsPDF('p', 'pt', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pageSize = 38; // 38 linhas
+      const pageSize = 38;
+      
+      const allLines: { songIdx: number; songLines: string[] }[] = offlineData.songs.map((song, idx) => ({
+          songIdx: idx,
+          songLines: transposeContent(song.content, transpositions[idx] || 0).split('\n')
+      }));
+
+      const longestLineCount = Math.max(...allLines.flatMap(s => s.songLines.map(l => l.length)));
+      const ptWidth = Math.max(400, longestLineCount * 7.5 + 100);
+      const ptHeight = pageSize * 12 * 1.5 + 150;
+
+      const pdf = new jsPDF('p', 'pt', [ptWidth, ptHeight]);
 
       const container = document.createElement('div');
       container.style.position = 'fixed';
@@ -340,24 +348,20 @@ export default function OfflineSetlistPage() {
       container.style.fontSize = '12pt';
       container.style.lineHeight = '1.4';
       container.style.padding = '40pt';
+      container.style.width = `${ptWidth}pt`;
       document.body.appendChild(container);
 
       let firstOverallPage = true;
 
       for (let songIdx = 0; songIdx < offlineData.songs.length; songIdx++) {
         const song = offlineData.songs[songIdx];
-        const content = transposeContent(song.content, transpositions[songIdx] || 0);
-        const lines = content.split('\n');
+        const lines = allLines[songIdx].songLines;
         
-        const longestLine = Math.max(...lines.map(l => l.length));
-        container.style.width = `${Math.max(450, longestLine * 8 + 100)}pt`;
-
         const songPages: string[][] = [];
         let currentIdx = 0;
         while (currentIdx < lines.length) {
             let pageLines = lines.slice(currentIdx, currentIdx + pageSize);
             
-            // Regra de cifra: se a última linha for cifra e não for o fim da música
             if (pageLines.length === pageSize && isChordLine(pageLines[pageSize - 1]) && (currentIdx + pageSize) < lines.length) {
                 pageLines = lines.slice(currentIdx, currentIdx + pageSize - 1);
                 currentIdx += (pageSize - 1);
@@ -365,7 +369,6 @@ export default function OfflineSetlistPage() {
                 currentIdx += pageSize;
             }
 
-            // Preenche com brancos
             while (pageLines.length < pageSize) {
                 pageLines.push(' ');
             }
@@ -373,10 +376,9 @@ export default function OfflineSetlistPage() {
         }
 
         for (let i = 0; i < songPages.length; i++) {
-          if (!firstOverallPage) pdf.addPage();
+          if (!firstOverallPage) pdf.addPage([ptWidth, ptHeight]);
           firstOverallPage = false;
 
-          // Header apenas na primeira página da música
           const headerHtml = i === 0 ? `
             <div style="margin-bottom: 20pt; border-bottom: 1px solid #eee; padding-bottom: 10pt;">
               <h1 style="font-size: 24pt; margin: 0; color: #000;">${song.title}</h1>
@@ -397,14 +399,13 @@ export default function OfflineSetlistPage() {
           await new Promise(r => setTimeout(r, 150));
           const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
           const imgData = canvas.toDataURL('image/png');
-          const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+          pdf.addImage(imgData, 'PNG', 0, 0, ptWidth, ptHeight);
         }
       }
 
       pdf.save(`${offlineData.name}.pdf`);
       document.body.removeChild(container);
-      toast({ title: "Repertório Exportado", description: "O PDF do repertório completo foi gerado com sucesso." });
+      toast({ title: "Repertório Exportado", description: "O PDF sob medida foi gerado com sucesso." });
     } catch (err) {
       console.error(err);
       toast({ variant: "destructive", title: "Erro ao gerar PDF", description: "Ocorreu um problema ao exportar o repertório." });
@@ -447,16 +448,14 @@ export default function OfflineSetlistPage() {
                     <Badge variant="secondary" className="flex-1 text-center justify-center">Tom: {currentSong.key ? transposeChord(currentSong.key, transpositions[currentSec.songIndex]) : 'N/A'}</Badge>
                     <Button variant="ghost" size="icon" onClick={() => changeTranspose(1)}><Plus className="h-4 w-4" /></Button>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-full sm:w-52">
-                        <div className="flex items-center gap-2">
-                            <Label className="text-xs">Cifras</Label>
-                            <Switch checked={showChords} onCheckedChange={setShowChords} />
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 ml-2 border" onClick={handleExportPDF} disabled={isExporting}>
-                            {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                        </Button>
+                <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-full sm:w-52">
+                    <div className="flex items-center gap-2">
+                        <Label className="text-xs">Cifras</Label>
+                        <Switch checked={showChords} onCheckedChange={setShowChords} />
                     </div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 ml-2 border" onClick={handleExportPDF} disabled={isExporting}>
+                        {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                    </Button>
                 </div>
             </div>
           </div>

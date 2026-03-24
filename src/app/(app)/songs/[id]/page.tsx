@@ -57,7 +57,6 @@ export default function SongPage() {
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [api, setApi] = useState<CarouselApi>();
   const [currentPartIndex, setCurrentPartIndex] = useState(0);
-  // Por padrão o card vem recolhido
   const [isPanelVisible, setIsPanelVisible] = useLocalStorage('song-panel-visible', false);
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
@@ -207,14 +206,13 @@ export default function SongPage() {
     setIsExporting(true);
     try {
       const lines = contentToDisplay.split('\n');
-      const pageSize = 38; // 38 linhas conforme solicitado
+      const pageSize = 38;
       const pages: string[][] = [];
       
       let currentIdx = 0;
       while (currentIdx < lines.length) {
         let pageLines = lines.slice(currentIdx, currentIdx + pageSize);
         
-        // Regra: se a última linha for cifra e não for o fim, move para a próxima página
         if (pageLines.length === pageSize && isChordLine(pageLines[pageSize - 1]) && (currentIdx + pageSize) < lines.length) {
             pageLines = lines.slice(currentIdx, currentIdx + pageSize - 1);
             currentIdx += (pageSize - 1);
@@ -222,16 +220,17 @@ export default function SongPage() {
             currentIdx += pageSize;
         }
 
-        // Preenche com brancos até 38 linhas
         while (pageLines.length < pageSize) {
           pageLines.push(' ');
         }
         pages.push(pageLines);
       }
 
-      const longestLine = Math.max(...lines.map(l => l.length));
-      const pdf = new jsPDF('p', 'pt', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const longestLineCount = Math.max(...lines.map(l => l.length));
+      const ptWidth = Math.max(400, longestLineCount * 7.5 + 100);
+      const ptHeight = 38 * 12 * 1.5 + 150;
+
+      const pdf = new jsPDF('p', 'pt', [ptWidth, ptHeight]);
 
       const container = document.createElement('div');
       container.style.position = 'fixed';
@@ -243,13 +242,12 @@ export default function SongPage() {
       container.style.fontSize = '12pt';
       container.style.lineHeight = '1.4';
       container.style.padding = '40pt';
-      container.style.width = `${Math.max(450, longestLine * 8 + 100)}pt`; 
+      container.style.width = `${ptWidth}pt`;
       document.body.appendChild(container);
 
       for (let i = 0; i < pages.length; i++) {
-        if (i > 0) pdf.addPage();
+        if (i > 0) pdf.addPage([ptWidth, ptHeight]);
         
-        // Título e artista apenas na primeira página
         const headerHtml = i === 0 ? `
           <div style="margin-bottom: 20pt; border-bottom: 1px solid #eee; padding-bottom: 10pt;">
             <h1 style="font-size: 24pt; margin: 0; color: #000;">${song.title}</h1>
@@ -270,13 +268,12 @@ export default function SongPage() {
         await new Promise(r => setTimeout(r, 150));
         const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
         const imgData = canvas.toDataURL('image/png');
-        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+        pdf.addImage(imgData, 'PNG', 0, 0, ptWidth, ptHeight);
       }
 
       pdf.save(`${song.title}.pdf`);
       document.body.removeChild(container);
-      toast({ title: "PDF Gerado", description: "O arquivo foi baixado com sucesso." });
+      toast({ title: "PDF Gerado", description: "O arquivo sob medida foi baixado com sucesso." });
     } catch (err) {
       console.error(err);
       toast({ variant: "destructive", title: "Erro ao gerar PDF", description: "Ocorreu um problema ao exportar." });
@@ -326,16 +323,14 @@ export default function SongPage() {
                       <Badge variant="secondary" className="flex-1 text-center justify-center">Tom: {transpose > 0 ? '+' : ''}{transpose}</Badge>
                       <Button variant="ghost" size="icon" onClick={() => setTranspose(t => Math.min(12, t + 1))} className="h-8 w-8"><Plus className="h-4 w-4" /></Button>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-52">
-                        <div className="flex items-center gap-2">
-                            <Label className="text-xs">Cifras</Label>
-                            <Switch checked={showChords} onCheckedChange={setShowChords} />
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 ml-2 border" onClick={handleExportPDF} disabled={isExporting}>
-                            {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                        </Button>
-                    </div>
+                  <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-52">
+                      <div className="flex items-center gap-2">
+                          <Label className="text-xs">Cifras</Label>
+                          <Switch checked={showChords} onCheckedChange={setShowChords} />
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 ml-2 border" onClick={handleExportPDF} disabled={isExporting}>
+                          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                      </Button>
                   </div>
               </div>
             </div>
