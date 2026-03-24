@@ -1,8 +1,9 @@
+
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Song, PedalSettings } from '@/types';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Play, Pause, X, Loader2, FileDown, Sun } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Play, Pause, X, Loader2, FileDown, Sun, Edit, Youtube } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -169,7 +170,6 @@ export default function SongPage() {
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     const { nextSong, prevSong, nextPage, prevPage, pedalType } = pedalSettings;
 
-    // Lógica 4 Botões: Tecla para ligar rolagem
     if (pedalType === '4-buttons' && e.key === nextSong) {
       e.preventDefault();
       if (isExitDialogOpen) {
@@ -183,9 +183,7 @@ export default function SongPage() {
       return;
     }
 
-    // Modo Rolagem Ativo
     if (isContinuousMode) {
-        // Pausar/Retomar
         const isPauseAction = e.key === prevSong || (pedalType === '2-buttons' && e.key === nextPage);
         if (isPauseAction) {
             e.preventDefault();
@@ -193,7 +191,6 @@ export default function SongPage() {
             return;
         }
     } else {
-        // Modo Slides
         if (e.key === nextPage || e.key === "ArrowRight") {
             e.preventDefault();
             api?.scrollNext();
@@ -218,11 +215,9 @@ export default function SongPage() {
         let remainingLinesTotal = lines.length - currentIdx;
         let currentPageSize = standardPageSize;
 
-        // Regra: se o que resta cabe na tolerância (38 + 3 = 41), coloca tudo
         if (remainingLinesTotal <= standardPageSize + tolerance) {
             currentPageSize = remainingLinesTotal;
         } else {
-            // Se a linha 38 for cifra, move para a próxima página para não ficar sozinha
             if (isChordLine(lines[currentIdx + standardPageSize - 1])) {
                 currentPageSize = standardPageSize - 1;
             }
@@ -231,7 +226,6 @@ export default function SongPage() {
         let pageLines = lines.slice(currentIdx, currentIdx + currentPageSize);
         currentIdx += currentPageSize;
 
-        // Preenche com linhas em branco para manter a altura
         while (pageLines.length < standardPageSize) {
           pageLines.push(' ');
         }
@@ -320,14 +314,28 @@ export default function SongPage() {
             <div className="flex flex-col gap-4">
               <div className="flex items-start justify-between">
                 <Button asChild variant="outline" size="icon"><Link href={fromSetlistId ? `/setlists/${fromSetlistId}` : '/songs'}><ArrowLeft className="h-4 w-4" /></Link></Button>
-                <div className="text-center flex-1">
-                  <h1 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">{song.title}</h1>
+                <div className="text-center flex-1 px-4">
+                  <h1 className="text-sm font-bold uppercase tracking-widest text-muted-foreground truncate">{song.title}</h1>
                   <div className="flex items-center justify-center gap-2 mt-1">
                     <Sun className={cn("h-3 w-3 transition-opacity", isWakeLockActive ? "text-orange-500 opacity-100" : "text-muted-foreground opacity-30")} />
                     <span className="text-[10px] text-muted-foreground uppercase font-bold">{isWakeLockActive ? 'Tela Ativa' : 'Tela Normal'}</span>
                   </div>
                 </div>
-                <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon"><PanelTopClose className="h-5 w-5" /></Button>
+                <div className="flex items-center gap-1">
+                  {song.url && (
+                    <Button asChild variant="ghost" size="icon" className="h-9 w-9 text-red-600 hover:text-red-700 hover:bg-red-50" title="Ver Vídeo">
+                      <a href={song.url} target="_blank" rel="noopener noreferrer">
+                        <Youtube className="h-5 w-5" />
+                      </a>
+                    </Button>
+                  )}
+                  <Button asChild variant="ghost" size="icon" className="h-9 w-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50" title="Editar Música">
+                    <Link href={`/songs/${songId}/edit`}>
+                      <Edit className="h-5 w-5" />
+                    </Link>
+                  </Button>
+                  <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon" className="h-9 w-9"><PanelTopClose className="h-5 w-5" /></Button>
+                </div>
               </div>
               <div className="flex flex-wrap justify-center gap-2">
                   <div className="flex items-center gap-1 border rounded-md p-1 bg-background h-10 w-48">
