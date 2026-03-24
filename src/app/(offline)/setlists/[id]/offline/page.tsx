@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun, SunOff } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun, MonitorPlay } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -70,7 +70,7 @@ function SongPresenter({
     const content = transposeContent(section.content, transposeValue);
 
     return (
-        <Card className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none overflow-hidden">
+        <Card className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none overflow-hidden relative">
             <CardContent className="flex-1 h-full p-0">
                 <ScrollArea className="h-full p-4 md:p-6">
                     <SongDisplay 
@@ -286,7 +286,7 @@ export default function OfflineSetlistPage() {
                 <h1 className="text-xl font-bold font-headline truncate">{currentSong.title}</h1>
                 <div className="flex items-center justify-center gap-2 mt-1">
                   <Badge variant="outline">Offline</Badge>
-                  {isWakeLockActive ? <Sun className="h-3 w-3 text-orange-500" /> : <SunOff className="h-3 w-3 text-muted-foreground" />}
+                  <Sun className={cn("h-3 w-3", isWakeLockActive ? "text-orange-500" : "text-muted-foreground opacity-30")} />
                   <span className="text-[10px] text-muted-foreground uppercase font-bold">{isWakeLockActive ? 'Tela Ativa' : 'Tela Normal'}</span>
                 </div>
               </div>

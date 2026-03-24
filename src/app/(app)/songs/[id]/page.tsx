@@ -2,7 +2,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Song, PedalSettings } from '@/types';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Play, Pause, X, Loader2, FileDown, Sun, SunOff } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Play, Pause, X, Loader2, FileDown, Sun } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -188,7 +188,7 @@ export default function SongPage() {
                 <div className="text-center flex-1">
                   <h1 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">{song.title}</h1>
                   <div className="flex items-center justify-center gap-2 mt-1">
-                    {isWakeLockActive ? <Sun className="h-3 w-3 text-orange-500" /> : <SunOff className="h-3 w-3 text-muted-foreground" />}
+                    <Sun className={cn("h-3 w-3", isWakeLockActive ? "text-orange-500" : "text-muted-foreground opacity-30")} />
                     <span className="text-[10px] text-muted-foreground uppercase font-bold">{isWakeLockActive ? 'Tela Ativa' : 'Tela Normal'}</span>
                   </div>
                 </div>
