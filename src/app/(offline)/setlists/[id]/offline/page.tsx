@@ -453,7 +453,7 @@ export default function OfflineSetlistPage() {
                     <Badge variant="secondary" className="flex-1 text-center justify-center">Tom: {currentSong.key ? transposeChord(currentSong.key, transpositions[currentSec.songIndex]) : 'N/A'}</Badge>
                     <Button variant="ghost" size="icon" onClick={() => changeTranspose(1)}><Plus className="h-4 w-4" /></Button>
                 </div>
-                <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-full sm:w-52">
+                <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-full sm:w-56">
                     <div className="flex items-center gap-2">
                         <Label className="text-xs">Cifras</Label>
                         <Switch checked={showChords} onCheckedChange={setShowChords} />

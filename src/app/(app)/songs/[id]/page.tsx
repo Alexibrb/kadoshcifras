@@ -169,7 +169,7 @@ export default function SongPage() {
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     const { nextSong, prevSong, nextPage, prevPage, pedalType } = pedalSettings;
 
-    // Lógica para ligar/desligar rolagem (Apenas se for 4 botões)
+    // Lógica 4 Botões: Tecla para ligar rolagem
     if (pedalType === '4-buttons' && e.key === nextSong) {
       e.preventDefault();
       if (isExitDialogOpen) {
@@ -183,8 +183,9 @@ export default function SongPage() {
       return;
     }
 
-    // Se estiver no modo contínuo (Rolagem), as teclas de "Pausa" ou "Próximo" controlam a pausa
+    // Modo Rolagem Ativo
     if (isContinuousMode) {
+        // Pausar/Retomar
         const isPauseAction = e.key === prevSong || (pedalType === '2-buttons' && e.key === nextPage);
         if (isPauseAction) {
             e.preventDefault();
@@ -192,7 +193,7 @@ export default function SongPage() {
             return;
         }
     } else {
-        // Modo Slides (Navegação Normal)
+        // Modo Slides
         if (e.key === nextPage || e.key === "ArrowRight") {
             e.preventDefault();
             api?.scrollNext();
@@ -217,12 +218,11 @@ export default function SongPage() {
         let remainingLinesTotal = lines.length - currentIdx;
         let currentPageSize = standardPageSize;
 
-        // Se o que resta cabe no limite (38 + 3), coloca tudo nesta página
+        // Regra: se o que resta cabe na tolerância (38 + 3 = 41), coloca tudo
         if (remainingLinesTotal <= standardPageSize + tolerance) {
             currentPageSize = remainingLinesTotal;
         } else {
-            // Regra da cifra: Se a última linha (38) for cifra, joga ela pra próxima
-            // Apenas se ainda houver mais conteúdo depois
+            // Se a linha 38 for cifra, move para a próxima página para não ficar sozinha
             if (isChordLine(lines[currentIdx + standardPageSize - 1])) {
                 currentPageSize = standardPageSize - 1;
             }
@@ -231,7 +231,7 @@ export default function SongPage() {
         let pageLines = lines.slice(currentIdx, currentIdx + currentPageSize);
         currentIdx += currentPageSize;
 
-        // Preenche com linhas em branco para manter a altura de 38-41 linhas
+        // Preenche com linhas em branco para manter a altura
         while (pageLines.length < standardPageSize) {
           pageLines.push(' ');
         }
@@ -260,7 +260,6 @@ export default function SongPage() {
       for (let i = 0; i < pages.length; i++) {
         if (i > 0) pdf.addPage([ptWidth, ptHeight]);
         
-        // Título apenas na primeira página
         const headerHtml = i === 0 ? `
           <div style="margin-bottom: 20pt; border-bottom: 1px solid #eee; padding-bottom: 10pt;">
             <h1 style="font-size: 24pt; margin: 0; color: #000;">${song.title}</h1>
@@ -336,7 +335,7 @@ export default function SongPage() {
                       <Badge variant="secondary" className="flex-1 text-center justify-center">Tom: {transpose > 0 ? '+' : ''}{transpose}</Badge>
                       <Button variant="ghost" size="icon" onClick={() => setTranspose(t => Math.min(12, t + 1))} className="h-8 w-8"><Plus className="h-4 w-4" /></Button>
                   </div>
-                  <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-52">
+                  <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-56">
                       <div className="flex items-center gap-2">
                           <Label className="text-xs">Cifras</Label>
                           <Switch checked={showChords} onCheckedChange={setShowChords} />
