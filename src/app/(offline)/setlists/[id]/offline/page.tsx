@@ -361,8 +361,10 @@ export default function OfflineSetlistPage() {
         let currentIdx = 0;
         while (currentIdx < lines.length) {
             let pageLines = lines.slice(currentIdx, currentIdx + pageSize);
+            const isLastLineOfSong = (currentIdx + pageLines.length) >= lines.length;
             
-            if (pageLines.length === pageSize && isChordLine(pageLines[pageSize - 1]) && (currentIdx + pageSize) < lines.length) {
+            // Se a última linha da página for uma cifra E não for a última linha da música, move para a próxima página
+            if (!isLastLineOfSong && pageLines.length === pageSize && isChordLine(pageLines[pageSize - 1])) {
                 pageLines = lines.slice(currentIdx, currentIdx + pageSize - 1);
                 currentIdx += (pageSize - 1);
             } else {
