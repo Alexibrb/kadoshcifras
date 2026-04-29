@@ -1,6 +1,6 @@
 'use client';
 import { Button } from '@/components/ui/button';
-import { LogOut, Music, ListMusic } from 'lucide-react';
+import { LogOut, Music, ListMusic, Download, Share, PlusSquare } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
@@ -10,12 +10,15 @@ import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import type { Song, Setlist } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { usePWAInstall } from '@/hooks/use-pwa-install';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
   const { data: songs, loading: loadingSongs } = useFirestoreCollection<Song>('songs');
   const { data: setlists, loading: loadingSetlists } = useFirestoreCollection<Setlist>('setlists');
+  const { isInstallable, isIOS, isStandalone, installApp } = usePWAInstall();
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -66,7 +69,36 @@ export default function DashboardPage() {
           </Link>
         </Button>
 
-        <Button onClick={handleLogout} size="lg" variant="ghost" className="h-16 text-muted-foreground hover:text-destructive hover:bg-destructive/10 mt-8">
+        {/* Seção de Instalação PWA no Dashboard */}
+        {!isStandalone && (isInstallable || isIOS) && (
+          <div className="pt-4 space-y-4">
+            {isInstallable && (
+              <Button 
+                onClick={installApp} 
+                variant="secondary" 
+                size="lg"
+                className="w-full h-16 bg-primary/5 text-primary hover:bg-primary/10 border-primary/20 border animate-pulse font-bold"
+              >
+                <Download className="mr-2 h-5 w-5" /> Instalar Aplicativo
+              </Button>
+            )}
+
+            {isIOS && (
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="p-4 space-y-2 text-center">
+                  <p className="text-sm font-semibold flex items-center justify-center gap-2">
+                    Instalar no iPhone <Download className="h-4 w-4" />
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Toque em <Share className="h-3 w-3 inline mx-0.5" /> e depois em <PlusSquare className="h-3 w-3 inline mx-0.5" /> <strong>Adicionar à Tela de Início</strong>.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
+        <Button onClick={handleLogout} size="lg" variant="ghost" className="h-16 text-muted-foreground hover:text-destructive hover:bg-destructive/10 mt-4">
             <LogOut className="mr-3 h-5 w-5" /> Sair da conta
         </Button>
       </div>
