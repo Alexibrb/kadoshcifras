@@ -1,6 +1,6 @@
 'use client';
 import { Button } from '@/components/ui/button';
-import { LogOut, Music, ListMusic, Download, Share, PlusSquare } from 'lucide-react';
+import { LogOut, Music, ListMusic, Download, Share, PlusSquare, Info } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
@@ -18,7 +18,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { data: songs, loading: loadingSongs } = useFirestoreCollection<Song>('songs');
   const { data: setlists, loading: loadingSetlists } = useFirestoreCollection<Setlist>('setlists');
-  const { isInstallable, isIOS, isStandalone, installApp } = usePWAInstall();
+  const { isInstallable, isIOS, isStandalone, isMobile, installApp } = usePWAInstall();
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -70,19 +70,21 @@ export default function DashboardPage() {
         </Button>
 
         {/* Seção de Instalação PWA no Dashboard */}
-        {!isStandalone && (isInstallable || isIOS) && (
+        {!isStandalone && (
           <div className="pt-4 space-y-4">
+            {/* Caso o navegador suporte a instalação direta (Android/Chrome) */}
             {isInstallable && (
               <Button 
                 onClick={installApp} 
                 variant="secondary" 
                 size="lg"
-                className="w-full h-16 bg-primary/5 text-primary hover:bg-primary/10 border-primary/20 border animate-pulse font-bold"
+                className="w-full h-16 bg-primary/10 text-primary hover:bg-primary/20 border-primary/30 border animate-pulse font-bold"
               >
                 <Download className="mr-2 h-5 w-5" /> Instalar Aplicativo
               </Button>
             )}
 
+            {/* Caso seja iOS (iPhone/iPad) */}
             {isIOS && (
               <Card className="bg-primary/5 border-primary/20">
                 <CardContent className="p-4 space-y-2 text-center">
@@ -91,6 +93,17 @@ export default function DashboardPage() {
                   </p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     Toque em <Share className="h-3 w-3 inline mx-0.5" /> e depois em <PlusSquare className="h-3 w-3 inline mx-0.5" /> <strong>Adicionar à Tela de Início</strong>.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Caso não seja instalável automaticamente e não seja iOS, mas é mobile (ex: outros navegadores no Android) */}
+            {!isInstallable && !isIOS && isMobile && (
+              <Card className="bg-muted/50 border-dashed">
+                <CardContent className="p-4 text-center">
+                   <p className="text-xs text-muted-foreground flex items-center justify-center gap-2">
+                    <Info className="h-3 w-3" /> Para instalar, acesse as opções do seu navegador e escolha "Instalar Aplicativo".
                   </p>
                 </CardContent>
               </Card>
