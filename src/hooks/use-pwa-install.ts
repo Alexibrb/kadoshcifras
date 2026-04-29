@@ -1,9 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 
+// Variável global para persistir o evento entre navegações de página (SPA)
+let deferredPrompt: any = null;
+
 export function usePWAInstall() {
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
+  const [isInstallable, setIsInstallable] = useState(!!deferredPrompt);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -13,7 +15,7 @@ export function usePWAInstall() {
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(ios);
 
-    // Detecta se é mobile genérico (Android/iOS)
+    // Detecta se é mobile genérico
     const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     setIsMobile(mobile);
 
@@ -21,37 +23,36 @@ export function usePWAInstall() {
     const standalone = (window.matchMedia('(display-mode: standalone)').matches) || (window.navigator as any).standalone;
     setIsStandalone(standalone);
 
+    // Se já temos um prompt capturado anteriormente, atualizamos o estado
+    if (deferredPrompt) {
+      setIsInstallable(true);
+    }
+
     const handler = (e: any) => {
-      // Impede que o navegador mostre o prompt automático
+      // Impede o prompt automático
       e.preventDefault();
-      // Guarda o evento para disparar depois
-      setInstallPrompt(e);
+      // Armazena o evento globalmente
+      deferredPrompt = e;
       setIsInstallable(true);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
 
-    // Se o evento já disparou antes do componente montar, alguns navegadores permitem capturar via estado
-    if (window.hasOwnProperty('BeforeInstallPromptEvent')) {
-       // Infelizmente não há API padrão para recuperar um evento passado, 
-       // mas o listener acima cobre 99% dos casos no ciclo de vida do React.
-    }
-
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
   const installApp = async () => {
-    if (!installPrompt) {
+    if (!deferredPrompt) {
       console.warn("Prompt de instalação não disponível.");
       return;
     }
     
-    installPrompt.prompt();
-    const { outcome } = await installPrompt.userChoice;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
     
     if (outcome === 'accepted') {
       setIsInstallable(false);
-      setInstallPrompt(null);
+      deferredPrompt = null;
     }
   };
 

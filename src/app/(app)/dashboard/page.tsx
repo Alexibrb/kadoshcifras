@@ -1,7 +1,6 @@
-
 'use client';
 import { Button } from '@/components/ui/button';
-import { LogOut, Music, ListMusic, Download, Share, PlusSquare, Info, Smartphone } from 'lucide-react';
+import { LogOut, Music, ListMusic, Download, Share, PlusSquare, Smartphone } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
@@ -73,7 +72,6 @@ export default function DashboardPage() {
         {/* Seção de Instalação PWA no Dashboard */}
         {!isStandalone && (
           <div className="pt-4 space-y-4">
-            {/* Tenta mostrar o botão direto primeiro */}
             {isInstallable ? (
               <Button 
                 onClick={installApp} 
