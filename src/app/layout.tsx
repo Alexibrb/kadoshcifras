@@ -1,4 +1,3 @@
-
 'use client';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
@@ -16,14 +15,11 @@ const FirebaseErrorListener = () => {
     const handleError = (error: FirestorePermissionError) => {
       console.error("Erro de Permissão do Firestore (Ouvinte):", error.message);
       
-      // Lança o erro para que o overlay de desenvolvimento do Next.js o capture.
-      // Isso fornece um stack trace clicável e contexto rico durante o desenvolvimento.
       if (process.env.NODE_ENV === 'development') {
          setTimeout(() => {
           throw error;
         }, 0);
       } else {
-        // Em produção, mostra um toast amigável.
         toast({
           variant: 'destructive',
           title: 'Permissão Negada',
@@ -49,11 +45,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
 
+  useEffect(() => {
+    if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(
+          (registration) => console.log('SW registrado com sucesso: ', registration.scope),
+          (err) => console.log('SW falhou ao registrar: ', err)
+        );
+      });
+    }
+  }, []);
+
   return (
     <html lang="pt" suppressHydrationWarning>
       <head>
-        <meta name="theme-color" content="#9f50e5" />
+        <meta name="theme-color" content="#673AB7" />
         <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="https://placehold.co/192x192.png?text=CK" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet" />

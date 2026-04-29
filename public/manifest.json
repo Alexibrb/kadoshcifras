@@ -1,27 +1,24 @@
 {
   "name": "CifrasKadosh",
-  "short_name": "CifrasKadosh",
-  "description": "Seu app de cifras e repertórios.",
+  "short_name": "Kadosh",
+  "description": "Seu companheiro definitivo para criar, gerenciar e apresentar músicas.",
   "start_url": "/",
-<<<<<<< HEAD
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#9f50e5",
-=======
-  "display": "fullscreen",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
->>>>>>> fb8ff31ef3948f74486e1a8e81dee5bc60bc1c8e
+  "background_color": "#F3E5F5",
+  "theme_color": "#673AB7",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "/icon-192x192.png",
+      "src": "https://placehold.co/192x192.png?text=CK",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "/icon-512x512.png",
+      "src": "https://placehold.co/512x512.png?text=CK",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
