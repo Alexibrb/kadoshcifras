@@ -1,3 +1,4 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -12,18 +13,18 @@ export default function Home() {
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-background to-secondary p-4 md:p-8">
-      <div className="flex flex-col items-center justify-center text-center space-y-6 w-full max-w-2xl pb-20">
+      <div className="flex flex-col items-center justify-center text-center space-y-6 w-full max-w-2xl pb-24">
         <h2 className="text-2xl md:text-3xl font-headline text-muted-foreground tracking-tight">
           Bem-vindo ao
         </h2>
         <div className="inline-flex items-center justify-center">
           <Image 
-            src="/logocifrafacil.png" 
+            src="/icon-512x512.png" 
             alt="CifrasKadosh Logo" 
             width={350} 
             height={350} 
             data-ai-hint="logo music" 
-            className="w-48 h-48 md:w-[350px] md:h-[350px] object-contain"
+            className="w-48 h-48 md:w-[320px] md:h-[320px] object-contain drop-shadow-xl"
             priority
           />
         </div>
