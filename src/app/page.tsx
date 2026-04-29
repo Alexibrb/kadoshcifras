@@ -11,9 +11,9 @@ export default function Home() {
   const { isInstallable, isIOS, isStandalone, installApp } = usePWAInstall();
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-background to-secondary p-8">
-      <div className="text-center space-y-6 w-full max-w-2xl">
-        <h2 className="text-3xl font-headline text-muted-foreground tracking-tight">
+    <main className="relative flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-background to-secondary p-4 md:p-8">
+      <div className="flex flex-col items-center justify-center text-center space-y-6 w-full max-w-2xl pb-20">
+        <h2 className="text-2xl md:text-3xl font-headline text-muted-foreground tracking-tight">
           Bem-vindo ao
         </h2>
         <div className="inline-flex items-center justify-center">
@@ -23,19 +23,20 @@ export default function Home() {
             width={350} 
             height={350} 
             data-ai-hint="logo music" 
+            className="w-48 h-48 md:w-[350px] md:h-[350px] object-contain"
             priority
           />
         </div>
-        <p className="max-w-xl mx-auto text-lg md:text-xl text-foreground/80 font-body">
+        <p className="max-w-xl mx-auto text-base md:text-xl text-foreground/80 font-body px-4">
           Seu companheiro definitivo para criar, gerenciar e apresentar músicas. Transponha tons, crie repertórios facilmente.
         </p>
 
-        <div className="flex flex-col items-center gap-6 mt-8">
+        <div className="flex flex-col items-center gap-6 mt-8 w-full px-4">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
-            <Button asChild size="lg" className="font-bold w-full sm:w-auto">
+            <Button asChild size="lg" className="font-bold w-full sm:w-48">
               <Link href="/signup">Cadastre-se</Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="font-bold w-full sm:w-auto">
+            <Button asChild size="lg" variant="outline" className="font-bold w-full sm:w-48">
               <Link href="/login">Eu tenho uma conta</Link>
             </Button>
           </div>
@@ -54,7 +55,7 @@ export default function Home() {
 
           {/* Instrução para iOS (iPhone/iPad) */}
           {isIOS && !isStandalone && (
-            <Card className="bg-primary/5 border-primary/20 max-w-xs mx-auto">
+            <Card className="bg-primary/5 border-primary/20 w-full max-w-xs mx-auto">
               <CardContent className="p-4 space-y-2 text-center">
                 <p className="text-sm font-semibold flex items-center justify-center gap-2">
                   Instale no iPhone <Download className="h-4 w-4" />
@@ -68,8 +69,10 @@ export default function Home() {
         </div>
       </div>
 
-      <footer className="absolute bottom-4 text-center text-sm text-muted-foreground">
-        <p>&copy; {new Date().getFullYear()} CifrasKadosh. Todos os Direitos Reservados.</p>
+      <footer className="absolute bottom-6 left-0 right-0 text-center px-4">
+        <p className="text-xs md:text-sm text-muted-foreground">
+          &copy; {new Date().getFullYear()} CifrasKadosh. Todos os Direitos Reservados.
+        </p>
       </footer>
     </main>
   );
