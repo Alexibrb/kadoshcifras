@@ -44,7 +44,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (docSnap.exists()) {
             const userData = docSnap.data();
             
-            // Sincroniza as configurações com o localStorage para uso offline
             if (typeof window !== 'undefined') {
                 if (userData.colorSettings) {
                     localStorage.setItem('user-color-settings', JSON.stringify(userData.colorSettings));
@@ -99,38 +98,31 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
         const isAdminPage = pathname.startsWith('/users');
 
         if (!user) {
-            // Se não está logado e não está na home ou páginas de auth, redireciona
             if (!isAuthPage && !isHomePage) router.push(redirectUrl);
             return;
         }
 
-        if (!appUser) {
-            // Se o usuário está logado no Auth mas o documento no Firestore ainda não existe/foi carregado
-            if (!isPendingApprovalPage && !isHomePage && !isAuthPage) {
-              router.push('/pending-approval');
-            }
-            return;
-        }
-
+        // Se temos o appUser carregado (seja do cache ou servidor)
         if (appUser) {
-            if (!appUser.isApproved) {
-                // Se o usuário NÃO está aprovado, ele deve ser mandado para a tela de pendência
-                if (!isPendingApprovalPage && !isHomePage) {
-                  router.push('/pending-approval');
+            if (appUser.isApproved) {
+                // SE ESTÁ APROVADO: Tira ele da tela de pendência ou login imediatamente
+                if (isPendingApprovalPage || isAuthPage) {
+                    router.push('/dashboard');
+                }
+                
+                // Proteção de páginas admin
+                if (appUser.role !== 'admin' && isAdminPage) {
+                    router.push('/dashboard');
                 }
             } else {
-                // Se o usuário ESTÁ aprovado:
-                
-                // 1. Se ele estiver na tela de aprovação pendente ou telas de auth, manda para o dashboard
-                if (isPendingApprovalPage || isAuthPage) {
-                  router.push('/dashboard');
-                }
-                
-                // 2. Se tentar acessar página admin sem ser admin, manda pro dashboard
-                if (appUser.role !== 'admin' && isAdminPage) {
-                  router.push('/dashboard');
+                // SE NÃO ESTÁ APROVADO: Manda para a tela de pendência (exceto se já estiver lá ou na home)
+                if (!isPendingApprovalPage && !isHomePage) {
+                    router.push('/pending-approval');
                 }
             }
+        } else if (!isPendingApprovalPage && !isHomePage && !isAuthPage) {
+            // Documento ainda não existe ou não carregou (pode acontecer no primeiro login)
+            router.push('/pending-approval');
         }
     }, [user, appUser, loading, router, redirectUrl, pathname]);
 
