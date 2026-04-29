@@ -1,12 +1,22 @@
-self.addEventListener('install', (event) => {
-  self.skipWaiting();
-});
+// Service Worker básico para permitir instalação PWA
+const CACHE_NAME = 'cifras-kadosh-v1';
+const urlsToCache = [
+  '/',
+  '/manifest.json',
+  '/icon-192x192.png',
+  '/icon-512x512.png'
+];
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(clients.claim());
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(urlsToCache))
+  );
 });
 
 self.addEventListener('fetch', (event) => {
-  // O Service Worker é obrigatório para instalação, 
-  // mesmo que não realize cache agressivo por enquanto.
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => response || fetch(event.request))
+  );
 });
