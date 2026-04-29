@@ -105,18 +105,31 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
         }
 
         if (!appUser) {
-            if (!isPendingApprovalPage && !isHomePage) router.push('/pending-approval');
+            // Se o usuário está logado no Auth mas o documento no Firestore ainda não existe/foi carregado
+            if (!isPendingApprovalPage && !isHomePage && !isAuthPage) {
+              router.push('/pending-approval');
+            }
             return;
         }
 
         if (appUser) {
             if (!appUser.isApproved) {
-                if (!isPendingApprovalPage && !isHomePage) router.push('/pending-approval');
+                // Se o usuário NÃO está aprovado, ele deve ser mandado para a tela de pendência
+                if (!isPendingApprovalPage && !isHomePage) {
+                  router.push('/pending-approval');
+                }
             } else {
-                // Se está aprovado e tenta acessar login/signup, vai pro dashboard
-                if (isAuthPage) router.push('/dashboard');
-                // Não redirecionamos da Home (/) para permitir instalação PWA
-                if (appUser.role !== 'admin' && isAdminPage) router.push('/dashboard');
+                // Se o usuário ESTÁ aprovado:
+                
+                // 1. Se ele estiver na tela de aprovação pendente ou telas de auth, manda para o dashboard
+                if (isPendingApprovalPage || isAuthPage) {
+                  router.push('/dashboard');
+                }
+                
+                // 2. Se tentar acessar página admin sem ser admin, manda pro dashboard
+                if (appUser.role !== 'admin' && isAdminPage) {
+                  router.push('/dashboard');
+                }
             }
         }
     }, [user, appUser, loading, router, redirectUrl, pathname]);
