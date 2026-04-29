@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
@@ -92,25 +93,29 @@ export const useRequireAuth = (redirectUrl: string = '/login') => {
     useEffect(() => {
         if (loading) return;
 
-        const isAuthPage = pathname === redirectUrl || pathname === '/signup' || pathname === '/';
+        const isAuthPage = pathname === '/login' || pathname === '/signup';
+        const isHomePage = pathname === '/';
         const isPendingApprovalPage = pathname === '/pending-approval';
         const isAdminPage = pathname.startsWith('/users');
 
         if (!user) {
-            if (!isAuthPage) router.push(redirectUrl);
+            // Se não está logado e não está na home ou páginas de auth, redireciona
+            if (!isAuthPage && !isHomePage) router.push(redirectUrl);
             return;
         }
 
         if (!appUser) {
-            if (!isPendingApprovalPage) router.push('/pending-approval');
+            if (!isPendingApprovalPage && !isHomePage) router.push('/pending-approval');
             return;
         }
 
         if (appUser) {
             if (!appUser.isApproved) {
-                if (!isPendingApprovalPage) router.push('/pending-approval');
+                if (!isPendingApprovalPage && !isHomePage) router.push('/pending-approval');
             } else {
-                if (isAuthPage || isPendingApprovalPage) router.push('/dashboard');
+                // Se está aprovado e tenta acessar login/signup, vai pro dashboard
+                if (isAuthPage) router.push('/dashboard');
+                // Não redirecionamos da Home (/) para permitir instalação PWA
                 if (appUser.role !== 'admin' && isAdminPage) router.push('/dashboard');
             }
         }

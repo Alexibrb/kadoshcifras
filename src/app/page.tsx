@@ -3,13 +3,14 @@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Logo } from '@/components/logo';
 import { usePWAInstall } from '@/hooks/use-pwa-install';
-import { Download, Share, PlusSquare } from 'lucide-react';
+import { Download, Share, PlusSquare, LayoutDashboard } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function Home() {
   const { isInstallable, isIOS, isStandalone, installApp } = usePWAInstall();
+  const { user } = useAuth();
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-background to-secondary p-4 md:p-8">
@@ -34,12 +35,22 @@ export default function Home() {
 
         <div className="flex flex-col items-center gap-6 mt-8 w-full px-4">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
-            <Button asChild size="lg" className="font-bold w-full sm:w-48">
-              <Link href="/signup">Cadastre-se</Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="font-bold w-full sm:w-48">
-              <Link href="/login">Eu tenho uma conta</Link>
-            </Button>
+            {user ? (
+              <Button asChild size="lg" className="font-bold w-full sm:w-64" variant="default">
+                <Link href="/dashboard">
+                  <LayoutDashboard className="mr-2 h-5 w-5" /> Ir para o Painel
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Button asChild size="lg" className="font-bold w-full sm:w-48">
+                  <Link href="/signup">Cadastre-se</Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="font-bold w-full sm:w-48">
+                  <Link href="/login">Eu tenho uma conta</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Botão de Instalação para Android/Desktop */}
