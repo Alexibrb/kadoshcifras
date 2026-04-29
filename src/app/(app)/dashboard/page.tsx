@@ -24,6 +24,13 @@ export default function DashboardPage() {
     await signOut(auth);
     router.push('/login');
   };
+
+  const handleInstallRedirect = async () => {
+    // Força o logout e redireciona para a home com um refresh total da página
+    // Isso garante que o navegador dispare o evento de instalação corretamente na landing page
+    await signOut(auth);
+    window.location.href = '/';
+  };
   
   const loading = loadingSongs || loadingSetlists;
 
@@ -82,17 +89,15 @@ export default function DashboardPage() {
                 <Download className="mr-2 h-5 w-5" /> Instalar Aplicativo
               </Button>
             ) : (
-              /* Se não for instalável diretamente (Safari ou prompt ainda não carregou), oferece ir para a Home */
+              /* Se não for instalável diretamente (Safari ou prompt ainda não carregou), oferece ir para a Home via Logout */
               !isIOS && (
                 <Button 
-                  asChild
+                  onClick={handleInstallRedirect}
                   variant="secondary" 
                   size="lg"
                   className="w-full h-16 bg-primary/10 text-primary hover:bg-primary/20 border-primary/30 border font-bold"
                 >
-                  <Link href="/">
-                    <Smartphone className="mr-2 h-5 w-5" /> Instalar App (Clique aqui)
-                  </Link>
+                  <Smartphone className="mr-2 h-5 w-5" /> Instalar App (Clique aqui)
                 </Button>
               )
             )}
