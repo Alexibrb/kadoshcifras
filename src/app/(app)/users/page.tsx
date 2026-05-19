@@ -81,7 +81,7 @@ export default function UsersPage() {
     if (!userId) return;
     
     try {
-      // Forçamos a exclusão direta via SDK para ignorar qualquer cache de hook
+      // Exclusão direta via Firestore para garantir que as regras de segurança sejam aplicadas
       const userRef = doc(db, 'users', userId);
       await deleteDoc(userRef);
       
@@ -143,7 +143,7 @@ export default function UsersPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="space-y-2">
             <h2 className="text-3xl font-bold font-headline tracking-tight">Gerenciamento do Sistema</h2>
-            <div className="text-muted-foreground">Administre usuários e configurações globais do aplicativo.</div>
+            <div className="text-muted-foreground text-sm">Administre usuários e configurações globais do aplicativo.</div>
         </div>
         <Button variant="outline" size="sm" onClick={() => setShowDebug(!showDebug)} className="gap-2">
             <Bug className="h-4 w-4" />
