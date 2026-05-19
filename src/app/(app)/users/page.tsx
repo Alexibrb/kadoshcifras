@@ -31,7 +31,7 @@ import { Save, Loader2, MessageSquare, Trash2, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   AlertDialog,
@@ -44,12 +44,31 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+// Função auxiliar para converter com segurança valores de data do Firestore/App
+const parseSafeDate = (dateValue: any): Date | null => {
+  if (!dateValue) return null;
+  
+  // Se já for um objeto Date
+  if (dateValue instanceof Date) return dateValue;
+  
+  // Se for um Timestamp do Firestore (objeto com toDate())
+  if (typeof dateValue.toDate === 'function') return dateValue.toDate();
+  
+  // Se for um Timestamp do Firestore (objeto com seconds/nanoseconds)
+  if (dateValue.seconds !== undefined) return new Date(dateValue.seconds * 1000);
+  
+  // Se for string ou número
+  const d = new Date(dateValue);
+  return isValid(d) ? d : null;
+};
+
 export default function UsersPage() {
   const { isAdmin, loading: loadingAuth } = useRequireAuth();
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 
+  // Só habilita a busca se for admin para evitar erros de permissão no console
   const { data: users, loading: loadingUsers, updateDocument } = useFirestoreCollection<User>(
     'users', 
     'createdAt', 
@@ -129,8 +148,8 @@ export default function UsersPage() {
   
   const sortedUsers = useMemo(() => {
     return [...users].sort((a, b) => {
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      const dateA = parseSafeDate(a.createdAt)?.getTime() || 0;
+      const dateB = parseSafeDate(b.createdAt)?.getTime() || 0;
       return dateB - dateA;
     });
   }, [users]);
@@ -206,16 +225,19 @@ export default function UsersPage() {
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {sortedUsers.map((u) => (
+                {sortedUsers.map((u) => {
+                    const registrationDate = parseSafeDate(u.createdAt);
+                    
+                    return (
                     <TableRow key={u.id}>
                     <TableCell>
                         <div className="flex flex-col">
                             <span className="font-medium">{u.displayName}</span>
                             <span className="text-[10px] text-muted-foreground">{u.email}</span>
-                            {u.createdAt && (
+                            {registrationDate && (
                               <div className="flex items-center gap-1 text-[9px] text-muted-foreground mt-1 font-mono uppercase">
                                 <Calendar className="h-2.5 w-2.5" />
-                                {format(new Date(u.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                                {format(registrationDate, "dd/MM/yyyy HH:mm", { locale: ptBR })}
                               </div>
                             )}
                         </div>
@@ -254,7 +276,7 @@ export default function UsersPage() {
                         </Button>
                     </TableCell>
                     </TableRow>
-                ))}
+                )})}
                 </TableBody>
             </Table>
             </CardContent>
