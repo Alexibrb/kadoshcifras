@@ -22,25 +22,15 @@ service cloud.firestore {
 
     // USERS COLLECTION
     match /users/{userId} {
-      // Permite leitura se for o próprio usuário ou se for admin
       allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
-
-      // Permite criação apenas para o próprio usuário no cadastro
       allow create: if isAuthenticated() && request.auth.uid == userId;
-
-      // Permite atualização se for o próprio usuário ou se for admin
-      allow update: if isAdmin() 
-                    || (isAuthenticated() && request.auth.uid == userId);
-      
-      // Permite exclusão apenas para administradores
+      allow update: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
       allow delete: if isAdmin();
     }
     
     // SETTINGS COLLECTION
     match /settings/{settingId} {
-      // Permite leitura pública (necessário para ver o WhatsApp antes da aprovação)
       allow read: if true;
-      // Permite qualquer escrita apenas para admins
       allow write: if isAdmin();
     }
     

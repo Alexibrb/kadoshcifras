@@ -28,8 +28,6 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useRequireAuth, useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { Save, Loader2, MessageSquare, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -75,36 +73,17 @@ export default function UsersPage() {
     updateDocument(userId, { role });
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    try {
-        await deleteDocument(userId);
-        toast({
-            title: "Usuário Excluído",
-            description: "O usuário foi removido permanentemente do sistema.",
-        });
-    } catch (error) {
-        toast({
-            variant: "destructive",
-            title: "Erro ao Excluir",
-            description: "Não foi possível remover o usuário.",
-        });
-    }
+  const handleDeleteUser = (userId: string) => {
+    // Não usamos await para mutações do Firestore seguindo as diretrizes de UX otimista
+    deleteDocument(userId);
   };
 
   const handleSaveSettings = async () => {
     setIsSavingSettings(true);
     try {
         await updateSettings({ adminWhatsApp: whatsappNumber });
-        toast({
-            title: "Configurações Salvas",
-            description: "O número do WhatsApp foi atualizado com sucesso.",
-        });
     } catch (error) {
-        toast({
-            variant: "destructive",
-            title: "Erro ao Salvar",
-            description: "Não foi possível atualizar as configurações.",
-        });
+        // O erro é tratado centralmente, mas desativamos o loading local
     } finally {
         setIsSavingSettings(false);
     }
@@ -144,7 +123,6 @@ export default function UsersPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
-        {/* Configurações Globais */}
         <Card className="md:col-span-1 border-primary/20 bg-primary/5">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl font-headline">
@@ -173,7 +151,6 @@ export default function UsersPage() {
             </CardFooter>
         </Card>
 
-        {/* Tabela de Usuários */}
         <Card className="md:col-span-2">
             <CardHeader>
                 <CardTitle className="font-headline">Lista de Usuários</CardTitle>
