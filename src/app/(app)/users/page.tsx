@@ -1,4 +1,3 @@
-
 // src/app/(app)/users/page.tsx
 'use client';
 import { useState, useEffect, useMemo } from 'react';
@@ -31,11 +30,22 @@ import { useRequireAuth, useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Save, Loader2, MessageSquare } from 'lucide-react';
+import { Save, Loader2, MessageSquare, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function UsersPage() {
-  const { data: users, loading: loadingUsers, updateDocument } = useFirestoreCollection<User>('users', 'createdAt');
+  const { data: users, loading: loadingUsers, updateDocument, deleteDocument } = useFirestoreCollection<User>('users', 'createdAt');
   const { data: appSettings, loading: loadingSettings, updateDocument: updateSettings } = useFirestoreDocument<AppSettings>('settings', 'app');
   const { isAdmin, loading: loadingAuth } = useRequireAuth();
   const { user: currentUser } = useAuth();
@@ -63,6 +73,22 @@ export default function UsersPage() {
 
   const handleRoleChange = (userId: string, role: 'admin' | 'user') => {
     updateDocument(userId, { role });
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    try {
+        await deleteDocument(userId);
+        toast({
+            title: "Usuário Excluído",
+            description: "O usuário foi removido permanentemente do sistema.",
+        });
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Erro ao Excluir",
+            description: "Não foi possível remover o usuário.",
+        });
+    }
   };
 
   const handleSaveSettings = async () => {
@@ -159,7 +185,8 @@ export default function UsersPage() {
                 <TableRow>
                     <TableHead>Usuário</TableHead>
                     <TableHead>Função</TableHead>
-                    <TableHead className="text-right">Aprovado</TableHead>
+                    <TableHead>Aprovado</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -186,8 +213,8 @@ export default function UsersPage() {
                         </SelectContent>
                         </Select>
                     </TableCell>
-                    <TableCell className="text-right">
-                        <div className="flex justify-end items-center gap-2">
+                    <TableCell>
+                        <div className="flex items-center gap-2">
                             <Switch
                             id={`approval-switch-${user.id}`}
                             checked={user.isApproved}
@@ -195,6 +222,38 @@ export default function UsersPage() {
                             disabled={user.id === currentUser?.uid}
                             />
                         </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                    disabled={user.id === currentUser?.uid}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    <span className="sr-only">Excluir usuário</span>
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Excluir Usuário?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Tem certeza que deseja excluir <strong>{user.displayName}</strong>? Esta ação não pode ser desfeita e ele perderá o acesso imediatamente.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                        onClick={() => handleDeleteUser(user.id)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                        Confirmar Exclusão
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </TableCell>
                     </TableRow>
                 ))}

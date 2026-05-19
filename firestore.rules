@@ -38,7 +38,7 @@ service cloud.firestore {
       allow update: if isAdmin() 
                     || (isAuthenticated() && request.auth.uid == userId);
       
-      allow delete: if false;
+      allow delete: if isAdmin();
     }
     
     // SETTINGS COLLECTION
