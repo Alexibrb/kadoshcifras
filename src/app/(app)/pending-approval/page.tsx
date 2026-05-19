@@ -1,3 +1,4 @@
+
 // src/app/(app)/pending-approval/page.tsx
 'use client';
 
@@ -7,12 +8,15 @@ import { Logo } from '@/components/logo';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { Hourglass, LogOut, MessageCircle } from 'lucide-react';
+import { Hourglass, LogOut, MessageCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { useFirestoreDocument } from '@/hooks/use-firestore-document';
+import { type AppSettings } from '@/types';
 
 export default function PendingApprovalPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { data: appSettings, loading: loadingSettings } = useFirestoreDocument<AppSettings>('settings', 'app');
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -20,8 +24,9 @@ export default function PendingApprovalPage() {
   };
 
   const handleNotifyAdmin = () => {
-    // SUBSTITUA PELO SEU NÚMERO (Ex: 5511999999999)
-    const adminPhone = "5511999999999"; 
+    // Busca o número configurado pelo admin no Firestore
+    const adminPhone = appSettings?.adminWhatsApp || "5511999999999"; // Fallback se não configurado
+    
     const message = encodeURIComponent(
       `Olá! Acabei de me cadastrar no CifrasKadosh e aguardo minha aprovação.\n\n` +
       `👤 Nome: ${user?.displayName || 'Não informado'}\n` +
@@ -53,9 +58,10 @@ export default function PendingApprovalPage() {
             <p className="text-sm font-medium">Quer agilizar sua aprovação?</p>
             <Button 
                 onClick={handleNotifyAdmin} 
+                disabled={loadingSettings}
                 className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-12 gap-2"
             >
-              <MessageCircle className="h-5 w-5" />
+              {loadingSettings ? <Loader2 className="h-5 w-5 animate-spin" /> : <MessageCircle className="h-5 w-5" />}
               Avisar no WhatsApp
             </Button>
           </div>

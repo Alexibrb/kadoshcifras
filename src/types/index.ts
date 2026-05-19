@@ -67,3 +67,8 @@ export interface PedalSettings {
     prevSong: string; // Usado para Pausar/Retomar
     nextSong: string; // Usado para Ligar/Desligar modo rolagem
 }
+
+export interface AppSettings {
+    id: string;
+    adminWhatsApp?: string;
+}
