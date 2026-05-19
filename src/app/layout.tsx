@@ -61,7 +61,7 @@ export default function RootLayout({
       <head>
         <meta name="theme-color" content="#673AB7" />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/android-chrome-512x512.png?v=2" />
+        <link rel="apple-touch-icon" href="/icon-512x512.png?v=2" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

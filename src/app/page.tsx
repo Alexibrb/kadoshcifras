@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePWAInstall } from '@/hooks/use-pwa-install';
-import { Download, Share, PlusSquare, LayoutDashboard } from 'lucide-react';
+import { Download, Share, PlusSquare, LayoutDashboard, Smartphone } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -19,7 +19,7 @@ export default function Home() {
         </h2>
         <div className="inline-flex items-center justify-center">
           <Image 
-            src="/android-chrome-512x512.png?v=2" 
+            src="/icon-512x512.png?v=2" 
             alt="CifrasKadosh Logo" 
             width={350} 
             height={350} 
@@ -58,7 +58,7 @@ export default function Home() {
               onClick={installApp} 
               variant="secondary" 
               size="lg" 
-              className="bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 w-full sm:w-auto animate-bounce"
+              className="bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 w-full sm:w-auto animate-bounce font-bold"
             >
               <Download className="mr-2 h-5 w-5" /> Instalar Aplicativo
             </Button>
