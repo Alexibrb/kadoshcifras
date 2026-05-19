@@ -1,4 +1,3 @@
-// src/app/(app)/users/page.tsx
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
@@ -75,11 +74,12 @@ export default function UsersPage() {
   };
 
   const handleDeleteUser = (userId: string) => {
+    // A exclusão agora emite erro via listener central se falhar
     deleteDocument(userId);
     
     toast({
       title: "Solicitação enviada",
-      description: "A ordem de exclusão foi enviada ao servidor.",
+      description: "O comando de exclusão foi enviado ao servidor.",
     });
   };
 
@@ -87,8 +87,12 @@ export default function UsersPage() {
     setIsSavingSettings(true);
     try {
         await updateSettings({ adminWhatsApp: whatsappNumber });
+        toast({
+            title: "Configurações salvas",
+            description: "O número de WhatsApp foi atualizado com sucesso.",
+        });
     } catch (error) {
-        // Erro tratado pelo listener
+        // Erro tratado pelo listener central
     } finally {
         setIsSavingSettings(false);
     }
@@ -123,7 +127,7 @@ export default function UsersPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="space-y-2">
             <h2 className="text-3xl font-bold font-headline tracking-tight">Gerenciamento do Sistema</h2>
-            <p className="text-muted-foreground">Administre usuários e configurações globais do aplicativo.</p>
+            <div className="text-muted-foreground">Administre usuários e configurações globais do aplicativo.</div>
         </div>
         <Button variant="outline" size="sm" onClick={() => setShowDebug(!showDebug)} className="gap-2">
             <Bug className="h-4 w-4" />
@@ -135,10 +139,10 @@ export default function UsersPage() {
         <Card className="border-orange-500 bg-orange-500/5">
             <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                    <Bug className="h-4 w-4" /> Log de Depuração (Apenas Admin)
+                    <Bug className="h-4 w-4" /> Log de Depuração (Admin)
                 </CardTitle>
             </CardHeader>
-            <CardContent className="text-xs font-mono space-y-1">
+            <CardContent className="text-xs font-mono space-y-2">
                 <div className="py-1"><strong>UID Autenticado:</strong> {currentUser?.uid}</div>
                 <div className="py-1"><strong>ID Firestore:</strong> {appUser?.id}</div>
                 <div className="flex items-center gap-2 py-1">
@@ -177,7 +181,7 @@ export default function UsersPage() {
                         value={whatsappNumber}
                         onChange={(e) => setWhatsappNumber(e.target.value)}
                     />
-                    <p className="text-[10px] text-muted-foreground">Use formato internacional: 55 + DDD + Número.</p>
+                    <div className="text-[10px] text-muted-foreground">Use formato internacional: 55 + DDD + Número.</div>
                 </div>
             </CardContent>
             <CardFooter>

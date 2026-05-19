@@ -8,7 +8,8 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Helper: Verifica se o usuário logado é um administrador (Verificação Direta)
+    // Helper: Verifica se o usuário logado é um administrador (Acesso Direto ao Documento)
+    // Usamos get para garantir que o papel de admin seja verificado no servidor, independente do token.
     function isAdmin() {
       return isAuthenticated() && 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
@@ -22,7 +23,7 @@ service cloud.firestore {
       );
     }
 
-    // USERS: Regras específicas para a coleção de usuários
+    // USERS: Regras para a coleção de usuários
     match /users/{userId} {
       // Leitura: Admin lê todos, usuário lê o próprio
       allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == userId);
@@ -33,13 +34,14 @@ service cloud.firestore {
       // Atualização: Admin ou o próprio usuário
       allow update: if isAuthenticated() && (isAdmin() || request.auth.uid == userId);
       
-      // EXCLUSÃO: Regra explícita para administradores
+      // EXCLUSÃO: Apenas administradores podem deletar usuários
+      // Importante: A verificação isAdmin() deve ser a única condição para exclusão administrativa.
       allow delete: if isAdmin();
     }
     
     // SETTINGS: Configurações globais
     match /settings/{settingId} {
-      allow read: if true;
+      allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
     
@@ -61,13 +63,7 @@ service cloud.firestore {
       );
     }
 
-    // SONGS: Biblioteca de músicas
-    match /songs/{songId} {
-      allow read: if isAuthenticated();
-      allow write: if isApproved();
-    }
-
-    // CATCH-ALL: Regra geral para outras coleções (Categorias, Artistas, Gêneros)
+    // CATCH-ALL: Regra geral para outras coleções (Songs, Categorias, Artistas, Gêneros)
     match /{collection}/{docId} {
       allow read: if isAuthenticated();
       allow write: if isApproved();
