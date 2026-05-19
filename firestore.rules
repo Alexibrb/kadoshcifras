@@ -8,36 +8,31 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Helper function to get the user's app data from the 'users' collection
-    function getAppUser(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data;
-    }
-
     // Helper function to check if the requesting user is an admin
     function isAdmin() {
       return isAuthenticated() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-             getAppUser(request.auth.uid).role == 'admin';
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
     // Helper function to check if the requesting user is approved
     function isApproved() {
       return isAuthenticated() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-             getAppUser(request.auth.uid).isApproved == true;
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true;
     }
 
     // USERS COLLECTION
     match /users/{userId} {
+      // Permite leitura se for o próprio usuário ou se for admin
       allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
 
-      allow create: if isAuthenticated() && request.auth.uid == userId
-                      && request.resource.data.isApproved == false
-                      && request.resource.data.role == 'user';
+      // Permite criação apenas para o próprio usuário no cadastro
+      allow create: if isAuthenticated() && request.auth.uid == userId;
 
+      // Permite atualização se for o próprio usuário ou se for admin
       allow update: if isAdmin() 
                     || (isAuthenticated() && request.auth.uid == userId);
       
+      // Permite exclusão apenas para administradores
       allow delete: if isAdmin();
     }
     
@@ -45,7 +40,7 @@ service cloud.firestore {
     match /settings/{settingId} {
       // Permite leitura pública (necessário para ver o WhatsApp antes da aprovação)
       allow read: if true;
-      // Permite qualquer escrita (create/update) apenas para admins
+      // Permite qualquer escrita apenas para admins
       allow write: if isAdmin();
     }
     
@@ -66,6 +61,11 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow write: if isApproved() || isAdmin();
     }
+
+    // METADATA COLLECTIONS
+    match /categories/{docId} { allow read: if isAuthenticated(); allow write: if isApproved() || isAdmin(); }
+    match /genres/{docId} { allow read: if isAuthenticated(); allow write: if isApproved() || isAdmin(); }
+    match /artists/{docId} { allow read: if isAuthenticated(); allow write: if isApproved() || isAdmin(); }
 
     // OTHER COLLECTIONS
     match /{collection}/{docId} {
