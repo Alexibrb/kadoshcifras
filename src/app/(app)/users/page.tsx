@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useRequireAuth, useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
-import { Save, Loader2, MessageSquare, Trash2, Calendar } from 'lucide-react';
+import { Save, Loader2, MessageSquare, Trash2, Calendar, ChevronDown, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
@@ -47,17 +47,9 @@ import {
 // Função auxiliar para converter com segurança valores de data do Firestore/App
 const parseSafeDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
-  
-  // Se já for um objeto Date
   if (dateValue instanceof Date) return dateValue;
-  
-  // Se for um Timestamp do Firestore (objeto com toDate())
   if (typeof dateValue.toDate === 'function') return dateValue.toDate();
-  
-  // Se for um Timestamp do Firestore (objeto com seconds/nanoseconds)
   if (dateValue.seconds !== undefined) return new Date(dateValue.seconds * 1000);
-  
-  // Se for string ou número
   const d = new Date(dateValue);
   return isValid(d) ? d : null;
 };
@@ -68,7 +60,6 @@ export default function UsersPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  // Só habilita a busca se for admin para evitar erros de permissão no console
   const { data: users, loading: loadingUsers, updateDocument } = useFirestoreCollection<User>(
     'users', 
     'createdAt', 
@@ -84,6 +75,9 @@ export default function UsersPage() {
   
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Estado para controlar quais usuários estão expandidos
+  const [expandedUsers, setExpandedUsers] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setIsMounted(true);
@@ -97,6 +91,13 @@ export default function UsersPage() {
       router.push('/dashboard');
     }
   }, [loadingAuth, isAdmin, router]);
+
+  const toggleExpand = (userId: string) => {
+    setExpandedUsers(prev => ({
+      ...prev,
+      [userId]: !prev[userId]
+    }));
+  };
 
   const handleApprovalChange = (userId: string, isApproved: boolean) => {
     updateDocument(userId, { isApproved });
@@ -218,26 +219,42 @@ export default function UsersPage() {
             <Table>
                 <TableHeader>
                 <TableRow>
-                    <TableHead>Nome / E-mail</TableHead>
+                    <TableHead>Membro</TableHead>
                     <TableHead>Função</TableHead>
-                    <TableHead>Aprovado</TableHead>
+                    <TableHead>Acesso</TableHead>
                     <TableHead className="text-right">Ação</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
                 {sortedUsers.map((u) => {
                     const registrationDate = parseSafeDate(u.createdAt);
+                    const isExpanded = expandedUsers[u.id];
                     
                     return (
                     <TableRow key={u.id}>
                     <TableCell>
                         <div className="flex flex-col">
-                            <span className="font-medium">{u.displayName}</span>
-                            <span className="text-[10px] text-muted-foreground">{u.email}</span>
-                            {registrationDate && (
-                              <div className="flex items-center gap-1 text-[9px] text-muted-foreground mt-1 font-mono uppercase">
-                                <Calendar className="h-2.5 w-2.5" />
-                                {format(registrationDate, "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                            <div className="flex items-center gap-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-6 w-6 p-0 hover:bg-transparent" 
+                                  onClick={() => toggleExpand(u.id)}
+                                >
+                                  {isExpanded ? <ChevronDown className="h-4 w-4 text-primary" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                                </Button>
+                                <span className="font-semibold text-sm">{u.displayName}</span>
+                            </div>
+                            
+                            {isExpanded && (
+                              <div className="pl-8 mt-1 space-y-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                <span className="text-[10px] text-muted-foreground block select-all">{u.email}</span>
+                                {registrationDate && (
+                                  <div className="flex items-center gap-1 text-[9px] text-muted-foreground font-mono uppercase">
+                                    <Calendar className="h-2.5 w-2.5" />
+                                    {format(registrationDate, "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                                  </div>
+                                )}
                               </div>
                             )}
                         </div>
