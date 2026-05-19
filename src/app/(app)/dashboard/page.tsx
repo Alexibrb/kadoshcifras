@@ -1,18 +1,20 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
-import { LogOut, Music, ListMusic, Download, Share, PlusSquare, Smartphone, Heart, Copy, Check } from 'lucide-react';
+import { LogOut, Music, ListMusic, Download, Share, PlusSquare, Smartphone, Heart, Copy, Check, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
-import type { Song, Setlist } from '@/types';
+import { useFirestoreDocument } from '@/hooks/use-firestore-document';
+import type { Song, Setlist, AppSettings } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePWAInstall } from '@/hooks/use-pwa-install';
 import { Card, CardContent } from '@/components/ui/card';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -30,11 +32,12 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const { data: songs, loading: loadingSongs } = useFirestoreCollection<Song>('songs');
   const { data: setlists, loading: loadingSetlists } = useFirestoreCollection<Setlist>('setlists');
+  const { data: appSettings, loading: loadingSettings } = useFirestoreDocument<AppSettings>('settings', 'app');
   const { isInstallable, isIOS, isStandalone, installApp } = usePWAInstall();
   const [copied, setCopied] = useState(false);
 
-  // Chave Pix fictícia ou real para o projeto
-  const pixKey = "seu-pix@email.com"; 
+  // Chave Pix dinâmica vinda das configurações do Admin
+  const pixKey = useMemo(() => appSettings?.adminPixKey || "não configurado", [appSettings]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -47,6 +50,14 @@ export default function DashboardPage() {
   };
 
   const copyPixKey = () => {
+    if (!appSettings?.adminPixKey) {
+      toast({
+        title: "Chave Indisponível",
+        description: "O administrador ainda não configurou uma chave Pix.",
+        variant: "destructive"
+      });
+      return;
+    }
     navigator.clipboard.writeText(pixKey);
     setCopied(true);
     toast({
@@ -56,7 +67,7 @@ export default function DashboardPage() {
     setTimeout(() => setCopied(false), 3000);
   };
   
-  const loading = loadingSongs || loadingSetlists;
+  const loading = loadingSongs || loadingSetlists || loadingSettings;
 
   return (
     <div className="flex-1 flex items-center justify-center p-4 md:p-8">
@@ -122,10 +133,16 @@ export default function DashboardPage() {
               <div className="bg-muted p-4 rounded-lg text-center space-y-2">
                 <p className="text-sm font-medium">Contribua via Pix</p>
                 <div className="flex items-center justify-center gap-2 bg-background border rounded-md p-3 select-all">
-                  <span className="font-mono text-sm break-all">{pixKey}</span>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={copyPixKey}>
-                    {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                  </Button>
+                  {loadingSettings ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  ) : (
+                    <>
+                      <span className="font-mono text-sm break-all">{pixKey}</span>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={copyPixKey}>
+                        {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
               <p className="text-xs text-muted-foreground text-center">

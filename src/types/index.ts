@@ -71,4 +71,5 @@ export interface PedalSettings {
 export interface AppSettings {
     id: string;
     adminWhatsApp?: string;
+    adminPixKey?: string;
 }

@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
@@ -27,7 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useRequireAuth, useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
-import { Save, Loader2, MessageSquare, Trash2, Calendar, ChevronDown, ChevronRight } from 'lucide-react';
+import { Save, Loader2, MessageSquare, Trash2, Calendar, ChevronDown, ChevronRight, Wallet } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
@@ -70,6 +71,7 @@ export default function UsersPage() {
   const { data: appSettings, loading: loadingSettings, updateDocument: updateSettings } = useFirestoreDocument<AppSettings>('settings', 'app');
   
   const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [pixKey, setPixKey] = useState('');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   
@@ -81,8 +83,9 @@ export default function UsersPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    if (appSettings?.adminWhatsApp) {
-        setWhatsappNumber(appSettings.adminWhatsApp);
+    if (appSettings) {
+        setWhatsappNumber(appSettings.adminWhatsApp || '');
+        setPixKey(appSettings.adminPixKey || '');
     }
   }, [appSettings]);
 
@@ -135,10 +138,13 @@ export default function UsersPage() {
   const handleSaveSettings = async () => {
     setIsSavingSettings(true);
     try {
-        await updateSettings({ adminWhatsApp: whatsappNumber });
+        await updateSettings({ 
+          adminWhatsApp: whatsappNumber,
+          adminPixKey: pixKey 
+        });
         toast({
             title: "Configurações salvas",
-            description: "O número de WhatsApp foi atualizado.",
+            description: "As informações do sistema foram atualizadas.",
         });
     } catch (error) {
         console.error("Erro ao salvar configurações:", error);
@@ -189,24 +195,41 @@ export default function UsersPage() {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl font-headline">
                     <MessageSquare className="h-5 w-5 text-primary" />
-                    WhatsApp Admin
+                    Configurações Globais
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="whatsapp">Número para Notificação</Label>
-                    <Input 
-                        id="whatsapp"
-                        placeholder="Ex: 5511999999999"
-                        value={whatsappNumber}
-                        onChange={(e) => setWhatsappNumber(e.target.value)}
-                    />
+                    <Label htmlFor="whatsapp" className="text-xs font-bold uppercase">WhatsApp Admin</Label>
+                    <div className="relative">
+                      <MessageSquare className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                          id="whatsapp"
+                          placeholder="Ex: 5511999999999"
+                          value={whatsappNumber}
+                          onChange={(e) => setWhatsappNumber(e.target.value)}
+                          className="pl-9"
+                      />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="pix" className="text-xs font-bold uppercase">Chave Pix Doação</Label>
+                    <div className="relative">
+                      <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                          id="pix"
+                          placeholder="E-mail, CPF ou Aleatória"
+                          value={pixKey}
+                          onChange={(e) => setPixKey(e.target.value)}
+                          className="pl-9"
+                      />
+                    </div>
                 </div>
             </CardContent>
             <CardFooter>
                 <Button onClick={handleSaveSettings} disabled={isSavingSettings} className="w-full">
                     {isSavingSettings ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                    Salvar
+                    Salvar Configurações
                 </Button>
             </CardFooter>
         </Card>
