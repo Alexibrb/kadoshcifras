@@ -8,26 +8,30 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Helper: Obtém os dados do usuário atual para verificar permissões
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
     // Helper: Verifica se o usuário logado é um administrador
     function isAdmin() {
-      return isAuthenticated() && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isAuthenticated() && getUserData().role == 'admin';
     }
     
-    // Helper: Verifica se o usuário logado está aprovado (ou é admin)
+    // Helper: Verifica se o usuário logado está aprovado ou é admin
     function isApproved() {
-      return isAuthenticated() && 
-             (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true);
+      let data = getUserData();
+      return isAuthenticated() && (data.role == 'admin' || data.isApproved == true);
     }
 
     // USERS: Regras específicas para a coleção de usuários
     match /users/{userId} {
       // Qualquer admin pode ler todos; usuários logados leem apenas o próprio
-      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+      allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == userId);
       // Criação permitida no momento do cadastro (auto-registro)
       allow create: if isAuthenticated() && request.auth.uid == userId;
       // Atualização permitida para o próprio usuário ou admins
-      allow update: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+      allow update: if isAuthenticated() && (isAdmin() || request.auth.uid == userId);
       // EXCLUSÃO: Apenas administradores podem excluir usuários
       allow delete: if isAdmin();
     }
@@ -40,26 +44,32 @@ service cloud.firestore {
     
     // SETLISTS: Repertórios
     match /setlists/{setlistId} {
-      allow read: if isAdmin() 
-                  || isApproved() 
-                  || (isAuthenticated() && (resource.data.isPublic == true || resource.data.isVisible == true))
-                  || (isAuthenticated() && resource.data.creatorId == request.auth.uid);
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        isApproved() || 
+        resource.data.isPublic == true || 
+        resource.data.isVisible == true || 
+        resource.data.creatorId == request.auth.uid
+      );
       
-      allow write: if isAdmin() 
-                   || isApproved()
-                   || (isAuthenticated() && (request.resource.data.creatorId == request.auth.uid || resource.data.creatorId == request.auth.uid));
+      allow write: if isAuthenticated() && (
+        isAdmin() || 
+        isApproved() || 
+        (exists(resource) && resource.data.creatorId == request.auth.uid) ||
+        (!exists(resource) && request.resource.data.creatorId == request.auth.uid)
+      );
     }
 
     // SONGS: Biblioteca de músicas
     match /songs/{songId} {
       allow read: if isAuthenticated();
-      allow write: if isApproved() || isAdmin();
+      allow write: if isAdmin() || isApproved();
     }
 
     // METADATA: Artistas, Gêneros, Categorias
-    match /categories/{docId} { allow read: if isAuthenticated(); allow write: if isApproved() || isAdmin(); }
-    match /genres/{docId} { allow read: if isAuthenticated(); allow write: if isApproved() || isAdmin(); }
-    match /artists/{docId} { allow read: if isAuthenticated(); allow write: if isApproved() || isAdmin(); }
+    match /categories/{docId} { allow read: if isAuthenticated(); allow write: if isAdmin() || isApproved(); }
+    match /genres/{docId} { allow read: if isAuthenticated(); allow write: if isAdmin() || isApproved(); }
+    match /artists/{docId} { allow read: if isAuthenticated(); allow write: if isAdmin() || isApproved(); }
 
     // CATCH-ALL: Regra geral para outras coleções
     match /{collection}/{docId} {
