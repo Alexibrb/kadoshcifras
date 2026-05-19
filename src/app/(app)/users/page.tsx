@@ -43,12 +43,20 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function UsersPage() {
-  const { data: users, loading: loadingUsers, updateDocument } = useFirestoreCollection<User>('users', 'createdAt');
-  const { data: appSettings, loading: loadingSettings, updateDocument: updateSettings } = useFirestoreDocument<AppSettings>('settings', 'app');
   const { isAdmin, loading: loadingAuth, appUser } = useRequireAuth();
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+
+  // Só habilitamos a busca de usuários se o usuário logado for confirmado como admin
+  const { data: users, loading: loadingUsers, updateDocument } = useFirestoreCollection<User>(
+    'users', 
+    'createdAt', 
+    [], 
+    isAdmin === true
+  );
+
+  const { data: appSettings, loading: loadingSettings, updateDocument: updateSettings } = useFirestoreDocument<AppSettings>('settings', 'app');
   
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -89,7 +97,7 @@ export default function UsersPage() {
       
       toast({
         title: "Usuário Removido",
-        description: `Dados de ${userToDelete.displayName} excluídos do banco. LEMBRE-SE: Você deve excluir o e-mail ${userToDelete.email} manualmente no Console do Firebase (Authentication) para liberar o acesso.`,
+        description: `Dados de ${userToDelete.displayName} excluídos. Lembre-se de remover o e-mail no console Auth.`,
       });
       setUserToDelete(null);
     } catch (error: any) {
@@ -97,7 +105,7 @@ export default function UsersPage() {
       toast({
         variant: "destructive",
         title: "Erro de Permissão",
-        description: "O Firestore negou a exclusão. Verifique se o seu papel de admin está correto nas Regras de Segurança.",
+        description: "A operação foi negada pelo banco de dados.",
       });
     } finally {
       setIsDeleting(false);
@@ -110,7 +118,7 @@ export default function UsersPage() {
         await updateSettings({ adminWhatsApp: whatsappNumber });
         toast({
             title: "Configurações salvas",
-            description: "O número de WhatsApp foi atualizado com sucesso.",
+            description: "O número de WhatsApp foi atualizado.",
         });
     } catch (error) {
         console.error("Erro ao salvar configurações:", error);
@@ -123,7 +131,7 @@ export default function UsersPage() {
     return [...users].sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
   }, [users]);
 
-  if (!isMounted || loadingUsers || loadingAuth || loadingSettings) {
+  if (!isMounted || loadingAuth || (isAdmin && loadingUsers) || loadingSettings) {
     return (
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <div className="space-y-2">
@@ -150,7 +158,7 @@ export default function UsersPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="space-y-2">
             <h2 className="text-3xl font-bold font-headline tracking-tight">Gerenciamento do Sistema</h2>
-            <div className="text-muted-foreground text-sm">Administre usuários e configurações globais do aplicativo.</div>
+            <div className="text-muted-foreground text-sm">Administre usuários e configurações globais.</div>
         </div>
         <Button variant="outline" size="sm" onClick={() => setShowDebug(!showDebug)} className="gap-2">
             <Bug className="h-4 w-4" />
@@ -162,33 +170,31 @@ export default function UsersPage() {
         <Card className={`border-orange-500 bg-orange-500/5 ${idMismatch ? 'ring-2 ring-destructive animate-pulse' : ''}`}>
             <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                    <Bug className="h-4 w-4" /> Painel de Diagnóstico (Admin)
+                    <Bug className="h-4 w-4" /> Painel de Diagnóstico
                 </CardTitle>
             </CardHeader>
             <CardContent className="text-xs font-mono space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                        <div className="text-muted-foreground flex items-center gap-1"><Fingerprint className="h-3 w-3" /> Seu UID (Login):</div>
+                        <div className="text-muted-foreground flex items-center gap-1"><Fingerprint className="h-3 w-3" /> UID Autenticação:</div>
                         <div className="font-bold break-all">{currentUser?.uid}</div>
                     </div>
                     <div className="space-y-1">
-                        <div className="text-muted-foreground flex items-center gap-1"><Fingerprint className="h-3 w-3" /> ID do seu Doc (Firestore):</div>
+                        <div className="text-muted-foreground flex items-center gap-1"><Fingerprint className="h-3 w-3" /> ID Documento:</div>
                         <div className="font-bold break-all">{appUser?.id}</div>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2 py-2 border-y border-orange-500/20">
-                    <div className="text-muted-foreground">Os IDs são idênticos?</div>
+                    <div className="text-muted-foreground">IDs coincidem?</div>
                     <Badge variant={!idMismatch ? "default" : "destructive"}>
                         {!idMismatch ? "SIM" : "NÃO"}
                     </Badge>
                 </div>
                 
                 {idMismatch && (
-                   <div className="bg-destructive/10 text-destructive p-3 rounded-md border border-destructive/20 text-[11px] leading-relaxed">
-                      <strong>ALERTA DE SEGURANÇA:</strong> As regras do Firestore exigem que o seu UID de login seja o ID do seu documento. 
-                      Atualmente seu documento admin tem um ID diferente, o que bloqueia a exclusão. 
-                      Para corrigir: No Firestore Console, crie um novo documento com o ID <code>{currentUser?.uid}</code> e copie seus dados para lá.
+                   <div className="bg-destructive/10 text-destructive p-3 rounded-md border border-destructive/20 text-[11px]">
+                      <strong>ALERTA:</strong> O UID de login não bate com o ID do seu documento admin. Isso impede operações críticas.
                    </div>
                 )}
             </CardContent>
@@ -212,7 +218,6 @@ export default function UsersPage() {
                         value={whatsappNumber}
                         onChange={(e) => setWhatsappNumber(e.target.value)}
                     />
-                    <div className="text-[10px] text-muted-foreground">Formato: 55 + DDD + Número sem espaços.</div>
                 </div>
             </CardContent>
             <CardFooter>
@@ -277,7 +282,6 @@ export default function UsersPage() {
                             onClick={() => setUserToDelete(u)}
                         >
                             <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Excluir</span>
                         </Button>
                     </TableCell>
                     </TableRow>
@@ -291,21 +295,16 @@ export default function UsersPage() {
       <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && !isDeleting && setUserToDelete(null)}>
           <AlertDialogContent>
               <AlertDialogHeader>
-                  <AlertDialogTitle>Confirmar Exclusão do Banco?</AlertDialogTitle>
+                  <AlertDialogTitle>Confirmar Exclusão?</AlertDialogTitle>
                   <AlertDialogDescription asChild>
                       <div className="space-y-4">
-                        <div className="text-sm text-muted-foreground">
-                            Deseja remover <strong>{userToDelete?.displayName}</strong> do banco de dados?
+                        <div className="text-sm">
+                            Deseja remover <strong>{userToDelete?.displayName}</strong>?
                         </div>
-                        <Card className="bg-destructive/5 border-destructive/20 p-3">
-                            <div className="flex gap-2 items-start text-destructive text-xs leading-relaxed">
-                                <AlertTriangle className="h-5 w-5 shrink-0" />
-                                <div className="space-y-1">
-                                    <p className="font-bold uppercase">Aviso Importante:</p>
-                                    <p>Esta ação exclui apenas os dados no Firestore. Por segurança, o acesso (E-mail e Senha) deve ser removido manualmente no <strong>Console do Firebase &gt; Authentication</strong> para que o usuário possa se cadastrar novamente.</p>
-                                </div>
-                            </div>
-                        </Card>
+                        <div className="bg-destructive/5 border border-destructive/20 p-3 rounded-md text-destructive text-xs leading-relaxed">
+                            <p className="font-bold uppercase mb-1">Aviso:</p>
+                            Esta ação remove os dados do Firestore. O acesso no Console do Firebase (Auth) deve ser removido manualmente.
+                        </div>
                       </div>
                   </AlertDialogDescription>
               </AlertDialogHeader>
@@ -319,8 +318,7 @@ export default function UsersPage() {
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       disabled={isDeleting}
                   >
-                      {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Confirmar Exclusão
+                      {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : "Confirmar Exclusão"}
                   </AlertDialogAction>
               </AlertDialogFooter>
           </AlertDialogContent>

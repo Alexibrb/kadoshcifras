@@ -20,11 +20,14 @@ service cloud.firestore {
 
     // USERS: Regras para usuários
     match /users/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      // Separamos list e get para maior clareza e segurança
+      allow list: if isAdmin();
+      allow get: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      
       allow create: if isAuthenticated() && request.auth.uid == userId;
       allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       
-      // Permitir exclusão apenas para administradores
+      // Permitir exclusão para administradores
       allow delete: if isAdmin();
     }
     

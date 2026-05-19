@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { db as firestoreDB } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, QueryConstraint, WhereFilterOp, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, orderBy, Query, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, QueryConstraint, WhereFilterOp, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, orderBy, Query } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
@@ -10,14 +10,21 @@ export type FirestoreQueryFilter = [string, WhereFilterOp, any];
 export function useFirestoreCollection<T extends { id: string }>(
   collectionName: string,
   initialSort?: string,
-  initialFilters: FirestoreQueryFilter[] = []
+  initialFilters: FirestoreQueryFilter[] = [],
+  enabled: boolean = true
 ) {
   const [data, setData] = useState<T[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
 
   const filtersJSON = useMemo(() => JSON.stringify(initialFilters), [initialFilters]);
 
   useEffect(() => {
+    if (!enabled) {
+      setData([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     const parsedFilters: FirestoreQueryFilter[] = JSON.parse(filtersJSON);
     
@@ -60,7 +67,7 @@ export function useFirestoreCollection<T extends { id: string }>(
     });
 
     return () => unsubscribe();
-  }, [collectionName, initialSort, filtersJSON]);
+  }, [collectionName, initialSort, filtersJSON, enabled]);
 
   const addDocument = async (newData: Omit<T, 'id' | 'createdAt'>) => {
       const collectionRef = collection(firestoreDB, collectionName);

@@ -13,17 +13,17 @@ const FirebaseErrorListener = () => {
 
   useEffect(() => {
     const handleError = (error: FirestorePermissionError) => {
-      console.error("Erro de Permissão do Firestore (Ouvinte):", error.message);
-      
+      // Logamos no console apenas se não estivermos em produção para facilitar o debug
       if (process.env.NODE_ENV === 'development') {
-         setTimeout(() => {
-          throw error;
-        }, 0);
-      } else {
+        console.warn("Permissão Negada (Debug):", error.context.path, error.context.operation);
+      }
+      
+      // Exibimos o toast para o usuário apenas se for uma operação crítica
+      if (error.context.operation !== 'list' && error.context.operation !== 'get') {
         toast({
           variant: 'destructive',
-          title: 'Permissão Negada',
-          description: 'O Firestore recusou a operação. Verifique suas permissões de admin.',
+          title: 'Ação não permitida',
+          description: 'Você não tem permissão para realizar esta operação.',
         });
       }
     };
