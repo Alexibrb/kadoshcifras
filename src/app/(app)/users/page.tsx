@@ -29,6 +29,8 @@ import { useRequireAuth, useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { Save, Loader2, MessageSquare, Trash2, Bug, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { db } from '@/lib/firebase';
+import { doc, deleteDoc } from 'firebase/firestore';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,7 +44,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function UsersPage() {
-  const { data: users, loading: loadingUsers, updateDocument, deleteDocument } = useFirestoreCollection<User>('users', 'createdAt');
+  const { data: users, loading: loadingUsers, updateDocument } = useFirestoreCollection<User>('users', 'createdAt');
   const { data: appSettings, loading: loadingSettings, updateDocument: updateSettings } = useFirestoreDocument<AppSettings>('settings', 'app');
   const { isAdmin, loading: loadingAuth, appUser } = useRequireAuth();
   const { user: currentUser } = useAuth();
@@ -52,8 +54,10 @@ export default function UsersPage() {
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     if (appSettings?.adminWhatsApp) {
         setWhatsappNumber(appSettings.adminWhatsApp);
     }
@@ -73,12 +77,22 @@ export default function UsersPage() {
     updateDocument(userId, { role });
   };
 
-  const handleDeleteUser = (userId: string) => {
-    deleteDocument(userId);
-    toast({
-      title: "Solicitação enviada",
-      description: "O comando de exclusão foi enviado ao servidor.",
-    });
+  // Nova função de exclusão "do zero"
+  const performDeleteUser = async (userId: string) => {
+    if (!userId) return;
+    
+    try {
+      const userRef = doc(db, 'users', userId);
+      await deleteDoc(userRef);
+      
+      toast({
+        title: "Sucesso",
+        description: "O usuário foi removido permanentemente.",
+      });
+    } catch (error: any) {
+      console.error("Erro ao excluir usuário:", error);
+      // O erro de permissão será capturado pelo FirebaseErrorListener no layout.tsx
+    }
   };
 
   const handleSaveSettings = async () => {
@@ -100,7 +114,7 @@ export default function UsersPage() {
     return [...users].sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
   }, [users]);
 
-  if (loadingUsers || loadingAuth || loadingSettings) {
+  if (!isMounted || loadingUsers || loadingAuth || loadingSettings) {
     return (
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <div className="space-y-2">
@@ -143,15 +157,15 @@ export default function UsersPage() {
             <CardContent className="text-xs font-mono space-y-3">
                 <div className="flex flex-col gap-1">
                     <div className="text-muted-foreground">UID Autenticado:</div>
-                    <div>{currentUser?.uid}</div>
+                    <div className="font-bold">{currentUser?.uid}</div>
                 </div>
                 <div className="flex flex-col gap-1">
                     <div className="text-muted-foreground">ID Firestore:</div>
-                    <div>{appUser?.id}</div>
+                    <div className="font-bold">{appUser?.id}</div>
                 </div>
                 <div className="flex flex-col gap-1">
                     <div className="text-muted-foreground">Role no Firestore:</div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-1">
                         <Badge variant={appUser?.role === 'admin' ? 'default' : 'destructive'}>
                             {appUser?.role || 'null'}
                         </Badge>
@@ -159,13 +173,13 @@ export default function UsersPage() {
                 </div>
                 <div className="flex flex-col gap-1">
                     <div className="text-muted-foreground">Aprovação no Firestore:</div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-1">
                         {appUser?.isApproved ? <ShieldCheck className="h-4 w-4 text-green-600" /> : <ShieldAlert className="h-4 w-4 text-destructive" />}
-                        <span>{appUser?.isApproved ? 'Aprovado' : 'Não Aprovado'}</span>
+                        <span className="font-bold">{appUser?.isApproved ? 'Aprovado' : 'Não Aprovado'}</span>
                     </div>
                 </div>
-                <div className="pt-2 text-[10px] text-muted-foreground italic border-t">
-                    Nota: Se o campo "Role" não for "admin", o Firebase bloqueará qualquer exclusão de usuário por segurança.
+                <div className="pt-2 text-[10px] text-muted-foreground italic border-t mt-4">
+                    Nota: Se o campo "Role" não for "admin", o Firebase bloqueará qualquer exclusão por segurança.
                 </div>
             </CardContent>
         </Card>
@@ -266,13 +280,13 @@ export default function UsersPage() {
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Excluir Usuário?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        Tem certeza que deseja excluir <strong>{user.displayName}</strong>? Esta ação não pode ser desfeita e ele perderá o acesso imediatamente.
+                                        Tem certeza que deseja excluir <strong>{user.displayName}</strong>? Esta ação não pode ser desfeita.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                     <AlertDialogAction 
-                                        onClick={() => handleDeleteUser(user.id)}
+                                        onClick={() => performDeleteUser(user.id)}
                                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                     >
                                         Confirmar Exclusão
