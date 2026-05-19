@@ -37,6 +37,12 @@ service cloud.firestore {
       allow delete: if false;
     }
     
+    // SETTINGS COLLECTION
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
     // SETLISTS COLLECTION
     match /setlists/{setlistId} {
       // Permite leitura se for aprovado OU se for público OU se for o próprio criador
