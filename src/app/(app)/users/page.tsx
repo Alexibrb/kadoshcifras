@@ -28,7 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useRequireAuth, useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
-import { Save, Loader2, MessageSquare, Trash2 } from 'lucide-react';
+import { Save, Loader2, MessageSquare, Trash2, Bug, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -45,13 +45,14 @@ import {
 export default function UsersPage() {
   const { data: users, loading: loadingUsers, updateDocument, deleteDocument } = useFirestoreCollection<User>('users', 'createdAt');
   const { data: appSettings, loading: loadingSettings, updateDocument: updateSettings } = useFirestoreDocument<AppSettings>('settings', 'app');
-  const { isAdmin, loading: loadingAuth } = useRequireAuth();
+  const { isAdmin, loading: loadingAuth, appUser } = useRequireAuth();
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
     if (appSettings?.adminWhatsApp) {
@@ -74,8 +75,16 @@ export default function UsersPage() {
   };
 
   const handleDeleteUser = (userId: string) => {
-    // Não usamos await para mutações do Firestore seguindo as diretrizes de UX otimista
+    console.log(`[DEBUG] Tentando excluir usuário: ${userId}`);
+    console.log(`[DEBUG] Usuário atual tentando a ação: ${currentUser?.uid}`);
+    console.log(`[DEBUG] Role do usuário atual no estado: ${appUser?.role}`);
+    
     deleteDocument(userId);
+    
+    toast({
+      title: "Solicitação enviada",
+      description: "A ordem de exclusão foi enviada ao servidor.",
+    });
   };
 
   const handleSaveSettings = async () => {
@@ -83,7 +92,7 @@ export default function UsersPage() {
     try {
         await updateSettings({ adminWhatsApp: whatsappNumber });
     } catch (error) {
-        // O erro é tratado centralmente, mas desativamos o loading local
+        // Erro tratado pelo listener
     } finally {
         setIsSavingSettings(false);
     }
@@ -120,7 +129,39 @@ export default function UsersPage() {
             <h2 className="text-3xl font-bold font-headline tracking-tight">Gerenciamento do Sistema</h2>
             <p className="text-muted-foreground">Administre usuários e configurações globais do aplicativo.</p>
         </div>
+        <Button variant="outline" size="sm" onClick={() => setShowDebug(!showDebug)} className="gap-2">
+            <Bug className="h-4 w-4" />
+            {showDebug ? 'Ocultar Depuração' : 'Depurar Permissões'}
+        </Button>
       </div>
+
+      {showDebug && (
+        <Card className="border-orange-500 bg-orange-500/5">
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                    <Bug className="h-4 w-4" /> Log de Depuração (Apenas Admin)
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs font-mono space-y-1">
+                <p><strong>UID Autenticado:</strong> {currentUser?.uid}</p>
+                <p><strong>ID Firestore:</strong> {appUser?.id}</p>
+                <p className="flex items-center gap-2">
+                    <strong>Role no Firestore:</strong> 
+                    <Badge variant={appUser?.role === 'admin' ? 'default' : 'destructive'}>
+                        {appUser?.role || 'null'}
+                    </Badge>
+                </p>
+                <p className="flex items-center gap-2">
+                    <strong>Aprovação no Firestore:</strong> 
+                    {appUser?.isApproved ? <ShieldCheck className="h-4 w-4 text-green-600" /> : <ShieldAlert className="h-4 w-4 text-destructive" />}
+                    {appUser?.isApproved ? 'Aprovado' : 'Não Aprovado'}
+                </p>
+                <p className="mt-2 text-[10px] text-muted-foreground italic">
+                    Nota: Se o campo "Role" não for "admin", o Firebase bloqueará qualquer exclusão de usuário.
+                </p>
+            </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="md:col-span-1 border-primary/20 bg-primary/5">
@@ -129,7 +170,7 @@ export default function UsersPage() {
                     <MessageSquare className="h-5 w-5 text-primary" />
                     Notificações
                 </CardTitle>
-                <CardDescription>Configure para onde as notificações de novos cadastros serão enviadas.</CardDescription>
+                <CardDescription>Para onde as notificações de novos cadastros serão enviadas.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -140,7 +181,7 @@ export default function UsersPage() {
                         value={whatsappNumber}
                         onChange={(e) => setWhatsappNumber(e.target.value)}
                     />
-                    <p className="text-[10px] text-muted-foreground">Use formato internacional: Código do País + DDD + Número.</p>
+                    <p className="text-[10px] text-muted-foreground">Use formato internacional: 55 + DDD + Número.</p>
                 </div>
             </CardContent>
             <CardFooter>
