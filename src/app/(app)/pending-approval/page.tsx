@@ -7,44 +7,70 @@ import { Logo } from '@/components/logo';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { Hourglass, LogOut } from 'lucide-react';
+import { Hourglass, LogOut, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 
 export default function PendingApprovalPage() {
   const router = useRouter();
-  const { user } = useAuth(); // Use useAuth para obter informações do usuário
+  const { user } = useAuth();
 
   const handleLogout = async () => {
     await signOut(auth);
     router.push('/login');
   };
 
+  const handleNotifyAdmin = () => {
+    // SUBSTITUA PELO SEU NÚMERO (Ex: 5511999999999)
+    const adminPhone = "5511999999999"; 
+    const message = encodeURIComponent(
+      `Olá! Acabei de me cadastrar no CifrasKadosh e aguardo minha aprovação.\n\n` +
+      `👤 Nome: ${user?.displayName || 'Não informado'}\n` +
+      `📧 E-mail: ${user?.email}`
+    );
+    window.open(`https://wa.me/${adminPhone}?text=${message}`, '_blank');
+  };
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md text-center">
+      <Card className="w-full max-w-md text-center shadow-xl border-primary/20">
         <CardHeader>
           <Logo className="justify-center mb-4" />
-          <div className="mx-auto bg-primary/10 rounded-full p-3 w-fit">
-            <Hourglass className="h-8 w-8 text-primary" />
+          <div className="mx-auto bg-primary/10 rounded-full p-4 w-fit mb-2">
+            <Hourglass className="h-10 w-10 text-primary animate-pulse" />
           </div>
-          <CardTitle className="mt-4 font-headline text-2xl">Aguardando Aprovação</CardTitle>
-          <CardDescription>
-            Sua conta foi criada com sucesso e está aguardando a aprovação de um administrador.
+          <CardTitle className="mt-4 font-headline text-2xl">Quase lá!</CardTitle>
+          <CardDescription className="text-base">
+            Sua conta foi criada, mas um administrador precisa aprovar seu acesso.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Você pode verificar o status da sua aprovação fazendo login novamente mais tarde.
-          </p>
-           <p className="text-sm">
-            Logado como: <span className="font-medium">{user?.email ?? 'Carregando...'}</span>
-          </p>
-          <Button onClick={handleLogout} variant="outline" className="w-full">
-            <LogOut className="mr-2 h-4 w-4" />
-            Sair
-          </Button>
+        <CardContent className="space-y-6">
+          <div className="bg-muted/50 p-4 rounded-lg space-y-2 text-sm">
+             <p className="text-muted-foreground">Logado como:</p>
+             <p className="font-bold text-primary">{user?.email ?? 'Carregando...'}</p>
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-sm font-medium">Quer agilizar sua aprovação?</p>
+            <Button 
+                onClick={handleNotifyAdmin} 
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-12 gap-2"
+            >
+              <MessageCircle className="h-5 w-5" />
+              Avisar no WhatsApp
+            </Button>
+          </div>
+
+          <div className="pt-4 border-t">
+            <Button onClick={handleLogout} variant="ghost" className="w-full text-muted-foreground hover:text-destructive">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sair da conta
+            </Button>
+          </div>
         </CardContent>
       </Card>
+      <p className="mt-8 text-xs text-muted-foreground uppercase tracking-widest">
+        CifrasKadosh • Sistema de Acesso Restrito
+      </p>
     </div>
   );
 }
