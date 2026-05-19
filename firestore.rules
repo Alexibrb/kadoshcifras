@@ -3,10 +3,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Função auxiliar para verificar se o usuário é admin de forma robusta
+    // Função simplificada para checar se o usuário é admin
     function isAdmin() {
       return request.auth != null && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
@@ -14,23 +13,18 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // USERS: Coleção crítica de usuários
+    // USERS: Regras para usuários
     match /users/{userId} {
-      // Leitura: Qualquer logado pode ler (para listar no painel)
       allow read: if isAuthenticated();
-      
-      // Criação: O próprio usuário cria seu documento no signup
       allow create: if isAuthenticated() && request.auth.uid == userId;
-      
-      // Atualização: O próprio ou um admin
       allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       
-      // EXCLUSÃO: Apenas Admin pode excluir usuários
-      // Nota: Esta regra é absoluta e não depende do userId do alvo
-      allow delete: if isAdmin();
+      // Regra de exclusão direta para admins
+      allow delete: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
-    // SETTINGS: Configurações globais (apenas admin escreve)
+    // SETTINGS: Configurações globais
     match /settings/{settingId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();

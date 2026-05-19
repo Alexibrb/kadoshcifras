@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useRequireAuth, useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
-import { Save, Loader2, MessageSquare, Trash2, Bug, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Save, Loader2, MessageSquare, Trash2, Bug, ShieldCheck, ShieldAlert, Fingerprint } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
@@ -166,31 +166,39 @@ export default function UsersPage() {
                 </CardTitle>
             </CardHeader>
             <CardContent className="text-xs font-mono space-y-4">
-                <div className="flex flex-col gap-1">
-                    <div className="text-muted-foreground">UID Autenticado:</div>
-                    <div className="font-bold">{currentUser?.uid}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                        <div className="text-muted-foreground flex items-center gap-1"><Fingerprint className="h-3 w-3" /> UID Autenticado (Auth):</div>
+                        <div className="font-bold break-all">{currentUser?.uid}</div>
+                    </div>
+                    <div className="space-y-1">
+                        <div className="text-muted-foreground flex items-center gap-1"><Fingerprint className="h-3 w-3" /> ID do Documento (Firestore):</div>
+                        <div className="font-bold break-all">{appUser?.id}</div>
+                    </div>
                 </div>
-                <div className="flex flex-col gap-1">
-                    <div className="text-muted-foreground">ID Firestore:</div>
-                    <div className="font-bold">{appUser?.id}</div>
+
+                <div className="flex items-center gap-2 py-2 border-y border-orange-500/20">
+                    <div className="text-muted-foreground">Os IDs coincidem?</div>
+                    <Badge variant={currentUser?.uid === appUser?.id ? "default" : "destructive"}>
+                        {currentUser?.uid === appUser?.id ? "SIM (Correto)" : "NÃO (Erro de Mapeamento)"}
+                    </Badge>
                 </div>
+
                 <div className="flex flex-col gap-1">
-                    <div className="text-muted-foreground">Role no Firestore:</div>
+                    <div className="text-muted-foreground">Papel (Role):</div>
                     <div className="mt-1 flex items-center gap-2">
                         <Badge variant={appUser?.role === 'admin' ? 'default' : 'destructive'}>
                             {appUser?.role || 'null'}
                         </Badge>
                     </div>
                 </div>
+
                 <div className="flex flex-col gap-1">
-                    <div className="text-muted-foreground">Aprovação no Firestore:</div>
+                    <div className="text-muted-foreground">Status de Aprovação:</div>
                     <div className="flex items-center gap-2 mt-1">
                         {appUser?.isApproved ? <ShieldCheck className="h-4 w-4 text-green-600" /> : <ShieldAlert className="h-4 w-4 text-destructive" />}
-                        <div className="font-bold">{appUser?.isApproved ? 'Aprovado' : 'Não Aprovado'}</div>
+                        <div className="font-bold">{appUser?.isApproved ? 'Aprovado' : 'Pendente'}</div>
                     </div>
-                </div>
-                <div className="pt-2 text-[10px] text-muted-foreground italic border-t mt-4">
-                    Nota: Se a exclusão falhar, verifique se o ID do documento alvo no Firestore é igual ao seu UID real.
                 </div>
             </CardContent>
         </Card>
