@@ -85,7 +85,7 @@ export default function UsersPage() {
     
     setIsDeleting(true);
     try {
-      // Tenta a exclusão direta usando o ID do documento
+      // Exclui o documento do usuário usando o ID confirmado no Firestore
       const userRef = doc(db, 'users', userToDelete.id);
       await deleteDoc(userRef);
       
@@ -99,7 +99,7 @@ export default function UsersPage() {
       toast({
         variant: "destructive",
         title: "Erro de Permissão",
-        description: "O Firestore negou a exclusão. Verifique se seu papel no banco de dados é exatamente 'admin'.",
+        description: "O Firestore negou a exclusão. Verifique se seu papel é exatamente 'admin' no banco.",
       });
     } finally {
       setIsDeleting(false);
@@ -189,8 +189,7 @@ export default function UsersPage() {
                 {idMismatch && (
                    <div className="bg-destructive/10 text-destructive p-3 rounded-md border border-destructive/20 text-[11px] leading-relaxed">
                       <strong>ALERTA CRÍTICO:</strong> Seu UID de autenticação não coincide com o ID do seu documento no Firestore. 
-                      Isso acontece se o seu documento foi criado manualmente com um ID aleatório. 
-                      Para as regras de segurança funcionarem, o ID do documento DEVE ser exatamente o seu UID.
+                      Isso impossibilita a exclusão pelas regras de segurança.
                    </div>
                 )}
 
@@ -317,15 +316,17 @@ export default function UsersPage() {
         </Card>
       </div>
       
-      {/* Diálogo de confirmação de exclusão unificado */}
+      {/* Diálogo de confirmação de exclusão com correção de hidratação (asChild no AlertDialogDescription) */}
       <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && !isDeleting && setUserToDelete(null)}>
           <AlertDialogContent>
               <AlertDialogHeader>
                   <AlertDialogTitle>Excluir Usuário permanentemente?</AlertDialogTitle>
-                  <div className="text-sm text-muted-foreground">
-                      Deseja excluir <strong>{userToDelete?.displayName}</strong> ({userToDelete?.email})? 
-                      Esta ação removerá o acesso dele imediatamente e não poderá ser desfeita.
-                  </div>
+                  <AlertDialogDescription asChild>
+                      <div className="text-sm text-muted-foreground">
+                          Deseja excluir <strong>{userToDelete?.displayName}</strong> ({userToDelete?.email})? 
+                          Esta ação removerá o acesso dele imediatamente e não poderá ser desfeita.
+                      </div>
+                  </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                   <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
