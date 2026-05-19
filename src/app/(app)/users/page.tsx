@@ -77,7 +77,6 @@ export default function UsersPage() {
     updateDocument(userId, { role });
   };
 
-  // Nova função de exclusão "do zero"
   const performDeleteUser = async (userId: string) => {
     if (!userId) return;
     
@@ -91,7 +90,11 @@ export default function UsersPage() {
       });
     } catch (error: any) {
       console.error("Erro ao excluir usuário:", error);
-      // O erro de permissão será capturado pelo FirebaseErrorListener no layout.tsx
+      toast({
+        variant: "destructive",
+        title: "Erro de Permissão",
+        description: "Você não tem permissão para excluir este usuário.",
+      });
     }
   };
 
@@ -104,7 +107,7 @@ export default function UsersPage() {
             description: "O número de WhatsApp foi atualizado com sucesso.",
         });
     } catch (error) {
-        // Erro tratado pelo listener central
+        console.error("Erro ao salvar configurações:", error);
     } finally {
         setIsSavingSettings(false);
     }
@@ -154,7 +157,7 @@ export default function UsersPage() {
                     <Bug className="h-4 w-4" /> Log de Depuração (Admin)
                 </CardTitle>
             </CardHeader>
-            <CardContent className="text-xs font-mono space-y-3">
+            <CardContent className="text-xs font-mono space-y-4">
                 <div className="flex flex-col gap-1">
                     <div className="text-muted-foreground">UID Autenticado:</div>
                     <div className="font-bold">{currentUser?.uid}</div>
@@ -179,7 +182,7 @@ export default function UsersPage() {
                     </div>
                 </div>
                 <div className="pt-2 text-[10px] text-muted-foreground italic border-t mt-4">
-                    Nota: Se o campo "Role" não for "admin", o Firebase bloqueará qualquer exclusão por segurança.
+                    Nota: Para excluir, o Firestore exige que o seu role seja 'admin'.
                 </div>
             </CardContent>
         </Card>
@@ -192,7 +195,7 @@ export default function UsersPage() {
                     <MessageSquare className="h-5 w-5 text-primary" />
                     Notificações
                 </CardTitle>
-                <CardDescription>Para onde as notificações de novos cadastros serão enviadas.</CardDescription>
+                <CardDescription>Configuração de WhatsApp para novos cadastros.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -203,7 +206,7 @@ export default function UsersPage() {
                         value={whatsappNumber}
                         onChange={(e) => setWhatsappNumber(e.target.value)}
                     />
-                    <div className="text-[10px] text-muted-foreground">Use formato internacional: 55 + DDD + Número.</div>
+                    <div className="text-[10px] text-muted-foreground">Formato: 55 + DDD + Número.</div>
                 </div>
             </CardContent>
             <CardFooter>
@@ -217,7 +220,7 @@ export default function UsersPage() {
         <Card className="md:col-span-2">
             <CardHeader>
                 <CardTitle className="font-headline">Lista de Usuários</CardTitle>
-                <CardDescription>Aprove ou gerencie permissões.</CardDescription>
+                <CardDescription>Gerencie aprovações e cargos.</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
             <Table>
@@ -280,7 +283,7 @@ export default function UsersPage() {
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Excluir Usuário?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        Tem certeza que deseja excluir <strong>{user.displayName}</strong>? Esta ação não pode ser desfeita.
+                                        Deseja excluir permanentemente <strong>{user.displayName}</strong>?
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -289,7 +292,7 @@ export default function UsersPage() {
                                         onClick={() => performDeleteUser(user.id)}
                                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                     >
-                                        Confirmar Exclusão
+                                        Excluir
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
@@ -301,7 +304,7 @@ export default function UsersPage() {
             </Table>
             {users.length === 0 && (
                     <div className="text-center p-8 text-muted-foreground">
-                        Nenhum usuário encontrado.
+                        Nenhum usuário cadastrado.
                     </div>
                 )}
             </CardContent>
