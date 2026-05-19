@@ -1,6 +1,6 @@
 'use client';
 import { Button } from '@/components/ui/button';
-import { LogOut, Music, ListMusic, Download, Share, PlusSquare, Smartphone } from 'lucide-react';
+import { LogOut, Music, ListMusic, Download, Share, PlusSquare, Smartphone, Heart, Copy, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
@@ -12,13 +12,29 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePWAInstall } from '@/hooks/use-pwa-install';
 import { Card, CardContent } from '@/components/ui/card';
+import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { useToast } from '@/hooks/use-toast';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
   const { data: songs, loading: loadingSongs } = useFirestoreCollection<Song>('songs');
   const { data: setlists, loading: loadingSetlists } = useFirestoreCollection<Setlist>('setlists');
   const { isInstallable, isIOS, isStandalone, installApp } = usePWAInstall();
+  const [copied, setCopied] = useState(false);
+
+  // Chave Pix fictícia ou real para o projeto
+  const pixKey = "seu-pix@email.com"; 
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -26,10 +42,18 @@ export default function DashboardPage() {
   };
 
   const handleInstallRedirect = async () => {
-    // Força o logout e redireciona para a home com um refresh total da página
-    // Isso garante que o navegador dispare o evento de instalação corretamente na landing page
     await signOut(auth);
     window.location.href = '/';
+  };
+
+  const copyPixKey = () => {
+    navigator.clipboard.writeText(pixKey);
+    setCopied(true);
+    toast({
+      title: "Chave Pix Copiada!",
+      description: "Obrigado por considerar apoiar o projeto.",
+    });
+    setTimeout(() => setCopied(false), 3000);
   };
   
   const loading = loadingSongs || loadingSetlists;
@@ -76,6 +100,46 @@ export default function DashboardPage() {
           </Link>
         </Button>
 
+        {/* Botão Ajude o Projeto */}
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button size="lg" variant="secondary" className="h-16 text-md font-bold text-primary bg-primary/5 hover:bg-primary/10 border-primary/20 border-dashed border-2">
+              <Heart className="mr-2 h-5 w-5 text-destructive fill-destructive/10" /> 
+              Ajude o Projeto
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="font-headline text-2xl flex items-center gap-2">
+                <Heart className="h-6 w-6 text-destructive fill-destructive" />
+                Apoie o CifrasKadosh
+              </DialogTitle>
+              <DialogDescription className="text-base pt-2">
+                O CifrasKadosh é um projeto independente. Sua doação ajuda a cobrir custos de servidores, banco de dados e manutenção contínua.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="bg-muted p-4 rounded-lg text-center space-y-2">
+                <p className="text-sm font-medium">Contribua via Pix</p>
+                <div className="flex items-center justify-center gap-2 bg-background border rounded-md p-3 select-all">
+                  <span className="font-mono text-sm break-all">{pixKey}</span>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={copyPixKey}>
+                    {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                Qualquer valor é bem-vindo e faz a diferença! ❤️
+              </p>
+            </div>
+            <DialogFooter>
+              <Button className="w-full" onClick={() => window.open('https://nubank.com.br', '_blank')}>
+                Fazer Doação
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Seção de Instalação PWA no Dashboard */}
         {!isStandalone && (
           <div className="pt-4 space-y-4">
@@ -89,7 +153,6 @@ export default function DashboardPage() {
                 <Download className="mr-2 h-5 w-5" /> Instalar Aplicativo
               </Button>
             ) : (
-              /* Se não for instalável diretamente (Safari ou prompt ainda não carregou), oferece ir para a Home via Logout */
               !isIOS && (
                 <Button 
                   onClick={handleInstallRedirect}
@@ -102,7 +165,6 @@ export default function DashboardPage() {
               )
             )}
 
-            {/* Caso seja iOS (iPhone/iPad) */}
             {isIOS && (
               <Card className="bg-primary/5 border-primary/20">
                 <CardContent className="p-4 space-y-2 text-center">
