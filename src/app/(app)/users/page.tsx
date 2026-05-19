@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -40,7 +40,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 export default function UsersPage() {
@@ -55,6 +54,10 @@ export default function UsersPage() {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  
+  // Estado para gerenciar a exclusão com segurança
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -77,32 +80,29 @@ export default function UsersPage() {
     updateDocument(userId, { role });
   };
 
-  const performDeleteUser = async (userId: string) => {
-    if (!userId) return;
+  const performDeleteUser = async () => {
+    if (!userToDelete) return;
     
+    setIsDeleting(true);
     try {
-      // O documento DEVE usar o UID como ID para as regras funcionarem.
-      const userRef = doc(db, 'users', userId);
+      // Tenta a exclusão direta usando o ID do documento
+      const userRef = doc(db, 'users', userToDelete.id);
       await deleteDoc(userRef);
       
       toast({
         title: "Sucesso",
-        description: "O usuário foi removido permanentemente do sistema.",
+        description: `Usuário ${userToDelete.displayName} removido permanentemente.`,
       });
+      setUserToDelete(null);
     } catch (error: any) {
-      console.error("ERRO COMPLETO NA EXCLUSÃO:", {
-        code: error.code,
-        message: error.message,
-        path: `users/${userId}`,
-        authUid: currentUser?.uid,
-        adminRole: appUser?.role
-      });
-      
+      console.error("ERRO DE EXCLUSÃO:", error);
       toast({
         variant: "destructive",
         title: "Erro de Permissão",
-        description: "O Firestore negou a exclusão. Verifique se seu papel é 'admin' e se o ID do documento corresponde ao UID do usuário.",
+        description: "O Firestore negou a exclusão. Verifique se seu papel no banco de dados é exatamente 'admin'.",
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -145,6 +145,8 @@ export default function UsersPage() {
     return null;
   }
 
+  const idMismatch = currentUser && appUser && currentUser.uid !== appUser.id;
+
   return (
     <div className="flex-1 space-y-8 p-4 md:p-8 pt-6">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -159,7 +161,7 @@ export default function UsersPage() {
       </div>
 
       {showDebug && (
-        <Card className="border-orange-500 bg-orange-500/5">
+        <Card className={`border-orange-500 bg-orange-500/5 ${idMismatch ? 'ring-2 ring-destructive animate-pulse' : ''}`}>
             <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
                     <Bug className="h-4 w-4" /> Log de Depuração (Admin)
@@ -179,10 +181,18 @@ export default function UsersPage() {
 
                 <div className="flex items-center gap-2 py-2 border-y border-orange-500/20">
                     <div className="text-muted-foreground">Os IDs coincidem?</div>
-                    <Badge variant={currentUser?.uid === appUser?.id ? "default" : "destructive"}>
-                        {currentUser?.uid === appUser?.id ? "SIM (Correto)" : "NÃO (Erro de Mapeamento)"}
+                    <Badge variant={!idMismatch ? "default" : "destructive"}>
+                        {!idMismatch ? "SIM (Correto)" : "NÃO (Erro de Mapeamento!)"}
                     </Badge>
                 </div>
+                
+                {idMismatch && (
+                   <div className="bg-destructive/10 text-destructive p-3 rounded-md border border-destructive/20 text-[11px] leading-relaxed">
+                      <strong>ALERTA CRÍTICO:</strong> Seu UID de autenticação não coincide com o ID do seu documento no Firestore. 
+                      Isso acontece se o seu documento foi criado manualmente com um ID aleatório. 
+                      Para as regras de segurança funcionarem, o ID do documento DEVE ser exatamente o seu UID.
+                   </div>
+                )}
 
                 <div className="flex flex-col gap-1">
                     <div className="text-muted-foreground">Papel (Role):</div>
@@ -211,7 +221,7 @@ export default function UsersPage() {
                     <MessageSquare className="h-5 w-5 text-primary" />
                     Notificações
                 </CardTitle>
-                <CardDescription>Configuração de WhatsApp para novos cadastros.</CardDescription>
+                <div className="text-muted-foreground text-sm">Configuração de WhatsApp para novos cadastros.</div>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -236,7 +246,7 @@ export default function UsersPage() {
         <Card className="md:col-span-2">
             <CardHeader>
                 <CardTitle className="font-headline">Lista de Usuários</CardTitle>
-                <CardDescription>Gerencie aprovações e cargos.</CardDescription>
+                <div className="text-muted-foreground text-sm">Gerencie aprovações e cargos.</div>
             </CardHeader>
             <CardContent className="p-0">
             <Table>
@@ -249,19 +259,19 @@ export default function UsersPage() {
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {sortedUsers.map((user) => (
-                    <TableRow key={user.id}>
+                {sortedUsers.map((u) => (
+                    <TableRow key={u.id}>
                     <TableCell>
                         <div className="flex flex-col">
-                            <span className="font-medium">{user.displayName}</span>
-                            <span className="text-[10px] text-muted-foreground">{user.email}</span>
+                            <span className="font-medium">{u.displayName}</span>
+                            <span className="text-[10px] text-muted-foreground">{u.email}</span>
                         </div>
                     </TableCell>
                     <TableCell>
                         <Select
-                        value={user.role}
-                        onValueChange={(value: 'admin' | 'user') => handleRoleChange(user.id, value)}
-                        disabled={user.id === currentUser?.uid}
+                        value={u.role}
+                        onValueChange={(value: 'admin' | 'user') => handleRoleChange(u.id, value)}
+                        disabled={u.id === currentUser?.uid}
                         >
                         <SelectTrigger className="h-8 w-[100px] text-xs">
                             <SelectValue />
@@ -275,44 +285,24 @@ export default function UsersPage() {
                     <TableCell>
                         <div className="flex items-center gap-2">
                             <Switch
-                            id={`approval-switch-${user.id}`}
-                            checked={user.isApproved}
-                            onCheckedChange={(checked) => handleApprovalChange(user.id, checked)}
-                            disabled={user.id === currentUser?.uid}
+                            id={`approval-switch-${u.id}`}
+                            checked={u.isApproved}
+                            onCheckedChange={(checked) => handleApprovalChange(u.id, checked)}
+                            disabled={u.id === currentUser?.uid}
                             />
                         </div>
                     </TableCell>
                     <TableCell className="text-right">
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                    disabled={user.id === currentUser?.uid}
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                    <span className="sr-only">Excluir usuário</span>
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Excluir Usuário?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Deseja excluir permanentemente <strong>{user.displayName}</strong>? Esta ação não pode ser desfeita.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction 
-                                        onClick={() => performDeleteUser(user.id)}
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    >
-                                        Excluir
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            disabled={u.id === currentUser?.uid}
+                            onClick={() => setUserToDelete(u)}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Excluir usuário</span>
+                        </Button>
                     </TableCell>
                     </TableRow>
                 ))}
@@ -326,6 +316,33 @@ export default function UsersPage() {
             </CardContent>
         </Card>
       </div>
+      
+      {/* Diálogo de confirmação de exclusão unificado */}
+      <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && !isDeleting && setUserToDelete(null)}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir Usuário permanentemente?</AlertDialogTitle>
+                  <div className="text-sm text-muted-foreground">
+                      Deseja excluir <strong>{userToDelete?.displayName}</strong> ({userToDelete?.email})? 
+                      Esta ação removerá o acesso dele imediatamente e não poderá ser desfeita.
+                  </div>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction 
+                      onClick={(e) => {
+                          e.preventDefault();
+                          performDeleteUser();
+                      }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      disabled={isDeleting}
+                  >
+                      {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      Excluir
+                  </AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
