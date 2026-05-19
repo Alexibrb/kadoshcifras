@@ -27,10 +27,12 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useRequireAuth, useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
-import { Save, Loader2, MessageSquare, Trash2 } from 'lucide-react';
+import { Save, Loader2, MessageSquare, Trash2, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -126,7 +128,11 @@ export default function UsersPage() {
   };
   
   const sortedUsers = useMemo(() => {
-    return [...users].sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
+    return [...users].sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    });
   }, [users]);
 
   if (!isMounted || loadingAuth || (isAdmin && loadingUsers) || loadingSettings) {
@@ -206,6 +212,12 @@ export default function UsersPage() {
                         <div className="flex flex-col">
                             <span className="font-medium">{u.displayName}</span>
                             <span className="text-[10px] text-muted-foreground">{u.email}</span>
+                            {u.createdAt && (
+                              <div className="flex items-center gap-1 text-[9px] text-muted-foreground mt-1 font-mono uppercase">
+                                <Calendar className="h-2.5 w-2.5" />
+                                {format(new Date(u.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                              </div>
+                            )}
                         </div>
                     </TableCell>
                     <TableCell>
