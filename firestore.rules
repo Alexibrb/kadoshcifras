@@ -8,10 +8,14 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Função de verificação de admin simplificada
+    // Função para buscar dados do usuário atual
+    function getAppUser(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+
+    // Função de verificação de admin
     function isAdmin() {
-      return isAuthenticated() && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isAuthenticated() && getAppUser(request.auth.uid).role == 'admin';
     }
 
     // USERS: Regras para usuários
@@ -31,10 +35,10 @@ service cloud.firestore {
     }
     
     // MÚSICAS E METADADOS
-    match /songs/{docId} { allow read: if isAuthenticated(); allow write: if isAuthenticated() && (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true); }
-    match /categories/{docId} { allow read: if isAuthenticated(); allow write: if isAuthenticated() && (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true); }
-    match /genres/{docId} { allow read: if isAuthenticated(); allow write: if isAuthenticated() && (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true); }
-    match /artists/{docId} { allow read: if isAuthenticated(); allow write: if isAuthenticated() && (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true); }
+    match /songs/{docId} { allow read: if isAuthenticated(); allow write: if isAuthenticated() && (isAdmin() || getAppUser(request.auth.uid).isApproved == true); }
+    match /categories/{docId} { allow read: if isAuthenticated(); allow write: if isAuthenticated() && (isAdmin() || getAppUser(request.auth.uid).isApproved == true); }
+    match /genres/{docId} { allow read: if isAuthenticated(); allow write: if isAuthenticated() && (isAdmin() || getAppUser(request.auth.uid).isApproved == true); }
+    match /artists/{docId} { allow read: if isAuthenticated(); allow write: if isAuthenticated() && (isAdmin() || getAppUser(request.auth.uid).isApproved == true); }
 
     // REPERTÓRIOS
     match /setlists/{setlistId} {

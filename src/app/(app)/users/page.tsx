@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useRequireAuth, useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
-import { Save, Loader2, MessageSquare, Trash2, Bug, ShieldCheck, Fingerprint } from 'lucide-react';
+import { Save, Loader2, MessageSquare, Trash2, Bug, ShieldCheck, Fingerprint, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
@@ -88,8 +88,8 @@ export default function UsersPage() {
       await deleteDoc(userRef);
       
       toast({
-        title: "Sucesso",
-        description: `Usuário ${userToDelete.displayName} removido permanentemente.`,
+        title: "Usuário Removido",
+        description: `Dados de ${userToDelete.displayName} excluídos do banco. LEMBRE-SE: Você deve excluir o e-mail ${userToDelete.email} manualmente no Console do Firebase (Authentication) para liberar o acesso.`,
       });
       setUserToDelete(null);
     } catch (error: any) {
@@ -97,7 +97,7 @@ export default function UsersPage() {
       toast({
         variant: "destructive",
         title: "Erro de Permissão",
-        description: "O Firestore negou a exclusão. Verifique se o seu UID coincide com o ID do seu documento.",
+        description: "O Firestore negou a exclusão. Verifique se o seu papel de admin está correto nas Regras de Segurança.",
       });
     } finally {
       setIsDeleting(false);
@@ -291,11 +291,21 @@ export default function UsersPage() {
       <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && !isDeleting && setUserToDelete(null)}>
           <AlertDialogContent>
               <AlertDialogHeader>
-                  <AlertDialogTitle>Confirmar Exclusão?</AlertDialogTitle>
+                  <AlertDialogTitle>Confirmar Exclusão do Banco?</AlertDialogTitle>
                   <AlertDialogDescription asChild>
-                      <div className="text-sm text-muted-foreground">
-                          Deseja remover <strong>{userToDelete?.displayName}</strong> permanentemente? 
-                          Esta ação não pode ser desfeita.
+                      <div className="space-y-4">
+                        <div className="text-sm text-muted-foreground">
+                            Deseja remover <strong>{userToDelete?.displayName}</strong> do banco de dados?
+                        </div>
+                        <Card className="bg-destructive/5 border-destructive/20 p-3">
+                            <div className="flex gap-2 items-start text-destructive text-xs leading-relaxed">
+                                <AlertTriangle className="h-5 w-5 shrink-0" />
+                                <div className="space-y-1">
+                                    <p className="font-bold uppercase">Aviso Importante:</p>
+                                    <p>Esta ação exclui apenas os dados no Firestore. Por segurança, o acesso (E-mail e Senha) deve ser removido manualmente no <strong>Console do Firebase &gt; Authentication</strong> para que o usuário possa se cadastrar novamente.</p>
+                                </div>
+                            </div>
+                        </Card>
                       </div>
                   </AlertDialogDescription>
               </AlertDialogHeader>
@@ -310,7 +320,7 @@ export default function UsersPage() {
                       disabled={isDeleting}
                   >
                       {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Excluir
+                      Confirmar Exclusão
                   </AlertDialogAction>
               </AlertDialogFooter>
           </AlertDialogContent>
