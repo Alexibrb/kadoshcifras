@@ -3,47 +3,47 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Função auxiliar básica
+    // Função auxiliar para verificar se o usuário é admin de forma robusta
+    function isAdmin() {
+      return request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // USERS: Regras específicas para a coleção de usuários
+    // USERS: Coleção crítica de usuários
     match /users/{userId} {
-      // Regra de exclusão: Permite se o usuário logado for admin no Firestore
-      allow delete: if isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-      
-      // Leitura permitida para qualquer autenticado
+      // Leitura: Qualquer logado pode ler (para listar no painel)
       allow read: if isAuthenticated();
       
-      // Criação permitida para o próprio usuário
+      // Criação: O próprio usuário cria seu documento no signup
       allow create: if isAuthenticated() && request.auth.uid == userId;
       
-      // Atualização permitida para o próprio ou admin
-      allow update: if isAuthenticated() && (
-        request.auth.uid == userId || 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
-      );
+      // Atualização: O próprio ou um admin
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      
+      // EXCLUSÃO: Apenas Admin pode excluir usuários
+      // Nota: Esta regra é absoluta e não depende do userId do alvo
+      allow delete: if isAdmin();
     }
     
-    // SETTINGS: Configurações globais
+    // SETTINGS: Configurações globais (apenas admin escreve)
     match /settings/{settingId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow write: if isAdmin();
     }
     
     // MÚSICAS E METADADOS
     match /songs/{docId} { 
       allow read: if isAuthenticated(); 
-      allow write: if isAuthenticated() && (
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true
-      ); 
+      allow write: if isAuthenticated() && (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true); 
     }
-    match /categories/{docId} { allow read: if isAuthenticated(); allow write: if isAuthenticated() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true); }
-    match /genres/{docId} { allow read: if isAuthenticated(); allow write: if isAuthenticated() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true); }
-    match /artists/{docId} { allow read: if isAuthenticated(); allow write: if isAuthenticated() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true); }
+    match /categories/{docId} { allow read: if isAuthenticated(); allow write: if isAuthenticated() && (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true); }
+    match /genres/{docId} { allow read: if isAuthenticated(); allow write: if isAuthenticated() && (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true); }
+    match /artists/{docId} { allow read: if isAuthenticated(); allow write: if isAuthenticated() && (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true); }
 
     // REPERTÓRIOS
     match /setlists/{setlistId} {

@@ -81,6 +81,7 @@ export default function UsersPage() {
     if (!userId) return;
     
     try {
+      // O documento DEVE usar o UID como ID para as regras funcionarem.
       const userRef = doc(db, 'users', userId);
       await deleteDoc(userRef);
       
@@ -89,11 +90,18 @@ export default function UsersPage() {
         description: "O usuário foi removido permanentemente do sistema.",
       });
     } catch (error: any) {
-      console.error("Erro ao excluir usuário:", error);
+      console.error("ERRO COMPLETO NA EXCLUSÃO:", {
+        code: error.code,
+        message: error.message,
+        path: `users/${userId}`,
+        authUid: currentUser?.uid,
+        adminRole: appUser?.role
+      });
+      
       toast({
         variant: "destructive",
         title: "Erro de Permissão",
-        description: "A exclusão falhou. Certifique-se de que seu papel é 'admin' no Firestore.",
+        description: "O Firestore negou a exclusão. Verifique se seu papel é 'admin' e se o ID do documento corresponde ao UID do usuário.",
       });
     }
   };
@@ -182,7 +190,7 @@ export default function UsersPage() {
                     </div>
                 </div>
                 <div className="pt-2 text-[10px] text-muted-foreground italic border-t mt-4">
-                    Nota: Se a exclusão falhar, certifique-se de que seu papel é exatamente 'admin' no Firestore.
+                    Nota: Se a exclusão falhar, verifique se o ID do documento alvo no Firestore é igual ao seu UID real.
                 </div>
             </CardContent>
         </Card>
