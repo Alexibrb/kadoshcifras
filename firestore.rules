@@ -28,10 +28,8 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.auth.uid == userId;
       allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       
-      // EXCLUSÃO: Permite apenas se o solicitante for admin. 
-      // Usamos a verificação direta aqui para máxima compatibilidade.
-      allow delete: if isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // EXCLUSÃO: Permite se o solicitante for admin (não importa quem ele está excluindo)
+      allow delete: if isAuthenticated() && isAdmin();
     }
     
     // SETTINGS: Configurações globais

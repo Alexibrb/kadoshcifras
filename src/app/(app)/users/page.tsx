@@ -93,7 +93,7 @@ export default function UsersPage() {
       toast({
         variant: "destructive",
         title: "Erro de Permissão",
-        description: "Você não tem permissão para excluir este usuário.",
+        description: "Você não tem permissão para excluir este usuário ou ele não existe.",
       });
     }
   };
@@ -168,7 +168,7 @@ export default function UsersPage() {
                 </div>
                 <div className="flex flex-col gap-1">
                     <div className="text-muted-foreground">Role no Firestore:</div>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="mt-1">
                         <Badge variant={appUser?.role === 'admin' ? 'default' : 'destructive'}>
                             {appUser?.role || 'null'}
                         </Badge>
@@ -182,7 +182,7 @@ export default function UsersPage() {
                     </div>
                 </div>
                 <div className="pt-2 text-[10px] text-muted-foreground italic border-t mt-4">
-                    Nota: Para excluir, o Firestore exige que o seu role seja 'admin'.
+                    Nota: Para excluir, o seu role deve ser exatamente "admin" (minúsculo) no banco de dados.
                 </div>
             </CardContent>
         </Card>
