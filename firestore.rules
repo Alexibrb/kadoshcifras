@@ -9,25 +9,20 @@ service cloud.firestore {
     }
 
     // Verificação de admin ultra-direta para evitar falhas de avaliação
+    // IMPORTANTE: Esta regra exige que o ID do documento seja EXATAMENTE o UID do usuário
     function isAdmin() {
-      return request.auth != null && 
+      return isAuthenticated() && 
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     // USERS: Regras para usuários
     match /users/{userId} {
-      // Leitura permitida para qualquer autenticado (precisamos listar para gerenciar)
       allow read: if isAuthenticated();
-      
-      // Criação permitida apenas para o próprio UID no signup
       allow create: if isAuthenticated() && request.auth.uid == userId;
-      
-      // Update permitido para o próprio usuário ou admins
       allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       
-      // Delete permitido APENAS para admins
-      // Usamos a lógica direta aqui para máxima segurança e compatibilidade
-      allow delete: if request.auth != null && 
+      // Regra de delete explícita para evitar ambiguidades
+      allow delete: if isAuthenticated() && 
                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     

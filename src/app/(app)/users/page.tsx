@@ -145,6 +145,7 @@ export default function UsersPage() {
     return null;
   }
 
+  // Verifica se o ID do documento é diferente do UID da autenticação
   const idMismatch = currentUser && appUser && currentUser.uid !== appUser.id;
 
   return (
@@ -164,49 +165,42 @@ export default function UsersPage() {
         <Card className={`border-orange-500 bg-orange-500/5 ${idMismatch ? 'ring-2 ring-destructive animate-pulse' : ''}`}>
             <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                    <Bug className="h-4 w-4" /> Log de Depuração (Admin)
+                    <Bug className="h-4 w-4" /> Painel de Diagnóstico (Admin)
                 </CardTitle>
             </CardHeader>
             <CardContent className="text-xs font-mono space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                        <div className="text-muted-foreground flex items-center gap-1"><Fingerprint className="h-3 w-3" /> UID Autenticado (Auth):</div>
+                        <div className="text-muted-foreground flex items-center gap-1"><Fingerprint className="h-3 w-3" /> Seu UID (Login):</div>
                         <div className="font-bold break-all">{currentUser?.uid}</div>
                     </div>
                     <div className="space-y-1">
-                        <div className="text-muted-foreground flex items-center gap-1"><Fingerprint className="h-3 w-3" /> ID do Documento (Firestore):</div>
+                        <div className="text-muted-foreground flex items-center gap-1"><Fingerprint className="h-3 w-3" /> ID do seu Doc (Firestore):</div>
                         <div className="font-bold break-all">{appUser?.id}</div>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2 py-2 border-y border-orange-500/20">
-                    <div className="text-muted-foreground">Os IDs coincidem?</div>
+                    <div className="text-muted-foreground">Os IDs são idênticos?</div>
                     <Badge variant={!idMismatch ? "default" : "destructive"}>
-                        {!idMismatch ? "SIM (Correto)" : "NÃO (Erro de Mapeamento!)"}
+                        {!idMismatch ? "SIM" : "NÃO"}
                     </Badge>
                 </div>
                 
                 {idMismatch && (
                    <div className="bg-destructive/10 text-destructive p-3 rounded-md border border-destructive/20 text-[11px] leading-relaxed">
-                      <strong>ALERTA CRÍTICO:</strong> Seu UID de autenticação não coincide com o ID do seu documento no Firestore. 
-                      Isso impossibilita a exclusão pelas regras de segurança.
+                      <strong>ALERTA DE SEGURANÇA:</strong> As regras do Firestore exigem que o seu UID de login seja o ID do seu documento. 
+                      Atualmente seu documento admin tem um ID diferente, o que bloqueia a exclusão. 
+                      Para corrigir: No Firestore Console, crie um novo documento com o ID <code>{currentUser?.uid}</code> e copie seus dados para lá.
                    </div>
                 )}
 
                 <div className="flex flex-col gap-1">
-                    <div className="text-muted-foreground">Papel (Role):</div>
-                    <div className="mt-1 flex items-center gap-2">
+                    <div className="text-muted-foreground">Papel Identificado:</div>
+                    <div className="mt-1">
                         <Badge variant={appUser?.role === 'admin' ? 'default' : 'destructive'}>
-                            {appUser?.role || 'null'}
+                            {appUser?.role || 'indefinido'}
                         </Badge>
-                    </div>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                    <div className="text-muted-foreground">Status de Aprovação:</div>
-                    <div className="flex items-center gap-2 mt-1">
-                        {appUser?.isApproved ? <ShieldCheck className="h-4 w-4 text-green-600" /> : <ShieldAlert className="h-4 w-4 text-destructive" />}
-                        <div className="font-bold">{appUser?.isApproved ? 'Aprovado' : 'Pendente'}</div>
                     </div>
                 </div>
             </CardContent>
@@ -218,43 +212,41 @@ export default function UsersPage() {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl font-headline">
                     <MessageSquare className="h-5 w-5 text-primary" />
-                    Notificações
+                    WhatsApp Admin
                 </CardTitle>
-                <div className="text-muted-foreground text-sm">Configuração de WhatsApp para novos cadastros.</div>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="whatsapp">WhatsApp do Admin</Label>
+                    <Label htmlFor="whatsapp">Número para Notificação</Label>
                     <Input 
                         id="whatsapp"
                         placeholder="Ex: 5511999999999"
                         value={whatsappNumber}
                         onChange={(e) => setWhatsappNumber(e.target.value)}
                     />
-                    <div className="text-[10px] text-muted-foreground">Formato: 55 + DDD + Número.</div>
+                    <div className="text-[10px] text-muted-foreground">Formato: 55 + DDD + Número sem espaços.</div>
                 </div>
             </CardContent>
             <CardFooter>
                 <Button onClick={handleSaveSettings} disabled={isSavingSettings} className="w-full">
                     {isSavingSettings ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                    Salvar Configurações
+                    Salvar
                 </Button>
             </CardFooter>
         </Card>
 
         <Card className="md:col-span-2">
             <CardHeader>
-                <CardTitle className="font-headline">Lista de Usuários</CardTitle>
-                <div className="text-muted-foreground text-sm">Gerencie aprovações e cargos.</div>
+                <CardTitle className="font-headline">Membros do Sistema</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
             <Table>
                 <TableHeader>
                 <TableRow>
-                    <TableHead>Usuário</TableHead>
+                    <TableHead>Nome / E-mail</TableHead>
                     <TableHead>Função</TableHead>
                     <TableHead>Aprovado</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                    <TableHead className="text-right">Ação</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -282,14 +274,11 @@ export default function UsersPage() {
                         </Select>
                     </TableCell>
                     <TableCell>
-                        <div className="flex items-center gap-2">
-                            <Switch
-                            id={`approval-switch-${u.id}`}
+                        <Switch
                             checked={u.isApproved}
                             onCheckedChange={(checked) => handleApprovalChange(u.id, checked)}
                             disabled={u.id === currentUser?.uid}
-                            />
-                        </div>
+                        />
                     </TableCell>
                     <TableCell className="text-right">
                         <Button 
@@ -300,31 +289,26 @@ export default function UsersPage() {
                             onClick={() => setUserToDelete(u)}
                         >
                             <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Excluir usuário</span>
+                            <span className="sr-only">Excluir</span>
                         </Button>
                     </TableCell>
                     </TableRow>
                 ))}
                 </TableBody>
             </Table>
-            {users.length === 0 && (
-                    <div className="text-center p-8 text-muted-foreground">
-                        Nenhum usuário cadastrado.
-                    </div>
-                )}
             </CardContent>
         </Card>
       </div>
       
-      {/* Diálogo de confirmação de exclusão com correção de hidratação (asChild no AlertDialogDescription) */}
+      {/* Diálogo de confirmação com asChild na descrição para evitar erro de hidratação */}
       <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && !isDeleting && setUserToDelete(null)}>
           <AlertDialogContent>
               <AlertDialogHeader>
-                  <AlertDialogTitle>Excluir Usuário permanentemente?</AlertDialogTitle>
+                  <AlertDialogTitle>Confirmar Exclusão?</AlertDialogTitle>
                   <AlertDialogDescription asChild>
                       <div className="text-sm text-muted-foreground">
-                          Deseja excluir <strong>{userToDelete?.displayName}</strong> ({userToDelete?.email})? 
-                          Esta ação removerá o acesso dele imediatamente e não poderá ser desfeita.
+                          Deseja remover <strong>{userToDelete?.displayName}</strong> permanentemente? 
+                          Esta ação não pode ser desfeita.
                       </div>
                   </AlertDialogDescription>
               </AlertDialogHeader>
