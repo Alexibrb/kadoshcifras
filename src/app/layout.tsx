@@ -60,7 +60,7 @@ export default function RootLayout({
     <html lang="pt" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#3B2825" />
-        <link rel="manifest" href="/manifest.json" />
+        <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
         <link rel="apple-touch-icon" href="/icon-512x512.png?v=2" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />

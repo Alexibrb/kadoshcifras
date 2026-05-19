@@ -142,15 +142,15 @@ export default function UsersPage() {
             </CardHeader>
             <CardContent className="text-xs font-mono space-y-3">
                 <div className="flex flex-col gap-1">
-                    <span className="text-muted-foreground">UID Autenticado:</span>
-                    <span>{currentUser?.uid}</span>
+                    <div className="text-muted-foreground">UID Autenticado:</div>
+                    <div>{currentUser?.uid}</div>
                 </div>
                 <div className="flex flex-col gap-1">
-                    <span className="text-muted-foreground">ID Firestore:</span>
-                    <span>{appUser?.id}</span>
+                    <div className="text-muted-foreground">ID Firestore:</div>
+                    <div>{appUser?.id}</div>
                 </div>
                 <div className="flex flex-col gap-1">
-                    <span className="text-muted-foreground">Role no Firestore:</span>
+                    <div className="text-muted-foreground">Role no Firestore:</div>
                     <div className="flex items-center gap-2">
                         <Badge variant={appUser?.role === 'admin' ? 'default' : 'destructive'}>
                             {appUser?.role || 'null'}
@@ -158,7 +158,7 @@ export default function UsersPage() {
                     </div>
                 </div>
                 <div className="flex flex-col gap-1">
-                    <span className="text-muted-foreground">Aprovação no Firestore:</span>
+                    <div className="text-muted-foreground">Aprovação no Firestore:</div>
                     <div className="flex items-center gap-2">
                         {appUser?.isApproved ? <ShieldCheck className="h-4 w-4 text-green-600" /> : <ShieldAlert className="h-4 w-4 text-destructive" />}
                         <span>{appUser?.isApproved ? 'Aprovado' : 'Não Aprovado'}</span>
