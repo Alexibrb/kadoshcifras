@@ -81,7 +81,6 @@ export default function UsersPage() {
     if (!userId) return;
     
     try {
-      // Exclusão direta via Firestore para garantir que as regras de segurança sejam aplicadas
       const userRef = doc(db, 'users', userId);
       await deleteDoc(userRef);
       
