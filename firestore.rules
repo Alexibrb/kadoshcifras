@@ -3,38 +3,42 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if a user is authenticated
+    // Helper: Verifica se o usuário está autenticado
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Helper function to check if the requesting user is an admin
+    // Helper: Verifica se o usuário logado é um administrador
     function isAdmin() {
       return isAuthenticated() && 
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
-    // Helper function to check if the requesting user is approved
+    // Helper: Verifica se o usuário logado está aprovado (ou é admin)
     function isApproved() {
       return isAuthenticated() && 
              (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true);
     }
 
-    // USERS COLLECTION
+    // USERS: Regras específicas para a coleção de usuários
     match /users/{userId} {
+      // Qualquer admin pode ler todos; usuários logados leem apenas o próprio
       allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+      // Criação permitida no momento do cadastro (auto-registro)
       allow create: if isAuthenticated() && request.auth.uid == userId;
+      // Atualização permitida para o próprio usuário ou admins
       allow update: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+      // EXCLUSÃO: Apenas administradores podem excluir usuários
       allow delete: if isAdmin();
     }
     
-    // SETTINGS COLLECTION
+    // SETTINGS: Configurações globais do sistema
     match /settings/{settingId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read: if true; // Aberto para leitura (necessário para tela de pendência)
+      allow write: if isAdmin(); // Apenas admin altera configurações
     }
     
-    // SETLISTS COLLECTION
+    // SETLISTS: Repertórios
     match /setlists/{setlistId} {
       allow read: if isAdmin() 
                   || isApproved() 
@@ -46,21 +50,21 @@ service cloud.firestore {
                    || (isAuthenticated() && (request.resource.data.creatorId == request.auth.uid || resource.data.creatorId == request.auth.uid));
     }
 
-    // SONGS COLLECTION
+    // SONGS: Biblioteca de músicas
     match /songs/{songId} {
       allow read: if isAuthenticated();
       allow write: if isApproved() || isAdmin();
     }
 
-    // METADATA COLLECTIONS
+    // METADATA: Artistas, Gêneros, Categorias
     match /categories/{docId} { allow read: if isAuthenticated(); allow write: if isApproved() || isAdmin(); }
     match /genres/{docId} { allow read: if isAuthenticated(); allow write: if isApproved() || isAdmin(); }
     match /artists/{docId} { allow read: if isAuthenticated(); allow write: if isApproved() || isAdmin(); }
 
-    // OTHER COLLECTIONS
+    // CATCH-ALL: Regra geral para outras coleções
     match /{collection}/{docId} {
       allow read: if isAuthenticated();
-      allow write: if isApproved() || isAdmin();
+      allow write: if isAdmin() || isApproved();
     }
   }
 }
