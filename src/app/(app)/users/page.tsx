@@ -300,7 +300,7 @@ export default function UsersPage() {
         </Card>
       </div>
       
-      {/* Diálogo de confirmação com asChild na descrição para evitar erro de hidratação */}
+      {/* Diálogo de confirmação corrigido para evitar erro de hidratação */}
       <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && !isDeleting && setUserToDelete(null)}>
           <AlertDialogContent>
               <AlertDialogHeader>
