@@ -17,7 +17,7 @@ service cloud.firestore {
     // Helper function to check if the requesting user is approved
     function isApproved() {
       return isAuthenticated() && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true;
+             (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true);
     }
 
     // USERS COLLECTION
