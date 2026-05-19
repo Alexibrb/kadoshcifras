@@ -19,7 +19,7 @@ export default function Home() {
         </h2>
         <div className="inline-flex items-center justify-center">
           <Image 
-            src="/icon-512x512.png" 
+            src="/android-chrome-512x512.png" 
             alt="CifrasKadosh Logo" 
             width={350} 
             height={350} 
