@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
 
@@ -62,7 +62,7 @@ export default function DashboardPage() {
     setCopied(true);
     toast({
       title: "Chave Pix Copiada!",
-      description: "Obrigado por considerar apoiar o projeto.",
+      description: "Agora você pode colar no seu aplicativo do banco.",
     });
     setTimeout(() => setCopied(false), 3000);
   };
@@ -126,12 +126,12 @@ export default function DashboardPage() {
                 Apoie o CifrasKadosh
               </DialogTitle>
               <DialogDescription className="text-base pt-2">
-                O CifrasKadosh é um projeto independente. Sua doação ajuda a cobrir custos de servidores, banco de dados e manutenção contínua.
+                O CifrasKadosh é mantido por voluntários. Sua doação ajuda a pagar os servidores e manter o app gratuito para todos.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="bg-muted p-4 rounded-lg text-center space-y-2">
-                <p className="text-sm font-medium">Contribua via Pix</p>
+              <div className="bg-muted p-4 rounded-lg text-center space-y-3">
+                <p className="text-sm font-semibold">Contribua via Pix</p>
                 <div className="flex items-center justify-center gap-2 bg-background border rounded-md p-3 select-all">
                   {loadingSettings ? (
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -144,16 +144,20 @@ export default function DashboardPage() {
                     </>
                   )}
                 </div>
+                <Button className="w-full" onClick={copyPixKey} variant={copied ? "secondary" : "default"}>
+                    {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                    {copied ? "Chave Copiada!" : "Copiar Chave Pix"}
+                </Button>
               </div>
               <p className="text-xs text-muted-foreground text-center">
-                Qualquer valor é bem-vindo e faz a diferença! ❤️
+                Qualquer valor faz uma grande diferença! ❤️
               </p>
             </div>
-            <DialogFooter>
-              <Button className="w-full" onClick={() => window.open('https://nubank.com.br', '_blank')}>
-                Fazer Doação
-              </Button>
-            </DialogFooter>
+            <div className="flex justify-center">
+                <DialogClose asChild>
+                    <Button variant="ghost">Fechar</Button>
+                </DialogClose>
+            </div>
           </DialogContent>
         </Dialog>
 
