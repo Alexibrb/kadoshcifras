@@ -8,38 +8,39 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Helper: Obtém os dados do usuário atual para verificar permissões
-    function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-    }
-
-    // Helper: Verifica se o usuário logado é um administrador
+    // Helper: Verifica se o usuário logado é um administrador (Verificação Direta)
     function isAdmin() {
-      return isAuthenticated() && getUserData().role == 'admin';
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
     // Helper: Verifica se o usuário logado está aprovado ou é admin
     function isApproved() {
-      let data = getUserData();
-      return isAuthenticated() && (data.role == 'admin' || data.isApproved == true);
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true
+      );
     }
 
     // USERS: Regras específicas para a coleção de usuários
     match /users/{userId} {
-      // Qualquer admin pode ler todos; usuários logados leem apenas o próprio
+      // Leitura: Admin lê todos, usuário lê o próprio
       allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == userId);
-      // Criação permitida no momento do cadastro (auto-registro)
+      
+      // Criação: Auto-registro
       allow create: if isAuthenticated() && request.auth.uid == userId;
-      // Atualização permitida para o próprio usuário ou admins
+      
+      // Atualização: Admin ou o próprio usuário
       allow update: if isAuthenticated() && (isAdmin() || request.auth.uid == userId);
-      // EXCLUSÃO: Apenas administradores podem excluir usuários
+      
+      // EXCLUSÃO: Regra explícita para administradores
       allow delete: if isAdmin();
     }
     
-    // SETTINGS: Configurações globais do sistema
+    // SETTINGS: Configurações globais
     match /settings/{settingId} {
-      allow read: if true; // Aberto para leitura (necessário para tela de pendência)
-      allow write: if isAdmin(); // Apenas admin altera configurações
+      allow read: if true;
+      allow write: if isAdmin();
     }
     
     // SETLISTS: Repertórios
@@ -63,18 +64,13 @@ service cloud.firestore {
     // SONGS: Biblioteca de músicas
     match /songs/{songId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin() || isApproved();
+      allow write: if isApproved();
     }
 
-    // METADATA: Artistas, Gêneros, Categorias
-    match /categories/{docId} { allow read: if isAuthenticated(); allow write: if isAdmin() || isApproved(); }
-    match /genres/{docId} { allow read: if isAuthenticated(); allow write: if isAdmin() || isApproved(); }
-    match /artists/{docId} { allow read: if isAuthenticated(); allow write: if isAdmin() || isApproved(); }
-
-    // CATCH-ALL: Regra geral para outras coleções
+    // CATCH-ALL: Regra geral para outras coleções (Categorias, Artistas, Gêneros)
     match /{collection}/{docId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin() || isApproved();
+      allow write: if isApproved();
     }
   }
 }
