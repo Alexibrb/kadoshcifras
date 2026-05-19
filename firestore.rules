@@ -8,8 +8,7 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Helper: Verifica se o usuário logado é um administrador (Acesso Direto ao Documento)
-    // Usamos get para garantir que o papel de admin seja verificado no servidor, independente do token.
+    // Helper: Verifica se o usuário logado é um administrador
     function isAdmin() {
       return isAuthenticated() && 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
@@ -26,17 +25,17 @@ service cloud.firestore {
     // USERS: Regras para a coleção de usuários
     match /users/{userId} {
       // Leitura: Admin lê todos, usuário lê o próprio
-      allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == userId);
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       
       // Criação: Auto-registro
       allow create: if isAuthenticated() && request.auth.uid == userId;
       
       // Atualização: Admin ou o próprio usuário
-      allow update: if isAuthenticated() && (isAdmin() || request.auth.uid == userId);
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       
       // EXCLUSÃO: Apenas administradores podem deletar usuários
-      // Importante: A verificação isAdmin() deve ser a única condição para exclusão administrativa.
-      allow delete: if isAdmin();
+      allow delete: if isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
     // SETTINGS: Configurações globais

@@ -74,9 +74,7 @@ export default function UsersPage() {
   };
 
   const handleDeleteUser = (userId: string) => {
-    // A exclusão agora emite erro via listener central se falhar
     deleteDocument(userId);
-    
     toast({
       title: "Solicitação enviada",
       description: "O comando de exclusão foi enviado ao servidor.",
@@ -142,22 +140,32 @@ export default function UsersPage() {
                     <Bug className="h-4 w-4" /> Log de Depuração (Admin)
                 </CardTitle>
             </CardHeader>
-            <CardContent className="text-xs font-mono space-y-2">
-                <div className="py-1"><strong>UID Autenticado:</strong> {currentUser?.uid}</div>
-                <div className="py-1"><strong>ID Firestore:</strong> {appUser?.id}</div>
-                <div className="flex items-center gap-2 py-1">
-                    <strong>Role no Firestore:</strong> 
-                    <Badge variant={appUser?.role === 'admin' ? 'default' : 'destructive'}>
-                        {appUser?.role || 'null'}
-                    </Badge>
+            <CardContent className="text-xs font-mono space-y-3">
+                <div className="flex flex-col gap-1">
+                    <span className="text-muted-foreground">UID Autenticado:</span>
+                    <span>{currentUser?.uid}</span>
                 </div>
-                <div className="flex items-center gap-2 py-1">
-                    <strong>Aprovação no Firestore:</strong> 
-                    {appUser?.isApproved ? <ShieldCheck className="h-4 w-4 text-green-600" /> : <ShieldAlert className="h-4 w-4 text-destructive" />}
-                    {appUser?.isApproved ? 'Aprovado' : 'Não Aprovado'}
+                <div className="flex flex-col gap-1">
+                    <span className="text-muted-foreground">ID Firestore:</span>
+                    <span>{appUser?.id}</span>
                 </div>
-                <div className="mt-2 text-[10px] text-muted-foreground italic">
-                    Nota: Se o campo "Role" não for "admin", o Firebase bloqueará qualquer exclusão de usuário.
+                <div className="flex flex-col gap-1">
+                    <span className="text-muted-foreground">Role no Firestore:</span>
+                    <div className="flex items-center gap-2">
+                        <Badge variant={appUser?.role === 'admin' ? 'default' : 'destructive'}>
+                            {appUser?.role || 'null'}
+                        </Badge>
+                    </div>
+                </div>
+                <div className="flex flex-col gap-1">
+                    <span className="text-muted-foreground">Aprovação no Firestore:</span>
+                    <div className="flex items-center gap-2">
+                        {appUser?.isApproved ? <ShieldCheck className="h-4 w-4 text-green-600" /> : <ShieldAlert className="h-4 w-4 text-destructive" />}
+                        <span>{appUser?.isApproved ? 'Aprovado' : 'Não Aprovado'}</span>
+                    </div>
+                </div>
+                <div className="pt-2 text-[10px] text-muted-foreground italic border-t">
+                    Nota: Se o campo "Role" não for "admin", o Firebase bloqueará qualquer exclusão de usuário por segurança.
                 </div>
             </CardContent>
         </Card>
