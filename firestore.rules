@@ -9,7 +9,6 @@ service cloud.firestore {
     }
 
     // Função de verificação de admin simplificada
-    // Importante: O ID do documento na coleção 'users' DEVE ser o UID do Firebase Auth
     function isAdmin() {
       return isAuthenticated() && 
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
@@ -21,7 +20,7 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.auth.uid == userId;
       allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       
-      // CORREÇÃO: Permitir exclusão apenas para administradores
+      // Permitir exclusão apenas para administradores
       allow delete: if isAdmin();
     }
     

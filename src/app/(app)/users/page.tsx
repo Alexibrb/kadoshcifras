@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useRequireAuth, useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
-import { Save, Loader2, MessageSquare, Trash2, Bug, ShieldCheck, ShieldAlert, Fingerprint } from 'lucide-react';
+import { Save, Loader2, MessageSquare, Trash2, Bug, ShieldCheck, Fingerprint } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
@@ -97,7 +97,7 @@ export default function UsersPage() {
       toast({
         variant: "destructive",
         title: "Erro de Permissão",
-        description: "O Firestore negou a exclusão. Verifique as regras de segurança.",
+        description: "O Firestore negou a exclusão. Verifique se o seu UID coincide com o ID do seu documento.",
       });
     } finally {
       setIsDeleting(false);
