@@ -93,7 +93,7 @@ export default function UsersPage() {
       toast({
         variant: "destructive",
         title: "Erro de Permissão",
-        description: "A exclusão falhou. Verifique se o seu papel de 'admin' está configurado corretamente no Firestore.",
+        description: "A exclusão falhou. Certifique-se de que seu papel é 'admin' no Firestore.",
       });
     }
   };
@@ -182,7 +182,7 @@ export default function UsersPage() {
                     </div>
                 </div>
                 <div className="pt-2 text-[10px] text-muted-foreground italic border-t mt-4">
-                    Nota: Se a exclusão falhar, certifique-se de que seu papel é exatamente &apos;admin&apos; no Firestore.
+                    Nota: Se a exclusão falhar, certifique-se de que seu papel é exatamente 'admin' no Firestore.
                 </div>
             </CardContent>
         </Card>

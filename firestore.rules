@@ -10,7 +10,7 @@ service cloud.firestore {
 
     // USERS: Regras específicas para a coleção de usuários
     match /users/{userId} {
-      // Regra de exclusão explícita para administradores
+      // Regra de exclusão: Permite se o usuário logado for admin no Firestore
       allow delete: if isAuthenticated() && 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
       
