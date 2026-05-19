@@ -23,7 +23,7 @@ const FirebaseErrorListener = () => {
         toast({
           variant: 'destructive',
           title: 'Permissão Negada',
-          description: 'Você não tem permissão para realizar esta ação.',
+          description: 'O Firestore recusou a operação. Verifique suas permissões de admin.',
         });
       }
     };

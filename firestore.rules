@@ -8,7 +8,7 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Helper: Verifica se o usuário logado é um administrador (acesso direto ao documento)
+    // Helper: Verifica se o usuário logado é um administrador de forma direta
     function isAdmin() {
       return isAuthenticated() && 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
@@ -28,8 +28,9 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.auth.uid == userId;
       allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       
-      // EXCLUSÃO: Permite se o solicitante for admin (não importa quem ele está excluindo)
-      allow delete: if isAuthenticated() && isAdmin();
+      // EXCLUSÃO: Permissão absoluta para administradores
+      allow delete: if isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
     // SETTINGS: Configurações globais

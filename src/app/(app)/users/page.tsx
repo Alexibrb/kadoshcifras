@@ -81,19 +81,20 @@ export default function UsersPage() {
     if (!userId) return;
     
     try {
+      // Forçamos a exclusão direta via SDK para ignorar qualquer cache de hook
       const userRef = doc(db, 'users', userId);
       await deleteDoc(userRef);
       
       toast({
         title: "Sucesso",
-        description: "O usuário foi removido permanentemente.",
+        description: "O usuário foi removido permanentemente do sistema.",
       });
     } catch (error: any) {
       console.error("Erro ao excluir usuário:", error);
       toast({
         variant: "destructive",
         title: "Erro de Permissão",
-        description: "Você não tem permissão para excluir este usuário ou ele não existe.",
+        description: "A exclusão falhou. Verifique se o seu papel de 'admin' está correto no Firestore.",
       });
     }
   };
@@ -168,7 +169,7 @@ export default function UsersPage() {
                 </div>
                 <div className="flex flex-col gap-1">
                     <div className="text-muted-foreground">Role no Firestore:</div>
-                    <div className="mt-1">
+                    <div className="mt-1 flex items-center gap-2">
                         <Badge variant={appUser?.role === 'admin' ? 'default' : 'destructive'}>
                             {appUser?.role || 'null'}
                         </Badge>
@@ -178,11 +179,11 @@ export default function UsersPage() {
                     <div className="text-muted-foreground">Aprovação no Firestore:</div>
                     <div className="flex items-center gap-2 mt-1">
                         {appUser?.isApproved ? <ShieldCheck className="h-4 w-4 text-green-600" /> : <ShieldAlert className="h-4 w-4 text-destructive" />}
-                        <span className="font-bold">{appUser?.isApproved ? 'Aprovado' : 'Não Aprovado'}</span>
+                        <div className="font-bold">{appUser?.isApproved ? 'Aprovado' : 'Não Aprovado'}</div>
                     </div>
                 </div>
                 <div className="pt-2 text-[10px] text-muted-foreground italic border-t mt-4">
-                    Nota: Para excluir, o seu role deve ser exatamente "admin" (minúsculo) no banco de dados.
+                    Nota: O erro de permissão ocorre quando o motor de regras do Firestore não reconhece o seu papel como 'admin'.
                 </div>
             </CardContent>
         </Card>
@@ -283,7 +284,7 @@ export default function UsersPage() {
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Excluir Usuário?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        Deseja excluir permanentemente <strong>{user.displayName}</strong>?
+                                        Deseja excluir permanentemente <strong>{user.displayName}</strong>? Esta ação não pode ser desfeita.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
