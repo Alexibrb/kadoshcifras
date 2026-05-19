@@ -75,10 +75,6 @@ export default function UsersPage() {
   };
 
   const handleDeleteUser = (userId: string) => {
-    console.log(`[DEBUG] Tentando excluir usuário: ${userId}`);
-    console.log(`[DEBUG] Usuário atual tentando a ação: ${currentUser?.uid}`);
-    console.log(`[DEBUG] Role do usuário atual no estado: ${appUser?.role}`);
-    
     deleteDocument(userId);
     
     toast({
@@ -99,7 +95,7 @@ export default function UsersPage() {
   };
   
   const sortedUsers = useMemo(() => {
-    return users.sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
+    return [...users].sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
   }, [users]);
 
   if (loadingUsers || loadingAuth || loadingSettings) {
@@ -143,22 +139,22 @@ export default function UsersPage() {
                 </CardTitle>
             </CardHeader>
             <CardContent className="text-xs font-mono space-y-1">
-                <p><strong>UID Autenticado:</strong> {currentUser?.uid}</p>
-                <p><strong>ID Firestore:</strong> {appUser?.id}</p>
-                <p className="flex items-center gap-2">
+                <div className="py-1"><strong>UID Autenticado:</strong> {currentUser?.uid}</div>
+                <div className="py-1"><strong>ID Firestore:</strong> {appUser?.id}</div>
+                <div className="flex items-center gap-2 py-1">
                     <strong>Role no Firestore:</strong> 
                     <Badge variant={appUser?.role === 'admin' ? 'default' : 'destructive'}>
                         {appUser?.role || 'null'}
                     </Badge>
-                </p>
-                <p className="flex items-center gap-2">
+                </div>
+                <div className="flex items-center gap-2 py-1">
                     <strong>Aprovação no Firestore:</strong> 
                     {appUser?.isApproved ? <ShieldCheck className="h-4 w-4 text-green-600" /> : <ShieldAlert className="h-4 w-4 text-destructive" />}
                     {appUser?.isApproved ? 'Aprovado' : 'Não Aprovado'}
-                </p>
-                <p className="mt-2 text-[10px] text-muted-foreground italic">
+                </div>
+                <div className="mt-2 text-[10px] text-muted-foreground italic">
                     Nota: Se o campo "Role" não for "admin", o Firebase bloqueará qualquer exclusão de usuário.
-                </p>
+                </div>
             </CardContent>
         </Card>
       )}
