@@ -15,12 +15,16 @@ service cloud.firestore {
 
     // Helper function to check if the requesting user is an admin
     function isAdmin() {
-      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getAppUser(request.auth.uid).role == 'admin';
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getAppUser(request.auth.uid).role == 'admin';
     }
     
     // Helper function to check if the requesting user is approved
     function isApproved() {
-      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getAppUser(request.auth.uid).isApproved == true;
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getAppUser(request.auth.uid).isApproved == true;
     }
 
     // USERS COLLECTION
@@ -39,19 +43,19 @@ service cloud.firestore {
     
     // SETTINGS COLLECTION
     match /settings/{settingId} {
-      allow read: if isAuthenticated();
+      // Permite leitura pública (necessário para ver o WhatsApp antes da aprovação)
+      allow read: if true;
+      // Permite qualquer escrita (create/update) apenas para admins
       allow write: if isAdmin();
     }
     
     // SETLISTS COLLECTION
     match /setlists/{setlistId} {
-      // Permite leitura se for aprovado OU se for público OU se for o próprio criador
       allow read: if isAdmin() 
                   || isApproved() 
                   || (isAuthenticated() && (resource.data.isPublic == true || resource.data.isVisible == true))
                   || (isAuthenticated() && resource.data.creatorId == request.auth.uid);
       
-      // Permite escrita se for aprovado OU se estiver criando seu próprio documento
       allow write: if isAdmin() 
                    || isApproved()
                    || (isAuthenticated() && (request.resource.data.creatorId == request.auth.uid || resource.data.creatorId == request.auth.uid));
@@ -59,13 +63,11 @@ service cloud.firestore {
 
     // SONGS COLLECTION
     match /songs/{songId} {
-      // Usuários autenticados podem ler músicas (necessário para ver repertórios públicos)
       allow read: if isAuthenticated();
-      // Apenas aprovados ou admin podem criar/editar músicas
       allow write: if isApproved() || isAdmin();
     }
 
-    // OTHER COLLECTIONS (artists, genres, categories)
+    // OTHER COLLECTIONS
     match /{collection}/{docId} {
       allow read: if isAuthenticated();
       allow write: if isApproved() || isAdmin();

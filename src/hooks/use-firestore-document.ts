@@ -2,7 +2,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { db as firestoreDB } from '@/lib/firebase';
-import { doc, onSnapshot, updateDoc, DocumentData } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, DocumentData } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -14,7 +14,6 @@ export function useFirestoreDocument<T extends { id: string }>(
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Se o docId não for fornecido, não faz nada.
     if (!docId) {
         setLoading(false);
         setData(null);
@@ -54,15 +53,18 @@ export function useFirestoreDocument<T extends { id: string }>(
       return;
     }
     const docRef = doc(firestoreDB, collectionName, docId);
-    updateDoc(docRef, updatedData as DocumentData)
-      .catch((error) => {
+    
+    // Usamos setDoc com merge: true para garantir que o documento seja criado se não existir
+    try {
+      await setDoc(docRef, updatedData as DocumentData, { merge: true });
+    } catch (error: any) {
         const permissionError = new FirestorePermissionError({
           path: docRef.path,
           operation: 'update',
           requestResourceData: updatedData,
         });
         errorEmitter.emit('permission-error', permissionError);
-      });
+    }
   };
 
   return {
