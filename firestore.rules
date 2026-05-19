@@ -8,7 +8,8 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Função de verificação de admin simplificada para garantir funcionamento
+    // Função de verificação de admin simplificada
+    // Importante: O ID do documento na coleção 'users' DEVE ser o UID do Firebase Auth
     function isAdmin() {
       return isAuthenticated() && 
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
@@ -16,11 +17,11 @@ service cloud.firestore {
 
     // USERS: Regras para usuários
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow create: if isAuthenticated() && request.auth.uid == userId;
       allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       
-      // Regra de delete explícita e direta
+      // CORREÇÃO: Permitir exclusão apenas para administradores
       allow delete: if isAdmin();
     }
     
@@ -31,10 +32,7 @@ service cloud.firestore {
     }
     
     // MÚSICAS E METADADOS
-    match /songs/{docId} { 
-      allow read: if isAuthenticated(); 
-      allow write: if isAuthenticated() && (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true); 
-    }
+    match /songs/{docId} { allow read: if isAuthenticated(); allow write: if isAuthenticated() && (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true); }
     match /categories/{docId} { allow read: if isAuthenticated(); allow write: if isAuthenticated() && (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true); }
     match /genres/{docId} { allow read: if isAuthenticated(); allow write: if isAuthenticated() && (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true); }
     match /artists/{docId} { allow read: if isAuthenticated(); allow write: if isAuthenticated() && (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true); }

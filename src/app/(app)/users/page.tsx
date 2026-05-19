@@ -55,7 +55,6 @@ export default function UsersPage() {
   const [showDebug, setShowDebug] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   
-  // Estado para gerenciar a exclusão com segurança
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -85,7 +84,6 @@ export default function UsersPage() {
     
     setIsDeleting(true);
     try {
-      // Exclui o documento do usuário usando o ID confirmado no Firestore
       const userRef = doc(db, 'users', userToDelete.id);
       await deleteDoc(userRef);
       
@@ -99,7 +97,7 @@ export default function UsersPage() {
       toast({
         variant: "destructive",
         title: "Erro de Permissão",
-        description: "O Firestore negou a exclusão. Verifique se seu papel é exatamente 'admin' no banco.",
+        description: "O Firestore negou a exclusão. Verifique as regras de segurança.",
       });
     } finally {
       setIsDeleting(false);
@@ -145,7 +143,6 @@ export default function UsersPage() {
     return null;
   }
 
-  // Verifica se o ID do documento é diferente do UID da autenticação
   const idMismatch = currentUser && appUser && currentUser.uid !== appUser.id;
 
   return (
@@ -194,15 +191,6 @@ export default function UsersPage() {
                       Para corrigir: No Firestore Console, crie um novo documento com o ID <code>{currentUser?.uid}</code> e copie seus dados para lá.
                    </div>
                 )}
-
-                <div className="flex flex-col gap-1">
-                    <div className="text-muted-foreground">Papel Identificado:</div>
-                    <div className="mt-1">
-                        <Badge variant={appUser?.role === 'admin' ? 'default' : 'destructive'}>
-                            {appUser?.role || 'indefinido'}
-                        </Badge>
-                    </div>
-                </div>
             </CardContent>
         </Card>
       )}
@@ -300,7 +288,6 @@ export default function UsersPage() {
         </Card>
       </div>
       
-      {/* Diálogo de confirmação corrigido para evitar erro de hidratação */}
       <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && !isDeleting && setUserToDelete(null)}>
           <AlertDialogContent>
               <AlertDialogHeader>
