@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useRequireAuth, useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
-import { Save, Loader2, MessageSquare, Trash2, Bug, ShieldCheck, Fingerprint, AlertTriangle } from 'lucide-react';
+import { Save, Loader2, MessageSquare, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
@@ -43,12 +43,11 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function UsersPage() {
-  const { isAdmin, loading: loadingAuth, appUser } = useRequireAuth();
+  const { isAdmin, loading: loadingAuth } = useRequireAuth();
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 
-  // Só habilitamos a busca de usuários se o usuário logado for confirmado como admin
   const { data: users, loading: loadingUsers, updateDocument } = useFirestoreCollection<User>(
     'users', 
     'createdAt', 
@@ -60,7 +59,6 @@ export default function UsersPage() {
   
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
-  const [showDebug, setShowDebug] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
@@ -151,8 +149,6 @@ export default function UsersPage() {
     return null;
   }
 
-  const idMismatch = currentUser && appUser && currentUser.uid !== appUser.id;
-
   return (
     <div className="flex-1 space-y-8 p-4 md:p-8 pt-6">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -160,46 +156,7 @@ export default function UsersPage() {
             <h2 className="text-3xl font-bold font-headline tracking-tight">Gerenciamento do Sistema</h2>
             <div className="text-muted-foreground text-sm">Administre usuários e configurações globais.</div>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setShowDebug(!showDebug)} className="gap-2">
-            <Bug className="h-4 w-4" />
-            {showDebug ? 'Ocultar Depuração' : 'Depurar Permissões'}
-        </Button>
       </div>
-
-      {showDebug && (
-        <Card className={`border-orange-500 bg-orange-500/5 ${idMismatch ? 'ring-2 ring-destructive animate-pulse' : ''}`}>
-            <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                    <Bug className="h-4 w-4" /> Painel de Diagnóstico
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="text-xs font-mono space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                        <div className="text-muted-foreground flex items-center gap-1"><Fingerprint className="h-3 w-3" /> UID Autenticação:</div>
-                        <div className="font-bold break-all">{currentUser?.uid}</div>
-                    </div>
-                    <div className="space-y-1">
-                        <div className="text-muted-foreground flex items-center gap-1"><Fingerprint className="h-3 w-3" /> ID Documento:</div>
-                        <div className="font-bold break-all">{appUser?.id}</div>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-2 py-2 border-y border-orange-500/20">
-                    <div className="text-muted-foreground">IDs coincidem?</div>
-                    <Badge variant={!idMismatch ? "default" : "destructive"}>
-                        {!idMismatch ? "SIM" : "NÃO"}
-                    </Badge>
-                </div>
-                
-                {idMismatch && (
-                   <div className="bg-destructive/10 text-destructive p-3 rounded-md border border-destructive/20 text-[11px]">
-                      <strong>ALERTA:</strong> O UID de login não bate com o ID do seu documento admin. Isso impede operações críticas.
-                   </div>
-                )}
-            </CardContent>
-        </Card>
-      )}
 
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="md:col-span-1 border-primary/20 bg-primary/5">
@@ -302,7 +259,7 @@ export default function UsersPage() {
                             Deseja remover <strong>{userToDelete?.displayName}</strong>?
                         </div>
                         <div className="bg-destructive/5 border border-destructive/20 p-3 rounded-md text-destructive text-xs leading-relaxed">
-                            <p className="font-bold uppercase mb-1">Aviso:</p>
+                            <div className="font-bold uppercase mb-1">Aviso:</div>
                             Esta ação remove os dados do Firestore. O acesso no Console do Firebase (Auth) deve ser removido manualmente.
                         </div>
                       </div>
