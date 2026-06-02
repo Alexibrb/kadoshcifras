@@ -74,7 +74,7 @@ function SongPresenter({
     const content = transposeContent(section.content, transposeValue);
 
     return (
-        <Card className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none overflow-hidden relative">
+        <Card className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none relative">
             <CardContent className="flex-1 h-full p-0">
                 <ScrollArea className="h-full p-4 md:p-8">
                     <SongDisplay 
@@ -188,7 +188,6 @@ export default function OfflineSetlistPage() {
     };
   }, [requestWakeLock]);
 
-  // Aplica Smart Split baseada na configuração de linhas do usuário
   const allSections = useMemo((): Section[] => {
     if (!offlineData) return [];
     const sections: Section[] = [];
@@ -508,7 +507,7 @@ export default function OfflineSetlistPage() {
         )}
 
         {isContinuousMode || !showChords ? (
-          <ScrollArea ref={scrollAreaRef} className="h-full bg-white dark:bg-black rounded-lg border">
+          <ScrollArea ref={scrollAreaRef} className="h-full bg-white dark:bg-black">
               <div className="p-4 md:p-8 pb-48">
                 {offlineData.songs.map((song, songIdx) => (
                     <div key={songIdx} className="flex flex-col mb-16">

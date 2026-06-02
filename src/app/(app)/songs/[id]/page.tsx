@@ -131,7 +131,6 @@ export default function SongPage() {
     return transposeChord(song.key, transpose);
   }, [song?.key, transpose]);
 
-  // Aplica a lógica Smart Split baseada na preferência do usuário
   const songParts = useMemo(() => {
     if (!contentToDisplay) return [];
     return paginateContent(contentToDisplay, finalLinesPerPage); 
@@ -450,7 +449,7 @@ export default function SongPage() {
         )}
 
         {isContinuousMode || !showChords ? (
-          <ScrollArea ref={scrollAreaRef} className="h-full bg-white dark:bg-black rounded-lg border">
+          <ScrollArea ref={scrollAreaRef} className="h-full bg-white dark:bg-black">
             <div className="p-4 md:p-8 pb-32">
               {songParts.map((part, idx) => (
                 <div key={idx} data-part-index={idx}>
@@ -464,7 +463,7 @@ export default function SongPage() {
             <CarouselContent className="h-full">
               {songParts.map((part, index) => (
                 <CarouselItem key={index} className="h-full">
-                  <ScrollArea className="h-full p-4 md:p-8 bg-white dark:bg-black rounded-lg border">
+                  <ScrollArea className="h-full p-4 md:p-8 bg-white dark:bg-black">
                     <SongDisplay content={part} showChords={showChords} style={{ fontSize: `${finalFontSize}px` }} />
                   </ScrollArea>
                 </CarouselItem>
