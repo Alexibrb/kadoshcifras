@@ -51,6 +51,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 if (userData.fontSize) {
                     localStorage.setItem('song-font-size', JSON.stringify(userData.fontSize));
                 }
+                if (userData.linesPerPage) {
+                    localStorage.setItem('song-lines-per-page', JSON.stringify(userData.linesPerPage));
+                }
             }
 
             const convertedData = convertTimestampsInObject(userData);

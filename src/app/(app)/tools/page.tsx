@@ -3,6 +3,7 @@
 import { PedalSettingsForm } from "@/components/tools/pedal-settings-form";
 import { ColorSettingsForm } from "@/components/tools/color-settings-form";
 import { FontSizeSettingsForm } from "@/components/tools/font-size-settings-form";
+import { LinesPerPageSettingsForm } from "@/components/tools/lines-per-page-settings-form";
 
 export default function ToolsPage() {
   return (
@@ -15,6 +16,7 @@ export default function ToolsPage() {
          <PedalSettingsForm />
          <ColorSettingsForm />
          <FontSizeSettingsForm />
+         <LinesPerPageSettingsForm />
        </div>
     </div>
   );

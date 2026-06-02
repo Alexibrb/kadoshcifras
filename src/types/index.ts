@@ -52,6 +52,7 @@ export interface User {
     createdAt?: AppTimestamp;
     colorSettings?: ColorSettings;
     fontSize?: number;
+    linesPerPage?: number;
 }
 
 export interface MetadataItem {

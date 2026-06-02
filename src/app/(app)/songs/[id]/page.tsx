@@ -1,3 +1,4 @@
+
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -77,6 +78,7 @@ export default function SongPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   
   const finalFontSize = appUser?.fontSize ?? 14;
+  const finalLinesPerPage = appUser?.linesPerPage ?? 14;
 
   useEffect(() => {
     if (isClient && song) {
@@ -129,11 +131,11 @@ export default function SongPage() {
     return transposeChord(song.key, transpose);
   }, [song?.key, transpose]);
 
-  // Aplica a lógica Smart Split
+  // Aplica a lógica Smart Split baseada na preferência do usuário
   const songParts = useMemo(() => {
     if (!contentToDisplay) return [];
-    return paginateContent(contentToDisplay, 14); // 14 linhas é um limite seguro para mobile
-  }, [contentToDisplay]);
+    return paginateContent(contentToDisplay, finalLinesPerPage); 
+  }, [contentToDisplay, finalLinesPerPage]);
 
   const handleSaveTranspose = async () => {
     if (!song) return;

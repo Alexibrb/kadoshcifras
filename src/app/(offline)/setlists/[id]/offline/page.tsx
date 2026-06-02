@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -116,6 +117,7 @@ export default function OfflineSetlistPage() {
   const [loading, setLoading] = useState(true);
 
   const [fontSize] = useLocalStorage('song-font-size', 14);
+  const [linesPerPage] = useLocalStorage('song-lines-per-page', 14);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [isPanelVisible, setIsPanelVisible] = useState(false);
   const [isContinuousMode, setIsContinuousMode] = useState(false);
@@ -186,13 +188,12 @@ export default function OfflineSetlistPage() {
     };
   }, [requestWakeLock]);
 
-  // Aplica Smart Split em todo o repertório
+  // Aplica Smart Split baseada na configuração de linhas do usuário
   const allSections = useMemo((): Section[] => {
     if (!offlineData) return [];
     const sections: Section[] = [];
     offlineData.songs.forEach((song, songIndex) => {
-        // Usa paginateContent em vez de split manual
-        const parts = paginateContent(song.content, 14);
+        const parts = paginateContent(song.content, linesPerPage);
         parts.forEach((part, partIndex) => {
             sections.push({
                 id: `${songIndex}-${partIndex}`,
@@ -205,7 +206,7 @@ export default function OfflineSetlistPage() {
         });
     });
     return sections;
-  }, [offlineData]);
+  }, [offlineData, linesPerPage]);
 
   const stopAutoScroll = useCallback(() => {
     setIsAutoScrolling(false);
