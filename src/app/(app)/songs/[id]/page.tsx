@@ -1,4 +1,3 @@
-
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Play, Pause, X, Lo
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { transposeContent, isChordLine, transposeChord } from '@/lib/music';
+import { transposeContent, isChordLine, transposeChord, paginateContent } from '@/lib/music';
 import { SongDisplay } from '@/components/song-display';
 import { Card, CardContent } from '@/components/ui/card';
 import { Carousel, CarouselApi, CarouselContent, CarouselItem } from '@/components/ui/carousel';
@@ -130,9 +129,10 @@ export default function SongPage() {
     return transposeChord(song.key, transpose);
   }, [song?.key, transpose]);
 
+  // Aplica a lógica Smart Split
   const songParts = useMemo(() => {
     if (!contentToDisplay) return [];
-    return contentToDisplay.split(/\n\s*\n\s*\n/).filter(p => p.trim());
+    return paginateContent(contentToDisplay, 14); // 14 linhas é um limite seguro para mobile
   }, [contentToDisplay]);
 
   const handleSaveTranspose = async () => {

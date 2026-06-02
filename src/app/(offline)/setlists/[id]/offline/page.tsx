@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -15,7 +14,7 @@ import { Slider } from '@/components/ui/slider';
 import Link from 'next/link';
 import { PedalSettings, ColorSettings } from '@/types';
 import { Carousel, CarouselApi, CarouselContent, CarouselItem } from '@/components/ui/carousel';
-import { transposeChord, transposeContent, isChordLine } from '@/lib/music';
+import { transposeChord, transposeContent, isChordLine, paginateContent } from '@/lib/music';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -187,17 +186,19 @@ export default function OfflineSetlistPage() {
     };
   }, [requestWakeLock]);
 
+  // Aplica Smart Split em todo o repertório
   const allSections = useMemo((): Section[] => {
     if (!offlineData) return [];
     const sections: Section[] = [];
     offlineData.songs.forEach((song, songIndex) => {
-        const parts = song.content.split(/\n\s*\n\s*\n+/).filter(p => p.trim());
+        // Usa paginateContent em vez de split manual
+        const parts = paginateContent(song.content, 14);
         parts.forEach((part, partIndex) => {
             sections.push({
                 id: `${songIndex}-${partIndex}`,
                 songIndex: songIndex,
                 partIndex: partIndex,
-                content: part.trim(),
+                content: part,
                 isLastSectionOfSong: partIndex === parts.length - 1,
                 isLastSectionOfSetlist: partIndex === parts.length - 1 && songIndex === offlineData.songs.length - 1,
             });
@@ -427,7 +428,6 @@ export default function OfflineSetlistPage() {
   const currentSong = offlineData.songs[currentSec.songIndex];
   const currentKey = currentSong.key ? transposeChord(currentSong.key, transpositions[currentSec.songIndex]) : null;
 
-  // Cálculos para o contador
   const totalSongs = offlineData.songs.length;
   const currentSongNum = currentSec.songIndex + 1;
   const sectionsOfCurrentSong = allSections.filter(s => s.songIndex === currentSec.songIndex);
