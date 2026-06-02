@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -117,7 +118,7 @@ export default function OfflineSetlistPage() {
 
   const [fontSize] = useLocalStorage('song-font-size', 14);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
-  const [isPanelVisible, setIsPanelVisible] = useState(false); // Inicia recolhido por padrão
+  const [isPanelVisible, setIsPanelVisible] = useState(false);
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(10);
@@ -426,6 +427,13 @@ export default function OfflineSetlistPage() {
   const currentSong = offlineData.songs[currentSec.songIndex];
   const currentKey = currentSong.key ? transposeChord(currentSong.key, transpositions[currentSec.songIndex]) : null;
 
+  // Cálculos para o contador
+  const totalSongs = offlineData.songs.length;
+  const currentSongNum = currentSec.songIndex + 1;
+  const sectionsOfCurrentSong = allSections.filter(s => s.songIndex === currentSec.songIndex);
+  const totalPagesInSong = sectionsOfCurrentSong.length;
+  const currentPageInSong = sectionsOfCurrentSong.findIndex(s => s.id === currentSec.id) + 1;
+
   return (
     <div 
       ref={containerRef}
@@ -446,6 +454,10 @@ export default function OfflineSetlistPage() {
                   <Badge variant="outline">Offline</Badge>
                   <Sun className={cn("h-3 w-3 transition-opacity", isWakeLockActive ? "text-orange-500 opacity-100" : "text-muted-foreground opacity-30")} />
                   <span className="text-[10px] text-muted-foreground uppercase font-bold">{isWakeLockActive ? 'Tela Ativa' : 'Tela Normal'}</span>
+                  <div className="flex items-center gap-1">
+                    <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4">Música {currentSongNum}/{totalSongs}</Badge>
+                    <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4">Página {currentPageInSong}/{totalPagesInSong}</Badge>
+                  </div>
                 </div>
               </div>
               <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon"><PanelTopClose className="h-5 w-5" /></Button>
@@ -470,9 +482,16 @@ export default function OfflineSetlistPage() {
         ) : (
           <div className="flex items-center justify-between h-8">
             <Button asChild variant="outline" size="icon" className="h-8 w-8"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
-            <h1 className="text-sm font-bold truncate flex-1 text-center">
-              {currentSong.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
-            </h1>
+            <div className="flex-1 flex flex-col items-center justify-center overflow-hidden">
+                <h1 className="text-sm font-bold truncate w-full text-center">
+                    {currentSong.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
+                </h1>
+                <div className="flex items-center gap-3 text-[9px] font-bold text-muted-foreground uppercase tracking-widest leading-none mt-0.5">
+                    <span>Música {currentSongNum} de {totalSongs}</span>
+                    <Separator orientation="vertical" className="h-2" />
+                    <span>Página {currentPageInSong} de {totalPagesInSong}</span>
+                </div>
+            </div>
             <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8"><PanelTopOpen className="h-5 w-5" /></Button>
           </div>
         )}

@@ -1,3 +1,4 @@
+
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -371,6 +372,9 @@ export default function SongPage() {
                   <div className="flex items-center justify-center gap-2 mt-1">
                     <Sun className={cn("h-3 w-3 transition-opacity", isWakeLockActive ? "text-orange-500 opacity-100" : "text-muted-foreground opacity-30")} />
                     <span className="text-[10px] text-muted-foreground uppercase font-bold">{isWakeLockActive ? 'Tela Ativa' : 'Tela Normal'}</span>
+                    <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4">
+                      Página {currentPartIndex + 1} de {songParts.length}
+                    </Badge>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -420,9 +424,14 @@ export default function SongPage() {
           ) : (
             <div className="flex items-center justify-between h-8">
               <Button asChild variant="outline" size="icon" className="h-8 w-8"><Link href={fromSetlistId ? `/setlists/${fromSetlistId}` : '/songs'}><ArrowLeft className="h-4 w-4" /></Link></Button>
-              <h1 className="text-sm font-bold truncate flex-1 text-center">
-                {song.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
-              </h1>
+              <div className="flex-1 flex flex-col items-center justify-center overflow-hidden">
+                <h1 className="text-sm font-bold truncate w-full text-center">
+                  {song.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
+                </h1>
+                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest leading-none mt-0.5">
+                  Página {currentPartIndex + 1} de {songParts.length}
+                </p>
+              </div>
               <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8"><PanelTopOpen className="h-5 w-5" /></Button>
             </div>
           )}
