@@ -373,7 +373,7 @@ export default function SongPage() {
                   <div className="flex items-center justify-center gap-2 mt-1">
                     <Sun className={cn("h-3 w-3 transition-opacity", isWakeLockActive ? "text-orange-500 opacity-100" : "text-muted-foreground opacity-30")} />
                     <span className="text-[10px] text-muted-foreground uppercase font-bold">{isWakeLockActive ? 'Tela Ativa' : 'Tela Normal'}</span>
-                    <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4">
+                    <Badge variant="secondary" className="text-[12px] py-0 px-1.5 h-5 text-blue-600 dark:text-blue-400 font-bold">
                       Página {currentPartIndex + 1} de {songParts.length}
                     </Badge>
                   </div>
@@ -429,7 +429,7 @@ export default function SongPage() {
                 <h1 className="text-sm font-bold truncate w-full text-center">
                   {song.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
                 </h1>
-                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest leading-none mt-0.5">
+                <p className="text-[12px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none mt-0.5">
                   Página {currentPartIndex + 1} de {songParts.length}
                 </p>
               </div>

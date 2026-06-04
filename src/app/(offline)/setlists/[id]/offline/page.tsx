@@ -455,8 +455,8 @@ export default function OfflineSetlistPage() {
                   <Sun className={cn("h-3 w-3 transition-opacity", isWakeLockActive ? "text-orange-500 opacity-100" : "text-muted-foreground opacity-30")} />
                   <span className="text-[10px] text-muted-foreground uppercase font-bold">{isWakeLockActive ? 'Tela Ativa' : 'Tela Normal'}</span>
                   <div className="flex items-center gap-1">
-                    <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4">Música {currentSongNum}/{totalSongs}</Badge>
-                    <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4">Página {currentPageInSong}/{totalPagesInSong}</Badge>
+                    <Badge variant="secondary" className="text-[12px] py-0 px-1.5 h-5 text-blue-600 dark:text-blue-400 font-bold">Música {currentSongNum}/{totalSongs}</Badge>
+                    <Badge variant="secondary" className="text-[12px] py-0 px-1.5 h-5 text-blue-600 dark:text-blue-400 font-bold">Página {currentPageInSong}/{totalPagesInSong}</Badge>
                   </div>
                 </div>
               </div>
@@ -486,9 +486,9 @@ export default function OfflineSetlistPage() {
                 <h1 className="text-sm font-bold truncate w-full text-center">
                     {currentSong.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
                 </h1>
-                <div className="flex items-center gap-3 text-[9px] font-bold text-muted-foreground uppercase tracking-widest leading-none mt-0.5">
+                <div className="flex items-center gap-3 text-[12px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none mt-0.5">
                     <span>Música {currentSongNum} de {totalSongs}</span>
-                    <Separator orientation="vertical" className="h-2" />
+                    <Separator orientation="vertical" className="h-2 bg-blue-200 dark:bg-blue-800" />
                     <span>Página {currentPageInSong} de {totalPagesInSong}</span>
                 </div>
             </div>
