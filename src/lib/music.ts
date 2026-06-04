@@ -79,15 +79,15 @@ export const transposeContent = (content: string, semitones: number): string => 
 export const paginateContent = (content: string, linesPerPage: number = 14): string[] => {
   if (!content) return [];
 
-  // Primeiro respeita quebras manuais de 3 linhas (se existirem)
-  const manualBlocks = content.split(/\n\s*\n\s*\n+/).filter(p => p.trim());
+  // Primeiro divide pelo marcador manual "--" em uma linha própria
+  const manualBlocks = content.split(/\n\s*--\s*\n/).filter(p => p.trim());
   const finalPages: string[] = [];
 
   manualBlocks.forEach(block => {
     const lines = block.split('\n');
     
     // Se o bloco já cabe na página, adiciona inteiro
-    if (lines.length <= linesPerPage + 2) {
+    if (lines.length <= linesPerPage) {
       finalPages.push(block.trim());
       return;
     }

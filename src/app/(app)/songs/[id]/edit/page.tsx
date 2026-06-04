@@ -220,7 +220,7 @@ export default function EditSongPage() {
               <Label htmlFor="content" className="text-xs font-bold uppercase text-muted-foreground">Letra & Cifras</Label>
               <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                 <AlertCircle className="h-3 w-3" />
-                2 linhas em branco = Nova Página no PDF
+                Linha com '--' = Nova Página
               </div>
             </div>
             <Textarea

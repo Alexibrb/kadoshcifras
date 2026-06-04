@@ -1,4 +1,3 @@
-
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -268,7 +267,7 @@ export default function NewSongPage() {
               <Alert variant="destructive" className="p-3">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  Use duas linhas em branco para dividir a música em várias páginas/seções.
+                  Use uma linha com '--' para forçar uma nova página. O sistema também divide automaticamente pelo limite de linhas configurado nas Ferramentas.
                 </AlertDescription>
               </Alert>
               <Textarea
