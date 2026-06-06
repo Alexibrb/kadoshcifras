@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { Song, MetadataItem } from '@/types';
-import { ArrowLeft, PlusCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, PlusCircle, AlertCircle, Save, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useMemo } from 'react';
@@ -50,8 +50,8 @@ export default function NewSongPage() {
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [isGenreDialogOpen, setIsGenreDialogOpen] = useState(false);
   const [isArtistDialogOpen, setIsArtistDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
-  // Deduplica metadados por nome para evitar erro de chaves duplicadas no React
   const uniqueArtists = useMemo(() => {
     const seen = new Set();
     return artists.filter(item => {
@@ -114,6 +114,7 @@ export default function NewSongPage() {
         alert("Por favor, preencha todos os campos obrigatórios (Título, Artista, Categoria, Gênero).");
         return;
     }
+    setIsSaving(true);
     const newSong: Omit<Song, 'id'> = {
       title,
       artist: selectedArtist,
@@ -127,6 +128,7 @@ export default function NewSongPage() {
     if (newSongId) {
       router.push(`/songs/${newSongId}`);
     } else {
+      setIsSaving(false);
       router.push('/songs');
     }
   };
@@ -262,7 +264,10 @@ export default function NewSongPage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                   <Label htmlFor="content">Letra &amp; Cifras</Label>
-                  <Button type="submit">Salvar Música</Button>
+                  <Button type="submit" disabled={isSaving}>
+                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                    Salvar Música
+                  </Button>
               </div>
               <Alert variant="destructive" className="p-3">
                 <AlertCircle className="h-4 w-4" />
@@ -277,11 +282,14 @@ export default function NewSongPage() {
                 placeholder="Digite ou cole sua cifra aqui"
                 className="font-code"
                 required
-                style={{ whiteSpace: 'pre', overflowX: 'auto', height: '1500px' }}
+                style={{ whiteSpace: 'pre', overflowX: 'auto', height: '800px' }}
               />
             </div>
-            <div className="flex justify-end">
-              <Button type="submit">Salvar Música</Button>
+            <div className="flex justify-end pt-4 border-t">
+              <Button type="submit" size="lg" className="h-12 px-10" disabled={isSaving}>
+                {isSaving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
+                Salvar Música
+              </Button>
             </div>
           </form>
         </CardContent>

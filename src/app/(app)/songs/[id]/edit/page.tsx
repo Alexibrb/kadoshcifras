@@ -48,7 +48,6 @@ export default function EditSongPage() {
 
   const [isSaving, setIsSaving] = useState(false);
 
-  // Deduplicação robusta para evitar erros de renderização e inconsistência no Select
   const uniqueArtists = useMemo(() => {
     const seen = new Set();
     return artists.filter(item => {
@@ -79,7 +78,6 @@ export default function EditSongPage() {
     });
   }, [genres]);
 
-  // Carrega os dados da música apenas quando ela e os metadados estiverem prontos
   useEffect(() => {
     if (song) {
       setTitle(song.title || '');
@@ -126,7 +124,7 @@ export default function EditSongPage() {
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 max-w-5xl mx-auto">
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 max-w-5xl mx-auto pb-20">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button asChild variant="outline" size="icon">
@@ -145,7 +143,6 @@ export default function EditSongPage() {
       </div>
 
       <div className="space-y-4">
-        {/* Acordeão de Metadados - Recolhido por padrão */}
         <Accordion type="single" collapsible className="w-full border rounded-lg bg-card">
           <AccordionItem value="details" className="border-none px-4">
             <AccordionTrigger className="hover:no-underline py-3">
@@ -213,7 +210,6 @@ export default function EditSongPage() {
           </AccordionItem>
         </Accordion>
 
-        {/* Área de Conteúdo - Principal */}
         <Card className="border-none shadow-none bg-accent/5">
           <CardContent className="p-0 space-y-2">
             <div className="flex items-center justify-between px-1">
@@ -232,6 +228,13 @@ export default function EditSongPage() {
             />
           </CardContent>
         </Card>
+
+        <div className="flex justify-end pt-4 border-t">
+          <Button onClick={() => handleSubmit()} size="lg" className="h-12 px-10" disabled={isSaving}>
+            {isSaving ? <Loader2 className="animate-spin h-5 w-5 mr-2" /> : <Save className="mr-2 h-5 w-5" />}
+            Salvar Música
+          </Button>
+        </div>
       </div>
     </div>
   );
