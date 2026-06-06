@@ -79,6 +79,7 @@ export default function SongPage() {
   
   const finalFontSize = appUser?.fontSize ?? 14;
   const finalLinesPerPage = appUser?.linesPerPage ?? 14;
+  const finalColorSettings = appUser?.colorSettings;
 
   useEffect(() => {
     if (isClient && song) {
@@ -373,9 +374,11 @@ export default function SongPage() {
                   <div className="flex items-center justify-center gap-2 mt-1">
                     <Sun className={cn("h-3 w-3 transition-opacity", isWakeLockActive ? "text-orange-500 opacity-100" : "text-muted-foreground opacity-30")} />
                     <span className="text-[10px] text-muted-foreground uppercase font-bold">{isWakeLockActive ? 'Tela Ativa' : 'Tela Normal'}</span>
-                    <Badge variant="secondary" className="text-[12px] py-0 px-1.5 h-5 text-blue-600 dark:text-blue-400 font-bold">
-                      Página {currentPartIndex + 1} de {songParts.length}
-                    </Badge>
+                    <div className="flex items-center gap-1">
+                        <Badge variant="secondary" className="text-[12px] py-0 px-1.5 h-5 text-blue-600 dark:text-blue-400 font-bold">
+                            Página {currentPartIndex + 1} de {songParts.length}
+                        </Badge>
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -453,7 +456,15 @@ export default function SongPage() {
             <div className="p-4 md:p-8 pb-32">
               {songParts.map((part, idx) => (
                 <div key={idx} data-part-index={idx}>
-                  <SongDisplay content={part} showChords={showChords} style={{ fontSize: `${finalFontSize}px` }} />
+                  <SongDisplay 
+                    content={part} 
+                    showChords={showChords} 
+                    style={{ 
+                        fontSize: `${finalFontSize}px`,
+                        '--lyrics-color': finalColorSettings?.lyricsColor,
+                        '--chords-color': finalColorSettings?.chordsColor,
+                    } as React.CSSProperties} 
+                  />
                 </div>
               ))}
             </div>
@@ -464,7 +475,15 @@ export default function SongPage() {
               {songParts.map((part, index) => (
                 <CarouselItem key={index} className="h-full">
                   <ScrollArea className="h-full p-4 md:p-8 bg-white dark:bg-black">
-                    <SongDisplay content={part} showChords={showChords} style={{ fontSize: `${finalFontSize}px` }} />
+                    <SongDisplay 
+                      content={part} 
+                      showChords={showChords} 
+                      style={{ 
+                        fontSize: `${finalFontSize}px`,
+                        '--lyrics-color': finalColorSettings?.lyricsColor,
+                        '--chords-color': finalColorSettings?.chordsColor,
+                      } as React.CSSProperties} 
+                    />
                   </ScrollArea>
                 </CarouselItem>
               ))}
