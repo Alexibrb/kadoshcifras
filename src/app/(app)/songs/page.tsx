@@ -76,9 +76,11 @@ export default function SongsPage() {
     let filtered = songs;
 
     if (searchQuery) {
+        const query = searchQuery.toLowerCase();
         filtered = filtered.filter((song) =>
-            song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (song.artist && song.artist.toLowerCase().includes(searchQuery.toLowerCase()))
+            song.title.toLowerCase().includes(query) ||
+            (song.artist && song.artist.toLowerCase().includes(query)) ||
+            (song.content && song.content.toLowerCase().includes(query))
         );
     }
 
@@ -153,10 +155,10 @@ export default function SongsPage() {
        <Card className="p-4">
         <div className="flex items-center gap-2 flex-wrap">
             <Input
-                placeholder="Buscar por título ou artista..."
+                placeholder="Buscar por título, artista ou trecho..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full sm:w-auto md:w-48"
+                className="w-full sm:w-auto md:w-64"
             />
             <Select onValueChange={setSelectedArtist} value={selectedArtist}>
                 <SelectTrigger className="w-full sm:w-auto md:w-[180px]">
