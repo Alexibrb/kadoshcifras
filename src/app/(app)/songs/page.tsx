@@ -150,8 +150,8 @@ export default function SongsPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-       <div className="flex items-center gap-4 mb-4">
-            <Link href="/songs">
+       <div className="flex items-center gap-4 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+            <Link href="/songs" className="shrink-0">
                 <Card className="hover:bg-accent/50 transition-colors">
                   <CardContent className="p-3 flex items-center gap-4">
                     <Music className="h-6 w-6 text-muted-foreground" />
@@ -162,7 +162,7 @@ export default function SongsPage() {
                   </CardContent>
                 </Card>
             </Link>
-            <Link href="/setlists">
+            <Link href="/setlists" className="shrink-0">
                 <Card className="hover:bg-accent/50 transition-colors">
                   <CardContent className="p-3 flex items-center gap-4">
                     <ListMusic className="h-6 w-6 text-muted-foreground" />
@@ -237,7 +237,7 @@ export default function SongsPage() {
 
 
       {loading && isClient ? (
-        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
                 <Card key={i} className="p-3 space-y-2">
                     <Skeleton className="h-5 w-3/4" />
@@ -271,17 +271,17 @@ export default function SongsPage() {
             </div>
          </div>
       ) : (
-        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {isClient &&
             filteredAndSortedSongs.map((song) => (
-              <Card key={song.id} className={cn("p-3 border-l-4 transition-all hover:shadow-md", getCategoryColor(song.category))}>
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-grow overflow-hidden">
-                    <Button asChild variant="link" className="p-0 h-auto justify-start">
-                        <Link href={`/songs/${song.id}`} className="truncate">
-                            <p className="font-semibold text-base truncate text-foreground hover:underline">{song.title}</p>
-                        </Link>
-                    </Button>
+              <Card key={song.id} className={cn("p-3 border-l-4 transition-all hover:shadow-md min-w-0", getCategoryColor(song.category))}>
+                <div className="flex items-center justify-between gap-2 min-w-0">
+                  <div className="flex-1 min-w-0">
+                    <Link href={`/songs/${song.id}`} className="block group">
+                        <p className="font-semibold text-base truncate text-foreground group-hover:text-primary transition-colors">
+                            {song.title}
+                        </p>
+                    </Link>
                      <p className="text-sm text-muted-foreground truncate">{song.artist}</p>
                   </div>
                   <div className="flex items-center shrink-0">
