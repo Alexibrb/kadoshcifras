@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 
 type SortOption = 'title-asc' | 'title-desc' | 'artist-asc' | 'artist-desc' | 'date-desc';
@@ -120,6 +121,31 @@ export default function SongsPage() {
     setSortOrder('title-asc');
     setSelectedArtist('all');
     setSelectedCategory('all');
+  };
+
+  // Função para retornar a cor baseada na categoria
+  const getCategoryColor = (category?: string) => {
+    if (!category) return 'border-l-muted';
+    
+    const cat = category.toLowerCase();
+    if (cat.includes('adoração') || cat.includes('worship')) return 'border-l-blue-500';
+    if (cat.includes('celebração') || cat.includes('rejubilo')) return 'border-l-orange-500';
+    if (cat.includes('hino') || cat.includes('harpa')) return 'border-l-amber-600';
+    if (cat.includes('comunhão')) return 'border-l-green-500';
+    if (cat.includes('especial')) return 'border-l-purple-500';
+    if (cat.includes('infantil')) return 'border-l-pink-400';
+    
+    // Fallback para cores variadas baseadas no nome
+    const colors = [
+        'border-l-red-400', 
+        'border-l-emerald-400', 
+        'border-l-sky-400', 
+        'border-l-violet-400', 
+        'border-l-rose-400',
+        'border-l-teal-400'
+    ];
+    const index = category.length % colors.length;
+    return colors[index];
   };
 
   return (
@@ -248,7 +274,7 @@ export default function SongsPage() {
         <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {isClient &&
             filteredAndSortedSongs.map((song) => (
-              <Card key={song.id} className="p-3">
+              <Card key={song.id} className={cn("p-3 border-l-4 transition-all hover:shadow-md", getCategoryColor(song.category))}>
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex-grow overflow-hidden">
                     <Button asChild variant="link" className="p-0 h-auto justify-start">
