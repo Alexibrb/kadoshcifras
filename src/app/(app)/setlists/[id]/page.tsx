@@ -323,7 +323,7 @@ export default function SetlistPage() {
                                         ref={provided.innerRef}
                                         {...provided.draggableProps}
                                         {...provided.dragHandleProps}
-                                        className={cn('flex items-center justify-between p-2 rounded-md border bg-background', canEdit && "hover:bg-accent/50", snapshot.isDragging ? 'shadow-lg bg-accent/20' : '')}
+                                        className={cn('flex items-center justify-between p-2 rounded-md border bg-background transition-colors', canEdit && "hover:bg-primary/5", snapshot.isDragging ? 'shadow-lg bg-primary/10' : '')}
                                         style={{...provided.draggableProps.style}}
                                       >
                                           <div className="flex items-center gap-2 flex-grow">
@@ -396,14 +396,14 @@ export default function SetlistPage() {
                             availableSongs.map((song) => (
                                <div
                                  key={song.id}
-                                 className="flex items-center justify-between p-2 rounded-md hover:bg-accent cursor-pointer"
+                                 className="flex items-center justify-between p-2 rounded-md hover:bg-primary/10 cursor-pointer group transition-colors"
                                  onClick={() => handleAddSong(song.id)}
                                >
                                     <div>
-                                        <p className="font-medium">{song.title}</p>
+                                        <p className="font-medium group-hover:text-primary transition-colors">{song.title}</p>
                                         <p className="text-sm text-muted-foreground">{song.artist}</p>
                                     </div>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground group-hover:text-primary">
                                         <PlusCircle className="h-4 w-4" />
                                     </Button>
                                </div>
