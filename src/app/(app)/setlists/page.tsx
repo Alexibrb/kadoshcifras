@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
+import { cn } from '@/lib/utils';
 
 export default function SetlistsPage() {
   const { appUser, loading: authLoading } = useAuth();
@@ -102,8 +103,16 @@ export default function SetlistsPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {setlists.map((setlist) => {
               const canDelete = appUser?.role === 'admin' || appUser?.id === setlist.creatorId;
+              const hasSongs = (setlist.songs?.length || 0) > 0;
+
               return (
-              <Card key={setlist.id} className="p-4 flex flex-col">
+              <Card 
+                key={setlist.id} 
+                className={cn(
+                    "p-4 flex flex-col border-l-4 transition-all hover:shadow-md",
+                    hasSongs ? "border-l-primary" : "border-l-muted-foreground/30"
+                )}
+              >
                 <div className="flex items-start justify-between gap-4 flex-grow">
                   <div className="flex-grow overflow-hidden">
                      <Link href={`/setlists/${setlist.id}`} className="block">
@@ -114,7 +123,9 @@ export default function SetlistsPage() {
                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                         {setlist.isPublic ? <Globe className="h-4 w-4 shrink-0" /> : <Lock className="h-4 w-4 shrink-0" />}
                         {setlist.isVisible === false ? <EyeOff className="h-4 w-4 shrink-0" /> : <Eye className="h-4 w-4 shrink-0" />}
-                        <span>{setlist.songs?.length || 0} música(s)</span>
+                        <span className={cn(hasSongs ? "text-foreground font-medium" : "text-muted-foreground")}>
+                            {setlist.songs?.length || 0} música(s)
+                        </span>
                      </div>
                      {setlist.creatorName && (
                         <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
