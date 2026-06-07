@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun, FileDown } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun, FileDown, FileText } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -455,8 +455,12 @@ export default function OfflineSetlistPage() {
                   <Sun className={cn("h-3 w-3 transition-opacity", isWakeLockActive ? "text-orange-500 opacity-100" : "text-muted-foreground opacity-30")} />
                   <span className="text-[10px] text-muted-foreground uppercase font-bold">{isWakeLockActive ? 'Tela Ativa' : 'Tela Normal'}</span>
                   <div className="flex items-center gap-1">
-                    <Badge variant="secondary" className="text-[12px] py-0 px-1.5 h-5 text-blue-600 dark:text-blue-400 font-bold">Música {currentSongNum}/{totalSongs}</Badge>
-                    <Badge variant="secondary" className="text-[12px] py-0 px-1.5 h-5 text-blue-600 dark:text-blue-400 font-bold">Página {currentPageInSong}/{totalPagesInSong}</Badge>
+                    <Badge variant="secondary" className="text-[12px] py-0 px-1.5 h-5 text-blue-600 dark:text-blue-400 font-bold flex items-center" style={{ fontFamily: 'Arial, sans-serif' }}>
+                        <Music className="h-3 w-3 mr-1" /> {currentSongNum} / {totalSongs}
+                    </Badge>
+                    <Badge variant="secondary" className="text-[12px] py-0 px-1.5 h-5 text-blue-600 dark:text-blue-400 font-bold flex items-center" style={{ fontFamily: 'Arial, sans-serif' }}>
+                        <FileText className="h-3 w-3 mr-1" /> {currentPageInSong} / {totalPagesInSong}
+                    </Badge>
                   </div>
                 </div>
               </div>
@@ -486,10 +490,10 @@ export default function OfflineSetlistPage() {
                 <h1 className="text-sm font-bold truncate w-full text-center">
                     {currentSong.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
                 </h1>
-                <div className="flex items-center gap-3 text-[12px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none mt-0.5">
-                    <span>Música {currentSongNum} de {totalSongs}</span>
+                <div className="flex items-center gap-3 text-[12px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none mt-0.5" style={{ fontFamily: 'Arial, sans-serif' }}>
+                    <span className="flex items-center"><Music className="h-3 w-3 mr-1" /> {currentSongNum} / {totalSongs}</span>
                     <Separator orientation="vertical" className="h-2 bg-blue-200 dark:bg-blue-800" />
-                    <span>Página {currentPageInSong} de {totalPagesInSong}</span>
+                    <span className="flex items-center"><FileText className="h-3 w-3 mr-1" /> {currentPageInSong} / {totalPagesInSong}</span>
                 </div>
             </div>
             <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8"><PanelTopOpen className="h-5 w-5" /></Button>

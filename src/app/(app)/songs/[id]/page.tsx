@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Song, PedalSettings, Setlist } from '@/types';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Play, Pause, X, Loader2, FileDown, Sun, Edit, Youtube, Save, Check } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Play, Pause, X, Loader2, FileDown, Sun, Edit, Youtube, Save, Check, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -375,8 +375,8 @@ export default function SongPage() {
                     <Sun className={cn("h-3 w-3 transition-opacity", isWakeLockActive ? "text-orange-500 opacity-100" : "text-muted-foreground opacity-30")} />
                     <span className="text-[10px] text-muted-foreground uppercase font-bold">{isWakeLockActive ? 'Tela Ativa' : 'Tela Normal'}</span>
                     <div className="flex items-center gap-1">
-                        <Badge variant="secondary" className="text-[12px] py-0 px-1.5 h-5 text-blue-600 dark:text-blue-400 font-bold">
-                            Página {currentPartIndex + 1} de {songParts.length}
+                        <Badge variant="secondary" className="text-[12px] py-0 px-1.5 h-5 text-blue-600 dark:text-blue-400 font-bold flex items-center" style={{ fontFamily: 'Arial, sans-serif' }}>
+                            <FileText className="h-3 w-3 mr-1" /> {currentPartIndex + 1} / {songParts.length}
                         </Badge>
                     </div>
                   </div>
@@ -432,9 +432,9 @@ export default function SongPage() {
                 <h1 className="text-sm font-bold truncate w-full text-center">
                   {song.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
                 </h1>
-                <p className="text-[12px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none mt-0.5">
-                  Página {currentPartIndex + 1} de {songParts.length}
-                </p>
+                <div className="text-[12px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none mt-0.5 flex items-center justify-center" style={{ fontFamily: 'Arial, sans-serif' }}>
+                  <FileText className="h-3 w-3 mr-1" /> {currentPartIndex + 1} / {songParts.length}
+                </div>
               </div>
               <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8"><PanelTopOpen className="h-5 w-5" /></Button>
             </div>
