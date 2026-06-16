@@ -1,4 +1,3 @@
-
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -107,11 +106,17 @@ export default function SongPage() {
   useEffect(() => {
     setIsClient(true);
     requestWakeLock();
-    if (containerRef.current) containerRef.current.focus();
     return () => {
       if (wakeLockRef.current) wakeLockRef.current.release();
     };
   }, [requestWakeLock]);
+
+  // Efeito para focar o container apenas quando ele estiver disponível no DOM
+  useEffect(() => {
+    if (isClient && !loadingSong && song && containerRef.current) {
+        containerRef.current.focus();
+    }
+  }, [isClient, loadingSong, song]);
 
   const stopAutoScroll = useCallback(() => {
     setIsAutoScrolling(false);

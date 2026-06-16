@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -182,11 +181,17 @@ export default function OfflineSetlistPage() {
   useEffect(() => {
     setIsClient(true);
     requestWakeLock();
-    if (containerRef.current) containerRef.current.focus();
     return () => {
         if (wakeLockRef.current) wakeLockRef.current.release();
     };
   }, [requestWakeLock]);
+
+  // Efeito para focar o container apenas quando ele estiver disponível no DOM
+  useEffect(() => {
+    if (isClient && !loading && offlineData && containerRef.current) {
+        containerRef.current.focus();
+    }
+  }, [isClient, loading, offlineData]);
 
   const allSections = useMemo((): Section[] => {
     if (!offlineData) return [];

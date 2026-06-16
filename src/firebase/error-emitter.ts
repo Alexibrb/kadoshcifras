@@ -1,8 +1,25 @@
 // src/firebase/error-emitter.ts
-import { EventEmitter } from 'events';
 
-// Garantindo que a classe EventEmitter não seja removida pelo tree-shaking no browser
-// e fornecendo um polyfill se necessário.
-class Emitter extends EventEmitter {}
+/**
+ * Emissor de eventos simplificado para evitar dependências de módulos Node.js no navegador.
+ */
+class Emitter {
+  private events: { [key: string]: Function[] } = {};
+
+  on(event: string, listener: Function) {
+    if (!this.events[event]) this.events[event] = [];
+    this.events[event].push(listener);
+  }
+
+  off(event: string, listener: Function) {
+    if (!this.events[event]) return;
+    this.events[event] = this.events[event].filter(l => l !== listener);
+  }
+
+  emit(event: string, ...args: any[]) {
+    if (!this.events[event]) return;
+    this.events[event].forEach(listener => listener(...args));
+  }
+}
 
 export const errorEmitter = new Emitter();
