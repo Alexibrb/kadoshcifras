@@ -1,61 +1,17 @@
-'use client';
+
 import './globals.css';
-import { Toaster } from "@/components/ui/toaster"
-import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider } from '@/hooks/use-auth';
-import { useEffect } from 'react';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { ClientProviders } from '@/components/client-providers';
 
-const FirebaseErrorListener = () => {
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const handleError = (error: FirestorePermissionError) => {
-      // Logamos no console apenas se não estivermos em produção para facilitar o debug
-      if (process.env.NODE_ENV === 'development') {
-        console.warn("Permissão Negada (Debug):", error.context.path, error.context.operation);
-      }
-      
-      // Exibimos o toast para o usuário apenas se for uma operação crítica
-      if (error.context.operation !== 'list' && error.context.operation !== 'get') {
-        toast({
-          variant: 'destructive',
-          title: 'Ação não permitida',
-          description: 'Você não tem permissão para realizar esta operação.',
-        });
-      }
-    };
-
-    errorEmitter.on('permission-error', handleError);
-
-    return () => {
-      errorEmitter.off('permission-error', handleError);
-    };
-  }, [toast]);
-
-  return null;
-};
-
-
+/**
+ * Root Layout (Server Component).
+ * Mantendo como Server Component garantimos que o CSS e os metadados 
+ * sejam entregues corretamente ao navegador na primeira carga.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-
-  useEffect(() => {
-    if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(
-          (registration) => console.log('SW registrado com sucesso: ', registration.scope),
-          (err) => console.log('SW falhou ao registrar: ', err)
-        );
-      });
-    }
-  }, []);
-
   return (
     <html lang="pt" suppressHydrationWarning>
       <head>
@@ -70,18 +26,9 @@ export default function RootLayout({
         <title>CifrasKadosh</title>
       </head>
       <body className="font-body antialiased">
-        <AuthProvider>
-            <ThemeProvider
-                attribute="class"
-                defaultTheme="light"
-                enableSystem={false}
-                disableTransitionOnChange
-            >
-                <FirebaseErrorListener />
-                {children}
-                <Toaster />
-            </ThemeProvider>
-        </AuthProvider>
+        <ClientProviders>
+          {children}
+        </ClientProviders>
       </body>
     </html>
   );
