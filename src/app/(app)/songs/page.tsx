@@ -146,30 +146,33 @@ export default function SongsPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      {/* Resumo - Formato centralizado mantendo o ícone na esquerda */}
        <div className="grid grid-cols-2 gap-4 mb-6">
-          <Card className="p-4 flex items-center gap-4 bg-card/50">
-            <div className="bg-primary/10 p-3 rounded-full shrink-0">
-              <Music className="h-6 w-6 text-primary" />
-            </div>
-            <div className="flex-1 text-center">
-              <p className="text-2xl font-bold font-headline leading-none">
-                {loadingSongs ? '...' : songs.length}
-              </p>
-              <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Músicas</p>
-            </div>
-          </Card>
-          <Card className="p-4 flex items-center gap-4 bg-card/50">
-            <div className="bg-primary/10 p-3 rounded-full shrink-0">
-              <ListMusic className="h-6 w-6 text-primary" />
-            </div>
-            <div className="flex-1 text-center">
-              <p className="text-2xl font-bold font-headline leading-none">
-                {loadingSetlists ? '...' : setlists.length}
-              </p>
-              <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Repertórios</p>
-            </div>
-          </Card>
+          <Link href="/songs" className="block group">
+            <Card className="p-4 flex items-center gap-4 bg-card/50 transition-all group-hover:bg-primary/5 group-hover:shadow-sm">
+              <div className="bg-primary/10 p-3 rounded-full shrink-0 group-hover:bg-primary/20 transition-colors">
+                <Music className="h-6 w-6 text-primary" />
+              </div>
+              <div className="flex-1 text-center">
+                <p className="text-2xl font-bold font-headline leading-none">
+                  {loadingSongs ? '...' : songs.length}
+                </p>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Músicas</p>
+              </div>
+            </Card>
+          </Link>
+          <Link href="/setlists" className="block group">
+            <Card className="p-4 flex items-center gap-4 bg-card/50 transition-all group-hover:bg-primary/5 group-hover:shadow-sm">
+              <div className="bg-primary/10 p-3 rounded-full shrink-0 group-hover:bg-primary/20 transition-colors">
+                <ListMusic className="h-6 w-6 text-primary" />
+              </div>
+              <div className="flex-1 text-center">
+                <p className="text-2xl font-bold font-headline leading-none">
+                  {loadingSetlists ? '...' : setlists.length}
+                </p>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Repertórios</p>
+              </div>
+            </Card>
+          </Link>
         </div>
 
       <div className="flex items-center justify-between space-y-2 flex-wrap gap-4">
