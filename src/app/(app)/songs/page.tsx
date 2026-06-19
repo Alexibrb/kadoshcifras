@@ -148,7 +148,7 @@ export default function SongsPage() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
        <div className="grid grid-cols-2 gap-4 mb-6">
           <Link href="/songs" className="block group">
-            <Card className="p-4 flex items-center gap-4 bg-card/50 transition-all group-hover:bg-primary/5 group-hover:shadow-sm border-2 border-primary/30 dark:border-white/40">
+            <Card className="p-4 flex items-center gap-4 bg-card/50 transition-all group-hover:bg-primary/5 group-hover:shadow-sm border-l-4 border-l-primary dark:border-l-white">
               <div className="bg-primary/10 p-3 rounded-full shrink-0 group-hover:bg-primary/20 transition-colors">
                 <Music className="h-6 w-6 text-primary" />
               </div>
@@ -161,7 +161,7 @@ export default function SongsPage() {
             </Card>
           </Link>
           <Link href="/setlists" className="block group">
-            <Card className="p-4 flex items-center gap-4 bg-card/50 transition-all group-hover:bg-primary/5 group-hover:shadow-sm border-2 border-primary/30 dark:border-white/40">
+            <Card className="p-4 flex items-center gap-4 bg-card/50 transition-all group-hover:bg-primary/5 group-hover:shadow-sm border-l-4 border-l-primary dark:border-l-white">
               <div className="bg-primary/10 p-3 rounded-full shrink-0 group-hover:bg-primary/20 transition-colors">
                 <ListMusic className="h-6 w-6 text-primary" />
               </div>
