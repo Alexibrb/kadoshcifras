@@ -79,34 +79,36 @@ export default function DashboardPage() {
             <p className="text-muted-foreground text-sm">O que vamos tocar hoje?</p>
         </div>
 
+        {/* Botão Repertórios - Agora com destaque principal */}
         <Button asChild size="lg" className="h-24 text-lg justify-between shadow-md" variant="default">
-          <Link href="/songs">
-            <div className="flex items-center">
+          <Link href="/setlists">
+             <div className="flex items-center">
               <div className="bg-primary-foreground/20 p-3 rounded-full mr-4">
-                <Music className="h-6 w-6" />
+                <ListMusic className="h-6 w-6" />
               </div>
-              <span className="font-semibold">Músicas</span>
+              <span className="font-semibold">Repertórios</span>
             </div>
-            {loading ? (
+             {loading ? (
                 <Skeleton className="h-6 w-10 rounded-md bg-primary-foreground/20" />
             ) : (
-                <Badge variant="secondary" className="text-base px-3">{songs.length}</Badge>
+                <Badge variant="secondary" className="text-base px-3">{setlists.length}</Badge>
             )}
           </Link>
         </Button>
 
+        {/* Botão Músicas - Agora com estilo secundário */}
         <Button asChild size="lg" variant="outline" className="h-24 text-lg justify-between shadow-sm border-2">
-          <Link href="/setlists">
-             <div className="flex items-center">
+          <Link href="/songs">
+            <div className="flex items-center">
               <div className="bg-primary/10 p-3 rounded-full mr-4 text-primary">
-                <ListMusic className="h-6 w-6" />
+                <Music className="h-6 w-6" />
               </div>
-              <span className="font-semibold text-primary">Repertórios</span>
+              <span className="font-semibold text-primary">Músicas</span>
             </div>
-             {loading ? (
+            {loading ? (
                 <Skeleton className="h-6 w-10 rounded-md" />
             ) : (
-                <Badge variant="default" className="text-base px-3 bg-primary">{setlists.length}</Badge>
+                <Badge variant="default" className="text-base px-3 bg-primary">{songs.length}</Badge>
             )}
           </Link>
         </Button>
