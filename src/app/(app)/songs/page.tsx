@@ -152,26 +152,26 @@ export default function SongsPage() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
        <div className="flex items-center gap-4 mb-4 overflow-x-auto pb-2 scrollbar-hide">
             <Link href="/songs" className="shrink-0">
-                <Card className="bg-card hover:bg-primary/5 border-primary/10 transition-all active:scale-95 shadow-sm">
-                  <CardContent className="p-4 flex items-center gap-4">
-                    <div className="bg-primary/10 p-2.5 rounded-full">
+                <Card className="bg-primary/5 hover:bg-primary/10 border-primary/20 transition-all active:scale-95 shadow-sm min-w-[140px]">
+                  <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+                    <div className="bg-primary/10 p-2.5 rounded-full mb-2">
                         <Music className="h-5 w-5 text-primary" />
                     </div>
-                    <div className="flex flex-col">
-                        <p className="text-2xl font-black font-headline leading-none">{loading ? '...' : songs.length}</p>
+                    <div className="flex flex-col items-center">
+                        <p className="text-2xl font-black font-headline leading-none text-primary">{loading ? '...' : songs.length}</p>
                         <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mt-1">Músicas</p>
                     </div>
                   </CardContent>
                 </Card>
             </Link>
             <Link href="/setlists" className="shrink-0">
-                <Card className="bg-card hover:bg-primary/5 border-primary/10 transition-all active:scale-95 shadow-sm">
-                  <CardContent className="p-4 flex items-center gap-4">
-                    <div className="bg-primary/10 p-2.5 rounded-full">
+                <Card className="bg-primary/5 hover:bg-primary/10 border-primary/20 transition-all active:scale-95 shadow-sm min-w-[140px]">
+                  <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+                    <div className="bg-primary/10 p-2.5 rounded-full mb-2">
                         <ListMusic className="h-5 w-5 text-primary" />
                     </div>
-                     <div className="flex flex-col">
-                        <p className="text-2xl font-black font-headline leading-none">{loading ? '...' : setlists.length}</p>
+                     <div className="flex flex-col items-center">
+                        <p className="text-2xl font-black font-headline leading-none text-primary">{loading ? '...' : setlists.length}</p>
                         <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mt-1">Repertórios</p>
                     </div>
                   </CardContent>
