@@ -146,13 +146,13 @@ export default function SongsPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      {/* Resumo - Formato anterior mais discreto */}
+      {/* Resumo - Formato centralizado mantendo o ícone na esquerda */}
        <div className="grid grid-cols-2 gap-4 mb-6">
           <Card className="p-4 flex items-center gap-4 bg-card/50">
             <div className="bg-primary/10 p-3 rounded-full shrink-0">
               <Music className="h-6 w-6 text-primary" />
             </div>
-            <div>
+            <div className="flex-1 text-center">
               <p className="text-2xl font-bold font-headline leading-none">
                 {loadingSongs ? '...' : songs.length}
               </p>
@@ -163,7 +163,7 @@ export default function SongsPage() {
             <div className="bg-primary/10 p-3 rounded-full shrink-0">
               <ListMusic className="h-6 w-6 text-primary" />
             </div>
-            <div>
+            <div className="flex-1 text-center">
               <p className="text-2xl font-bold font-headline leading-none">
                 {loadingSetlists ? '...' : setlists.length}
               </p>
