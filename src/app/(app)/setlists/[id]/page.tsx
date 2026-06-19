@@ -532,8 +532,7 @@ export default function SetlistPage() {
                                                 </div>
                                                 <Checkbox 
                                                     checked={selectedDrawnSongIds.includes(song.id)}
-                                                    onCheckedChange={() => toggleDrawnSongSelection(song.id)}
-                                                    className="h-5 w-5"
+                                                    className="h-5 w-5 pointer-events-none"
                                                 />
                                             </div>
                                         ))}
