@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useFirestoreDocument } from '@/hooks/use-firestore-document';
 import { type Setlist, type Song, type SetlistSong } from '@/types';
-import { ArrowLeft, Music, Plus, Minus, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff, HardDriveDownload, MonitorPlay, Bug, Loader2 } from 'lucide-react';
+import { ArrowLeft, Music, Plus, Minus, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff, HardDriveDownload, MonitorPlay, Bug, Loader2, Dices, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
@@ -19,6 +19,16 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { transposeChord } from '@/lib/music';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 export default function SetlistPage() {
   const params = useParams();
@@ -45,6 +55,11 @@ export default function SetlistPage() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
+  
+  // Estados para o Sorteio
+  const [isDrawDialogOpen, setIsDrawDialogOpen] = useState(false);
+  const [drawCount, setDrawCount] = useState(1);
+  const [drawnSongs, setDrawnSongs] = useState<Song[]>([]);
   
   const loading = loadingSetlist || loadingSongs || authLoading || !isClient;
 
@@ -154,7 +169,6 @@ export default function SetlistPage() {
     
     setIsSyncing(true);
     try {
-        // Coleta todos os dados das músicas para garantir que o modo offline tenha as letras completas
         const offlineSongs = orderedSongs.map(os => {
             const song = songMap.get(os.songId);
             return {
@@ -171,10 +185,7 @@ export default function SetlistPage() {
             songs: offlineSongs
         };
 
-        // Salva no LocalStorage do dispositivo atual (celular ou PC)
         localStorage.setItem(`offline-setlist-${setlistId}`, JSON.stringify(offlineData));
-        
-        // Redireciona para o modo de apresentação
         router.push(`/setlists/${setlistId}/offline`);
     } catch (error) {
         console.error("Erro ao sincronizar para offline:", error);
@@ -186,6 +197,32 @@ export default function SetlistPage() {
     } finally {
         setIsSyncing(false);
     }
+  };
+
+  const handleRandomDraw = () => {
+    if (availableSongs.length === 0) {
+      toast({
+        title: "Aviso",
+        description: "Não há músicas disponíveis para sortear.",
+        variant: "destructive"
+      });
+      return;
+    }
+    const shuffled = [...availableSongs].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, Math.min(drawCount, availableSongs.length));
+    setDrawnSongs(selected);
+  };
+
+  const handleAddDrawnSongs = async () => {
+    if (drawnSongs.length === 0 || !setlist || !canEdit) return;
+    const newSongs = [...(orderedSongs || []), ...drawnSongs.map(s => ({ songId: s.id, transpose: 0 }))];
+    await updateSetlistDoc({ songs: newSongs });
+    setIsDrawDialogOpen(false);
+    setDrawnSongs([]);
+    toast({
+        title: "Músicas Adicionadas",
+        description: `${drawnSongs.length} músicas foram adicionadas ao seu repertório.`,
+    });
   };
   
   if (isClient && !loading && !setlist) {
@@ -369,14 +406,76 @@ export default function SetlistPage() {
 
         <div className="flex flex-col order-2 lg:order-2">
           <Card className={cn(!canEdit && "bg-muted/30 border-dashed", "h-full")}>
-            <CardHeader>
-              <CardTitle className="font-headline flex items-center gap-2">
-                Adicionar Músicas
-                {!canEdit && <Lock className="w-4 h-4 text-muted-foreground" />}
-              </CardTitle>
-              <CardDescription>
-                  {canEdit ? "Busque por uma música e clique nela para adicioná-la." : "Você não tem permissão para editar este repertório."}
-              </CardDescription>
+            <CardHeader className="flex flex-row items-start justify-between">
+              <div>
+                <CardTitle className="font-headline flex items-center gap-2">
+                    Adicionar Músicas
+                    {!canEdit && <Lock className="w-4 h-4 text-muted-foreground" />}
+                </CardTitle>
+                <CardDescription>
+                    {canEdit ? "Busque por uma música e clique nela para adicioná-la." : "Você não tem permissão para editar este repertório."}
+                </CardDescription>
+              </div>
+              
+              {canEdit && (
+                <Dialog open={isDrawDialogOpen} onOpenChange={setIsDrawDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="secondary" size="sm" className="gap-2">
+                            <Dices className="h-4 w-4" />
+                            Sorteio
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 font-headline">
+                                <Sparkles className="h-5 w-5 text-primary" />
+                                Sorteio Aleatório
+                            </DialogTitle>
+                            <DialogDescription>
+                                Escolha quantas músicas deseja sortear das que ainda não estão no repertório.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-6 space-y-4">
+                            <div className="flex items-center justify-between gap-4">
+                                <Label htmlFor="draw-count" className="font-bold">Quantidade de Músicas:</Label>
+                                <div className="flex items-center gap-2">
+                                    <Button variant="outline" size="icon" onClick={() => setDrawCount(Math.max(1, drawCount - 1))}><Minus className="h-4 w-4" /></Button>
+                                    <span className="w-8 text-center font-bold text-xl">{drawCount}</span>
+                                    <Button variant="outline" size="icon" onClick={() => setDrawCount(Math.min(10, drawCount + 1))}><Plus className="h-4 w-4" /></Button>
+                                </div>
+                            </div>
+                            
+                            <Button className="w-full" onClick={handleRandomDraw}>
+                                <Dices className="mr-2 h-4 w-4" /> Sortear Agora
+                            </Button>
+
+                            {drawnSongs.length > 0 && (
+                                <div className="mt-4 space-y-2">
+                                    <p className="text-sm font-semibold text-muted-foreground">Músicas Sorteadas:</p>
+                                    <div className="border rounded-md divide-y max-h-48 overflow-y-auto">
+                                        {drawnSongs.map(song => (
+                                            <div key={song.id} className="p-2 flex justify-between items-center text-sm">
+                                                <div>
+                                                    <p className="font-bold">{song.title}</p>
+                                                    <p className="text-xs text-muted-foreground">{song.artist}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <DialogFooter className="gap-2">
+                            <DialogClose asChild>
+                                <Button variant="ghost">Cancelar</Button>
+                            </DialogClose>
+                            <Button onClick={handleAddDrawnSongs} disabled={drawnSongs.length === 0}>
+                                Adicionar ao Repertório
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
                 <fieldset disabled={!canEdit} className="space-y-4">
