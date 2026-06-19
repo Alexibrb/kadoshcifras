@@ -450,9 +450,9 @@ export default function OfflineSetlistPage() {
         {isPanelVisible ? (
           <div className="flex flex-col gap-4">
             <div className="flex items-start justify-between">
-              <Button asChild variant="outline" size="icon"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
-              <div className="text-center flex-1">
-                <h1 className="text-xl font-bold font-headline truncate">
+              <Button asChild variant="outline" size="icon" className="shrink-0"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
+              <div className="text-center flex-1 px-4">
+                <h1 className="text-xl font-bold font-headline leading-tight">
                   {currentSong.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
                 </h1>
                 <div className="flex items-center justify-center gap-2 mt-1">
@@ -469,7 +469,7 @@ export default function OfflineSetlistPage() {
                   </div>
                 </div>
               </div>
-              <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon"><PanelTopClose className="h-5 w-5" /></Button>
+              <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon" className="shrink-0"><PanelTopClose className="h-5 w-5" /></Button>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
                 <div className="flex items-center gap-1 border rounded-md p-1 bg-background h-10 w-full sm:w-48">
@@ -489,19 +489,19 @@ export default function OfflineSetlistPage() {
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-between h-8">
-            <Button asChild variant="outline" size="icon" className="h-8 w-8"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
-            <div className="flex-1 flex flex-col items-center justify-center overflow-hidden">
-                <h1 className="text-sm font-bold truncate w-full text-center">
+          <div className="flex items-center justify-between min-h-8 py-1">
+            <Button asChild variant="outline" size="icon" className="h-8 w-8 shrink-0"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
+            <div className="flex-1 flex flex-col items-center justify-center px-2 overflow-hidden">
+                <h1 className="text-sm font-bold w-full text-center leading-tight">
                     {currentSong.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
                 </h1>
-                <div className="flex items-center gap-3 text-[12px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none mt-0.5" style={{ fontFamily: 'Arial, sans-serif' }}>
+                <div className="flex items-center gap-3 text-[12px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none mt-1" style={{ fontFamily: 'Arial, sans-serif' }}>
                     <span className="flex items-center"><Music className="h-3 w-3 mr-1" /> {currentSongNum} / {totalSongs}</span>
                     <Separator orientation="vertical" className="h-2 bg-blue-200 dark:bg-blue-800" />
                     <span className="flex items-center"><FileText className="h-3 w-3 mr-1" /> {currentPageInSong} / {totalPagesInSong}</span>
                 </div>
             </div>
-            <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8"><PanelTopOpen className="h-5 w-5" /></Button>
+            <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8 shrink-0"><PanelTopOpen className="h-5 w-5" /></Button>
           </div>
         )}
       </Card>

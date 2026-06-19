@@ -371,9 +371,9 @@ export default function SongPage() {
           {isPanelVisible ? (
             <div className="flex flex-col gap-4">
               <div className="flex items-start justify-between">
-                <Button asChild variant="outline" size="icon"><Link href={fromSetlistId ? `/setlists/${fromSetlistId}` : '/songs'}><ArrowLeft className="h-4 w-4" /></Link></Button>
+                <Button asChild variant="outline" size="icon" className="shrink-0"><Link href={fromSetlistId ? `/setlists/${fromSetlistId}` : '/songs'}><ArrowLeft className="h-4 w-4" /></Link></Button>
                 <div className="text-center flex-1 px-4">
-                  <h1 className="text-sm font-bold uppercase tracking-widest text-muted-foreground truncate">
+                  <h1 className="text-sm font-bold uppercase tracking-widest text-muted-foreground leading-tight">
                     {song.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
                   </h1>
                   <div className="flex items-center justify-center gap-2 mt-1">
@@ -386,7 +386,7 @@ export default function SongPage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 shrink-0">
                   {song.url && (
                     <Button asChild variant="ghost" size="icon" className="h-9 w-9 text-red-600 hover:text-red-700 hover:bg-red-50" title="Ver Vídeo">
                       <a href={song.url} target="_blank" rel="noopener noreferrer">
@@ -431,17 +431,17 @@ export default function SongPage() {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-between h-8">
-              <Button asChild variant="outline" size="icon" className="h-8 w-8"><Link href={fromSetlistId ? `/setlists/${fromSetlistId}` : '/songs'}><ArrowLeft className="h-4 w-4" /></Link></Button>
-              <div className="flex-1 flex flex-col items-center justify-center overflow-hidden">
-                <h1 className="text-sm font-bold truncate w-full text-center">
+            <div className="flex items-center justify-between min-h-8 py-1">
+              <Button asChild variant="outline" size="icon" className="h-8 w-8 shrink-0"><Link href={fromSetlistId ? `/setlists/${fromSetlistId}` : '/songs'}><ArrowLeft className="h-4 w-4" /></Link></Button>
+              <div className="flex-1 flex flex-col items-center justify-center px-2">
+                <h1 className="text-sm font-bold w-full text-center leading-tight">
                   {song.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
                 </h1>
-                <div className="text-[12px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none mt-0.5 flex items-center justify-center" style={{ fontFamily: 'Arial, sans-serif' }}>
+                <div className="text-[12px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none mt-1 flex items-center justify-center" style={{ fontFamily: 'Arial, sans-serif' }}>
                   <FileText className="h-3 w-3 mr-1" /> {currentPartIndex + 1} / {songParts.length}
                 </div>
               </div>
-              <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8"><PanelTopOpen className="h-5 w-5" /></Button>
+              <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8 shrink-0"><PanelTopOpen className="h-5 w-5" /></Button>
             </div>
           )}
         </CardContent>
