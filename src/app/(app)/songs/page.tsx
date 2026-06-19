@@ -49,7 +49,6 @@ export default function SongsPage() {
     setIsClient(true);
   }, []);
 
-  // Deduplica artistas por nome para evitar erros de chave e UI confusa
   const uniqueArtists = useMemo(() => {
     const seen = new Set();
     return artists.filter(item => {
@@ -60,7 +59,6 @@ export default function SongsPage() {
     });
   }, [artists]);
 
-  // Deduplica categorias por nome
   const uniqueCategories = useMemo(() => {
     const seen = new Set();
     return categories.filter(item => {
@@ -123,7 +121,6 @@ export default function SongsPage() {
     setSelectedCategory('all');
   };
 
-  // Função para retornar a cor baseada na categoria
   const getCategoryColor = (category?: string) => {
     if (!category) return 'border-l-muted';
     
@@ -135,7 +132,6 @@ export default function SongsPage() {
     if (cat.includes('especial')) return 'border-l-purple-500';
     if (cat.includes('infantil')) return 'border-l-pink-400';
     
-    // Fallback para cores variadas baseadas no nome
     const colors = [
         'border-l-red-400', 
         'border-l-emerald-400', 
@@ -151,28 +147,34 @@ export default function SongsPage() {
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
        <div className="flex items-center gap-4 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+            {/* Card Músicas - 70% opacidade igual ao Dashboard */}
             <Link href="/songs" className="shrink-0">
-                <Card className="bg-primary/5 hover:bg-primary/10 border-primary/20 transition-all active:scale-95 shadow-sm min-w-[140px]">
+                <Card className="bg-primary/70 text-primary-foreground hover:bg-primary/80 border-none transition-all active:scale-95 shadow-md min-w-[140px]">
                   <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-                    <div className="bg-primary/10 p-2.5 rounded-full mb-2">
-                        <Music className="h-5 w-5 text-primary" />
+                    <div className="bg-primary-foreground/10 p-2.5 rounded-full mb-2 flex items-center justify-center">
+                        <Music className="h-5 w-5" />
                     </div>
                     <div className="flex flex-col items-center">
-                        <p className="text-2xl font-black font-headline leading-none text-primary">{loading ? '...' : songs.length}</p>
-                        <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mt-1">Músicas</p>
+                        <p className="text-2xl font-black font-headline leading-none">
+                          {loadingSongs ? '...' : songs.length}
+                        </p>
+                        <p className="text-[10px] uppercase tracking-widest font-bold opacity-80 mt-1">Músicas</p>
                     </div>
                   </CardContent>
                 </Card>
             </Link>
+            {/* Card Repertórios - Destaque Principal igual ao Dashboard */}
             <Link href="/setlists" className="shrink-0">
-                <Card className="bg-primary/5 hover:bg-primary/10 border-primary/20 transition-all active:scale-95 shadow-sm min-w-[140px]">
+                <Card className="bg-primary text-primary-foreground hover:bg-primary/90 border-none transition-all active:scale-95 shadow-md min-w-[140px]">
                   <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-                    <div className="bg-primary/10 p-2.5 rounded-full mb-2">
-                        <ListMusic className="h-5 w-5 text-primary" />
+                    <div className="bg-primary-foreground/10 p-2.5 rounded-full mb-2 flex items-center justify-center">
+                        <ListMusic className="h-5 w-5" />
                     </div>
                      <div className="flex flex-col items-center">
-                        <p className="text-2xl font-black font-headline leading-none text-primary">{loading ? '...' : setlists.length}</p>
-                        <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mt-1">Repertórios</p>
+                        <p className="text-2xl font-black font-headline leading-none">
+                          {loadingSetlists ? '...' : setlists.length}
+                        </p>
+                        <p className="text-[10px] uppercase tracking-widest font-bold opacity-80 mt-1">Repertórios</p>
                     </div>
                   </CardContent>
                 </Card>
