@@ -406,7 +406,7 @@ export default function SetlistPage() {
                       <DragDropContext onDragEnd={onDragEnd}>
                         <Droppable droppableId="songs" isDropDisabled={!canEdit}>
                           {(provided) => (
-                            <ul {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+                            <ul {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
                               {orderedSongs.map((setlistSong, index) => {
                                  const song = songMap.get(setlistSong.songId);
                                  if (!song) return null;
@@ -421,27 +421,35 @@ export default function SetlistPage() {
                                         ref={provided.innerRef}
                                         {...provided.draggableProps}
                                         {...provided.dragHandleProps}
-                                        className={cn('flex items-center justify-between p-2 rounded-md border bg-background transition-colors', canEdit && "hover:bg-primary/5", snapshot.isDragging ? 'shadow-lg bg-primary/10' : '')}
+                                        className={cn('flex items-start justify-between p-3 rounded-md border bg-background transition-colors', canEdit && "hover:bg-primary/5", snapshot.isDragging ? 'shadow-lg bg-primary/10' : '')}
                                         style={{...provided.draggableProps.style}}
                                       >
-                                          <div className="flex items-center gap-2 flex-grow">
-                                              {canEdit && <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />}
-                                              <div className="flex-grow">
-                                                  <Link href={`/songs/${song.id}?fromSetlist=${setlistId}&transpose=${setlistSong.transpose}`} className="font-medium hover:underline">{song.title}</Link>
-                                                  <p className="text-sm text-muted-foreground">{song.artist}</p>
+                                          <div className="flex items-start gap-3 flex-grow min-w-0">
+                                              {canEdit && <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab mt-1 shrink-0" />}
+                                              <div className="flex-grow flex flex-col gap-1 min-w-0">
+                                                  <Link 
+                                                    href={`/songs/${song.id}?fromSetlist=${setlistId}&transpose=${setlistSong.transpose}`} 
+                                                    className="font-bold text-base hover:underline truncate block"
+                                                  >
+                                                    {song.title}
+                                                  </Link>
+                                                  <p className="text-sm text-muted-foreground truncate">{song.artist}</p>
+                                                  
+                                                  {canEdit && (
+                                                    <div className="flex items-center gap-1 rounded-md border p-0.5 bg-background w-fit mt-1 shadow-sm">
+                                                        <Button variant="ghost" size="icon" onClick={() => handleTransposeChange(index, -1)} className="h-7 w-7"><Minus className="h-3 w-3" /></Button>
+                                                        <span className="font-mono text-xs font-bold px-2 min-w-16 text-center text-primary">
+                                                            {displayedKey} ({setlistSong.transpose > 0 ? '+' : ''}{setlistSong.transpose})
+                                                        </span>
+                                                        <Button variant="ghost" size="icon" onClick={() => handleTransposeChange(index, 1)} className="h-7 w-7"><Plus className="h-3 w-3" /></Button>
+                                                    </div>
+                                                  )}
                                               </div>
                                           </div>
-                                          <div className="flex items-center gap-2">
+                                          <div className="flex items-center ml-2">
                                             {canEdit && (
-                                              <div className="flex items-center gap-1 rounded-md border p-0.5 bg-background">
-                                                  <Button variant="ghost" size="icon" onClick={() => handleTransposeChange(index, -1)} className="h-7 w-7"><Minus className="h-4 w-4" /></Button>
-                                                  <span className="font-mono text-sm font-semibold w-12 text-center">{displayedKey} ({setlistSong.transpose > 0 ? '+' : ''}{setlistSong.transpose})</span>
-                                                  <Button variant="ghost" size="icon" onClick={() => handleTransposeChange(index, 1)} className="h-7 w-7"><Plus className="h-4 w-4" /></Button>
-                                              </div>
-                                            )}
-                                            {canEdit && (
-                                                <Button variant="ghost" size="icon" onClick={() => handleRemoveSong(index)} className="h-8 w-8">
-                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                <Button variant="ghost" size="icon" onClick={() => handleRemoveSong(index)} className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                                                    <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             )}
                                           </div>
@@ -532,7 +540,8 @@ export default function SetlistPage() {
                                                 </div>
                                                 <Checkbox 
                                                     checked={selectedDrawnSongIds.includes(song.id)}
-                                                    className="h-5 w-5 pointer-events-none"
+                                                    onCheckedChange={() => toggleDrawnSongSelection(song.id)}
+                                                    className="h-5 w-5"
                                                 />
                                             </div>
                                         ))}
