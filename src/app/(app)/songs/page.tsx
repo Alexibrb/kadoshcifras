@@ -146,40 +146,32 @@ export default function SongsPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-       <div className="flex items-center gap-4 mb-4 overflow-x-auto pb-2 scrollbar-hide">
-            {/* Card Músicas - 70% opacidade igual ao Dashboard */}
-            <Link href="/songs" className="shrink-0">
-                <Card className="bg-primary/70 text-primary-foreground hover:bg-primary/80 border-none transition-all active:scale-95 shadow-md min-w-[140px]">
-                  <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-                    <div className="bg-primary-foreground/10 p-2.5 rounded-full mb-2 flex items-center justify-center">
-                        <Music className="h-5 w-5" />
-                    </div>
-                    <div className="flex flex-col items-center">
-                        <p className="text-2xl font-black font-headline leading-none">
-                          {loadingSongs ? '...' : songs.length}
-                        </p>
-                        <p className="text-[10px] uppercase tracking-widest font-bold opacity-80 mt-1">Músicas</p>
-                    </div>
-                  </CardContent>
-                </Card>
-            </Link>
-            {/* Card Repertórios - Destaque Principal igual ao Dashboard */}
-            <Link href="/setlists" className="shrink-0">
-                <Card className="bg-primary text-primary-foreground hover:bg-primary/90 border-none transition-all active:scale-95 shadow-md min-w-[140px]">
-                  <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-                    <div className="bg-primary-foreground/10 p-2.5 rounded-full mb-2 flex items-center justify-center">
-                        <ListMusic className="h-5 w-5" />
-                    </div>
-                     <div className="flex flex-col items-center">
-                        <p className="text-2xl font-black font-headline leading-none">
-                          {loadingSetlists ? '...' : setlists.length}
-                        </p>
-                        <p className="text-[10px] uppercase tracking-widest font-bold opacity-80 mt-1">Repertórios</p>
-                    </div>
-                  </CardContent>
-                </Card>
-            </Link>
+      {/* Resumo - Formato anterior mais discreto */}
+       <div className="grid grid-cols-2 gap-4 mb-6">
+          <Card className="p-4 flex items-center gap-4 bg-card/50">
+            <div className="bg-primary/10 p-3 rounded-full shrink-0">
+              <Music className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold font-headline leading-none">
+                {loadingSongs ? '...' : songs.length}
+              </p>
+              <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Músicas</p>
+            </div>
+          </Card>
+          <Card className="p-4 flex items-center gap-4 bg-card/50">
+            <div className="bg-primary/10 p-3 rounded-full shrink-0">
+              <ListMusic className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold font-headline leading-none">
+                {loadingSetlists ? '...' : setlists.length}
+              </p>
+              <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Repertórios</p>
+            </div>
+          </Card>
         </div>
+
       <div className="flex items-center justify-between space-y-2 flex-wrap gap-4">
         <h2 className="text-3xl font-bold font-headline tracking-tight">Minhas Músicas</h2>
       </div>
