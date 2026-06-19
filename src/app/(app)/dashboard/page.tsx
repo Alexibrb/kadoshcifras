@@ -79,7 +79,7 @@ export default function DashboardPage() {
             <p className="text-muted-foreground text-sm">O que vamos tocar hoje?</p>
         </div>
 
-        {/* Botão Repertórios - Agora com destaque principal */}
+        {/* Botão Repertórios - Destaque Principal */}
         <Button asChild size="lg" className="h-24 text-lg justify-between shadow-md" variant="default">
           <Link href="/setlists">
              <div className="flex items-center">
@@ -96,19 +96,19 @@ export default function DashboardPage() {
           </Link>
         </Button>
 
-        {/* Botão Músicas - Agora com estilo secundário */}
-        <Button asChild size="lg" variant="outline" className="h-24 text-lg justify-between shadow-sm border-2">
+        {/* Botão Músicas - Destaque Secundário (70% opacidade) */}
+        <Button asChild size="lg" className="h-24 text-lg justify-between shadow-md bg-primary/70 hover:bg-primary/80 text-primary-foreground border-none">
           <Link href="/songs">
             <div className="flex items-center">
-              <div className="bg-primary/10 p-3 rounded-full mr-4 text-primary">
+              <div className="bg-primary-foreground/20 p-3 rounded-full mr-4">
                 <Music className="h-6 w-6" />
               </div>
-              <span className="font-semibold text-primary">Músicas</span>
+              <span className="font-semibold">Músicas</span>
             </div>
             {loading ? (
-                <Skeleton className="h-6 w-10 rounded-md" />
+                <Skeleton className="h-6 w-10 rounded-md bg-primary-foreground/20" />
             ) : (
-                <Badge variant="default" className="text-base px-3 bg-primary">{songs.length}</Badge>
+                <Badge variant="secondary" className="text-base px-3">{songs.length}</Badge>
             )}
           </Link>
         </Button>
