@@ -25,6 +25,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -36,7 +37,6 @@ export default function DashboardPage() {
   const { isInstallable, isIOS, isStandalone, installApp } = usePWAInstall();
   const [copied, setCopied] = useState(false);
 
-  // Chave Pix dinâmica vinda das configurações do Admin
   const pixKey = useMemo(() => appSettings?.adminPixKey || "não configurado", [appSettings]);
 
   const handleLogout = async () => {
@@ -79,36 +79,40 @@ export default function DashboardPage() {
             <p className="text-muted-foreground text-sm">O que vamos tocar hoje?</p>
         </div>
 
-        {/* Botão Repertórios - Destaque Principal */}
-        <Button asChild size="lg" className="h-24 text-lg justify-between shadow-md" variant="default">
+        {/* Botão Repertórios - Destaque Principal conforme imagem */}
+        <Button asChild size="lg" className="h-24 text-xl justify-between shadow-md px-6 bg-primary text-primary-foreground hover:bg-primary/90 border-none transition-all active:scale-95" variant="default">
           <Link href="/setlists">
              <div className="flex items-center">
-              <div className="bg-primary-foreground/20 p-3 rounded-full mr-4">
+              <div className="bg-primary-foreground/10 p-3 rounded-full mr-4 flex items-center justify-center">
                 <ListMusic className="h-6 w-6" />
               </div>
-              <span className="font-semibold">Repertórios</span>
+              <span className="font-bold font-headline">Repertórios</span>
             </div>
              {loading ? (
-                <Skeleton className="h-6 w-10 rounded-md bg-primary-foreground/20" />
+                <Skeleton className="h-8 w-12 rounded-full bg-primary-foreground/20" />
             ) : (
-                <Badge variant="secondary" className="text-base px-3">{setlists.length}</Badge>
+                <div className="bg-primary-foreground text-primary font-bold px-4 py-1.5 rounded-full text-base min-w-10 text-center">
+                  {setlists.length}
+                </div>
             )}
           </Link>
         </Button>
 
-        {/* Botão Músicas - Destaque Secundário (70% opacidade) */}
-        <Button asChild size="lg" className="h-24 text-lg justify-between shadow-md bg-primary/70 hover:bg-primary/80 text-primary-foreground border-none">
+        {/* Botão Músicas - Destaque Secundário (70% opacidade) conforme imagem */}
+        <Button asChild size="lg" className="h-24 text-xl justify-between shadow-md px-6 bg-primary/70 text-primary-foreground hover:bg-primary/80 border-none transition-all active:scale-95">
           <Link href="/songs">
             <div className="flex items-center">
-              <div className="bg-primary-foreground/20 p-3 rounded-full mr-4">
+              <div className="bg-primary-foreground/10 p-3 rounded-full mr-4 flex items-center justify-center">
                 <Music className="h-6 w-6" />
               </div>
-              <span className="font-semibold">Músicas</span>
+              <span className="font-bold font-headline">Músicas</span>
             </div>
             {loading ? (
-                <Skeleton className="h-6 w-10 rounded-md bg-primary-foreground/20" />
+                <Skeleton className="h-8 w-12 rounded-full bg-primary-foreground/20" />
             ) : (
-                <Badge variant="secondary" className="text-base px-3">{songs.length}</Badge>
+                <div className="bg-primary-foreground text-primary font-bold px-4 py-1.5 rounded-full text-base min-w-10 text-center">
+                  {songs.length}
+                </div>
             )}
           </Link>
         </Button>
@@ -116,7 +120,7 @@ export default function DashboardPage() {
         {/* Botão Ajude o Projeto */}
         <Dialog>
           <DialogTrigger asChild>
-            <Button size="lg" variant="secondary" className="h-16 text-md font-bold text-primary bg-primary/5 hover:bg-primary/10 border-primary/20 border-dashed border-2">
+            <Button size="lg" variant="secondary" className="h-16 text-md font-bold text-primary bg-primary/5 hover:bg-primary/10 border-primary/20 border-dashed border-2 mt-4">
               <Heart className="mr-2 h-5 w-5 text-destructive fill-destructive/10" /> 
               Ajude o Projeto
             </Button>
@@ -165,7 +169,7 @@ export default function DashboardPage() {
 
         {/* Seção de Instalação PWA no Dashboard */}
         {!isStandalone && (
-          <div className="pt-4 space-y-4">
+          <div className="pt-2 space-y-4">
             {isInstallable ? (
               <Button 
                 onClick={installApp} 
@@ -203,7 +207,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <Button onClick={handleLogout} size="lg" variant="ghost" className="h-16 text-muted-foreground hover:text-destructive hover:bg-destructive/10 mt-4">
+        <Button onClick={handleLogout} size="lg" variant="ghost" className="h-16 text-muted-foreground hover:text-destructive hover:bg-destructive/10 mt-2">
             <LogOut className="mr-3 h-5 w-5" /> Sair da conta
         </Button>
       </div>
