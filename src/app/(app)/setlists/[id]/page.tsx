@@ -19,6 +19,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { transposeChord } from '@/lib/music';
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -39,7 +40,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from "@/AlertDialog";
 
 export default function SetlistPage() {
   const params = useParams();
@@ -71,6 +72,7 @@ export default function SetlistPage() {
   const [isDrawDialogOpen, setIsDrawDialogOpen] = useState(false);
   const [drawCount, setDrawCount] = useState(1);
   const [drawnSongs, setDrawnSongs] = useState<Song[]>([]);
+  const [selectedDrawnSongIds, setSelectedDrawnSongIds] = useState<string[]>([]);
   
   const loading = loadingSetlist || loadingSongs || authLoading || !isClient;
 
@@ -231,17 +233,30 @@ export default function SetlistPage() {
     const shuffled = [...availableSongs].sort(() => 0.5 - Math.random());
     const selected = shuffled.slice(0, Math.min(drawCount, availableSongs.length));
     setDrawnSongs(selected);
+    setSelectedDrawnSongIds(selected.map(s => s.id));
+  };
+
+  const toggleDrawnSongSelection = (songId: string) => {
+    setSelectedDrawnSongIds(prev => 
+      prev.includes(songId) 
+        ? prev.filter(id => id !== songId) 
+        : [...prev, songId]
+    );
   };
 
   const handleAddDrawnSongs = async () => {
-    if (drawnSongs.length === 0 || !setlist || !canEdit) return;
-    const newSongs = [...(orderedSongs || []), ...drawnSongs.map(s => ({ songId: s.id, transpose: 0 }))];
+    const songsToAdd = drawnSongs.filter(s => selectedDrawnSongIds.includes(s.id));
+    if (songsToAdd.length === 0 || !setlist || !canEdit) return;
+    
+    const newSongs = [...(orderedSongs || []), ...songsToAdd.map(s => ({ songId: s.id, transpose: 0 }))];
     await updateSetlistDoc({ songs: newSongs });
+    
     setIsDrawDialogOpen(false);
     setDrawnSongs([]);
+    setSelectedDrawnSongIds([]);
     toast({
         title: "Músicas Adicionadas",
-        description: `${drawnSongs.length} músicas foram adicionadas ao seu repertório.`,
+        description: `${songsToAdd.length} músicas foram adicionadas ao seu repertório.`,
     });
   };
   
@@ -471,14 +486,14 @@ export default function SetlistPage() {
                             Sorteio
                         </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="max-w-lg">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2 font-headline">
                                 <Sparkles className="h-5 w-5 text-primary" />
                                 Sorteio Aleatório
                             </DialogTitle>
                             <DialogDescription>
-                                Escolha quantas músicas deseja sortear das que ainda não estão no repertório.
+                                Escolha quantas músicas deseja sortear e depois marque quais quer adicionar.
                             </DialogDescription>
                         </DialogHeader>
                         <div className="py-6 space-y-4">
@@ -497,14 +512,29 @@ export default function SetlistPage() {
 
                             {drawnSongs.length > 0 && (
                                 <div className="mt-4 space-y-2">
-                                    <p className="text-sm font-semibold text-muted-foreground">Músicas Sorteadas:</p>
-                                    <div className="border rounded-md divide-y max-h-48 overflow-y-auto">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-sm font-semibold text-muted-foreground">Selecione para adicionar:</p>
+                                        <p className="text-xs font-bold text-primary">{selectedDrawnSongIds.length} selecionada(s)</p>
+                                    </div>
+                                    <div className="border rounded-md divide-y max-h-60 overflow-y-auto bg-muted/20">
                                         {drawnSongs.map(song => (
-                                            <div key={song.id} className="p-2 flex justify-between items-center text-sm">
-                                                <div>
-                                                    <p className="font-bold">{song.title}</p>
+                                            <div 
+                                                key={song.id} 
+                                                className={cn(
+                                                    "p-3 flex justify-between items-center transition-colors cursor-pointer",
+                                                    selectedDrawnSongIds.includes(song.id) ? "bg-primary/5" : "hover:bg-muted/50"
+                                                )}
+                                                onClick={() => toggleDrawnSongSelection(song.id)}
+                                            >
+                                                <div className="flex-1">
+                                                    <p className="font-bold text-sm">{song.title}</p>
                                                     <p className="text-xs text-muted-foreground">{song.artist}</p>
                                                 </div>
+                                                <Checkbox 
+                                                    checked={selectedDrawnSongIds.includes(song.id)}
+                                                    onCheckedChange={() => toggleDrawnSongSelection(song.id)}
+                                                    className="h-5 w-5"
+                                                />
                                             </div>
                                         ))}
                                     </div>
@@ -515,8 +545,8 @@ export default function SetlistPage() {
                             <DialogClose asChild>
                                 <Button variant="ghost">Cancelar</Button>
                             </DialogClose>
-                            <Button onClick={handleAddDrawnSongs} disabled={drawnSongs.length === 0}>
-                                Adicionar ao Repertório
+                            <Button onClick={handleAddDrawnSongs} disabled={selectedDrawnSongIds.length === 0}>
+                                Adicionar Selecionadas ({selectedDrawnSongIds.length})
                             </Button>
                         </DialogFooter>
                     </DialogContent>
