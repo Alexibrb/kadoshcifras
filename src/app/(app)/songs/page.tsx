@@ -152,23 +152,27 @@ export default function SongsPage() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
        <div className="flex items-center gap-4 mb-4 overflow-x-auto pb-2 scrollbar-hide">
             <Link href="/songs" className="shrink-0">
-                <Card className="hover:bg-accent/50 transition-colors">
-                  <CardContent className="p-3 flex items-center gap-4">
-                    <Music className="h-6 w-6 text-muted-foreground" />
-                    <div className="flex items-baseline gap-2">
-                        <p className="text-2xl font-bold">{loading ? '...' : songs.length}</p>
-                        <p className="text-sm text-muted-foreground">Músicas</p>
+                <Card className="bg-card hover:bg-primary/5 border-primary/10 transition-all active:scale-95 shadow-sm">
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <div className="bg-primary/10 p-2.5 rounded-full">
+                        <Music className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex flex-col">
+                        <p className="text-2xl font-black font-headline leading-none">{loading ? '...' : songs.length}</p>
+                        <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mt-1">Músicas</p>
                     </div>
                   </CardContent>
                 </Card>
             </Link>
             <Link href="/setlists" className="shrink-0">
-                <Card className="hover:bg-accent/50 transition-colors">
-                  <CardContent className="p-3 flex items-center gap-4">
-                    <ListMusic className="h-6 w-6 text-muted-foreground" />
-                     <div className="flex items-baseline gap-2">
-                        <p className="text-2xl font-bold">{loading ? '...' : setlists.length}</p>
-                        <p className="text-sm text-muted-foreground">Repertórios</p>
+                <Card className="bg-card hover:bg-primary/5 border-primary/10 transition-all active:scale-95 shadow-sm">
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <div className="bg-primary/10 p-2.5 rounded-full">
+                        <ListMusic className="h-5 w-5 text-primary" />
+                    </div>
+                     <div className="flex flex-col">
+                        <p className="text-2xl font-black font-headline leading-none">{loading ? '...' : setlists.length}</p>
+                        <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mt-1">Repertórios</p>
                     </div>
                   </CardContent>
                 </Card>
