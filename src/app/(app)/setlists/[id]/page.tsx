@@ -29,6 +29,17 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function SetlistPage() {
   const params = useParams();
@@ -115,6 +126,15 @@ export default function SetlistPage() {
     await updateSetlistDoc({ songs: newSongs });
   };
   
+  const handleClearSetlist = async () => {
+    if (!setlist || !canEdit) return;
+    await updateSetlistDoc({ songs: [] });
+    toast({
+        title: "Repertório Limpo",
+        description: "Todas as músicas foram removidas com sucesso.",
+    });
+  };
+
   const handleTransposeChange = async (indexToChange: number, change: number) => {
       if (!setlist || !canEdit) return;
       const newSongs = orderedSongs.map((s, index) => {
@@ -334,11 +354,37 @@ export default function SetlistPage() {
       <div className="flex flex-col gap-8 lg:grid lg:grid-cols-2">
         <div className="flex flex-col order-1 lg:order-1">
           <Card className="flex flex-col h-full">
-              <CardHeader>
-                  <CardTitle className="font-headline">Músicas no Repertório</CardTitle>
-                  <CardDescription>
-                      {canEdit ? "Arraste para reordenar. Ajuste o tom de cada música para este repertório." : "Visualize as músicas do repertório."}
-                  </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <div>
+                      <CardTitle className="font-headline">Músicas no Repertório</CardTitle>
+                      <CardDescription>
+                          {canEdit ? "Arraste para reordenar." : "Visualize as músicas do repertório."}
+                      </CardDescription>
+                  </div>
+                  {canEdit && orderedSongs.length > 0 && (
+                      <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 gap-2">
+                                  <Trash2 className="h-4 w-4" />
+                                  Limpar Tudo
+                              </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                              <AlertDialogHeader>
+                                  <AlertDialogTitle>Limpar Repertório?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      Isso removerá todas as músicas deste repertório. Esta ação não pode ser desfeita.
+                                  </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={handleClearSetlist} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+                                      Confirmar Limpeza
+                                  </AlertDialogAction>
+                              </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
+                  )}
               </CardHeader>
               <CardContent className="flex-grow">
                   {orderedSongs.length > 0 ? (
