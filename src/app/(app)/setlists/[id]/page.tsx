@@ -40,7 +40,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/AlertDialog";
+} from "@/components/ui/alert-dialog";
 
 export default function SetlistPage() {
   const params = useParams();
@@ -156,7 +156,7 @@ export default function SetlistPage() {
   
    const handleVisibilityToggle = async (isVisible: boolean) => {
     if (!canChangeSettings) return;
-    await updateSetlistDoc({ isVisible });
+    await updateSetlistDoc({ isPublic: setlist?.isPublic, isVisible });
   };
   
   const handleNameSave = async () => {
