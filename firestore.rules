@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -45,7 +46,16 @@ service cloud.firestore {
 
     // REPERTÓRIOS
     match /setlists/{setlistId} {
-      allow read: if isAuthenticated();
+      // Regra de Leitura Segura:
+      // 1. Criador e Admin sempre podem ler.
+      // 2. Outros podem ler se isVisible for true E (se houver eventDate, ela não tiver passado).
+      allow read: if isAuthenticated() && (
+        resource.data.creatorId == request.auth.uid || 
+        isAdmin() || 
+        (resource.data.isVisible == true && (resource.data.eventDate == null || resource.data.eventDate >= request.time))
+      );
+      
+      // Escrita: Apenas usuários autenticados (a lógica de quem pode editar o que é tratada via UI e visibilidade)
       allow write: if isAuthenticated();
     }
   }

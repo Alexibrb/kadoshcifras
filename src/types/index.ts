@@ -35,6 +35,7 @@ export interface Setlist {
   creatorName?: string;
   isPublic?: boolean;
   isVisible?: boolean;
+  eventDate?: AppTimestamp;
   createdAt?: AppTimestamp;
 }
 

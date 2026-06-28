@@ -1,9 +1,10 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { type Setlist } from '@/types';
-import { ListMusic, PlusCircle, Trash2, User, Globe, Lock, Eye, EyeOff } from 'lucide-react';
+import { ListMusic, PlusCircle, Trash2, User, Globe, Lock, Eye, EyeOff, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
 import {
@@ -20,6 +21,8 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function SetlistsPage() {
   const { appUser, loading: authLoading } = useAuth();
@@ -32,7 +35,7 @@ export default function SetlistsPage() {
     appUser ? [['creatorId', '==', appUser.id]] : [['id', '==', 'none']]
   );
 
-  // Busca os repertórios que sejam VISÍVEIS para qualquer um
+  // Busca os repertórios que sejam VISÍVEIS
   const { data: otherSetlistsData, loading: loadingOtherSetlists } = useFirestoreCollection<Setlist>(
     'setlists',
     undefined,
@@ -50,18 +53,47 @@ export default function SetlistsPage() {
   const setlists = useMemo(() => {
     if (!isClient || !appUser) return [];
 
-    // Combina as duas listas, garantindo que não haja duplicatas
-    const filteredOthers = otherSetlistsData.filter(s => s.creatorId !== appUser.id);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    // Filtra outros repertórios para remover os expirados
+    const filteredOthers = otherSetlistsData.filter(s => {
+        if (s.creatorId === appUser.id) return false;
+        
+        if (s.eventDate) {
+            let eventDate: Date;
+            if (typeof (s.eventDate as any).toDate === 'function') {
+                eventDate = (s.eventDate as any).toDate();
+            } else {
+                eventDate = new Date(s.eventDate as any);
+            }
+            // Se a data do evento já passou, oculta para os outros
+            if (eventDate < now) return false;
+        }
+        
+        return true;
+    });
+
     const combined = [...mySetlistsData, ...filteredOthers];
     const uniqueSetlists = Array.from(new Map(combined.map(item => [item.id, item])).values());
     
-    // Ordena no cliente
     return uniqueSetlists.sort((a,b) => a.name.localeCompare(b.name));
   }, [mySetlistsData, otherSetlistsData, appUser, isClient]);
 
 
   const deleteSetlist = (id: string) => {
     deleteDocument(id);
+  };
+
+  const getEventDateText = (eventDate: any) => {
+      if (!eventDate) return null;
+      let date: Date;
+      if (typeof eventDate.toDate === 'function') {
+          date = eventDate.toDate();
+      } else {
+          date = new Date(eventDate);
+      }
+      return format(date, "dd/MM/yyyy", { locale: ptBR });
   };
 
   return (
@@ -104,6 +136,7 @@ export default function SetlistsPage() {
           {setlists.map((setlist) => {
               const canDelete = appUser?.role === 'admin' || appUser?.id === setlist.creatorId;
               const hasSongs = (setlist.songs?.length || 0) > 0;
+              const dateText = getEventDateText(setlist.eventDate);
 
               return (
               <Card 
@@ -120,16 +153,24 @@ export default function SetlistsPage() {
                           <p className="font-semibold text-lg truncate font-headline">{setlist.name}</p>
                         </div>
                      </Link>
-                     <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                        {setlist.isPublic ? <Globe className="h-4 w-4 shrink-0" /> : <Lock className="h-4 w-4 shrink-0" />}
-                        {setlist.isVisible === false ? <EyeOff className="h-4 w-4 shrink-0" /> : <Eye className="h-4 w-4 shrink-0" />}
-                        <span className={cn(hasSongs ? "text-foreground font-medium" : "text-muted-foreground")}>
-                            {setlist.songs?.length || 0} música(s)
-                        </span>
+                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
+                        <div className="flex items-center gap-1.5">
+                            {setlist.isPublic ? <Globe className="h-3.5 w-3.5 shrink-0" /> : <Lock className="h-3.5 w-3.5 shrink-0" />}
+                            {setlist.isVisible === false ? <EyeOff className="h-3.5 w-3.5 shrink-0" /> : <Eye className="h-3.5 w-3.5 shrink-0" />}
+                            <span className={cn("text-xs", hasSongs ? "text-foreground font-medium" : "text-muted-foreground")}>
+                                {setlist.songs?.length || 0} músicas
+                            </span>
+                        </div>
+                        {dateText && (
+                            <div className="flex items-center gap-1 text-xs font-medium text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/10">
+                                <Calendar className="h-3 w-3" />
+                                {dateText}
+                            </div>
+                        )}
                      </div>
                      {setlist.creatorName && (
-                        <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
-                            <User className="h-3 w-3" />
+                        <div className="flex items-center gap-1.5 mt-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+                            <User className="h-2.5 w-2.5" />
                             <span>{setlist.creatorName}</span>
                         </div>
                      )}

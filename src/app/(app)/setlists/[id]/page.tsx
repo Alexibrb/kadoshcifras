@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useFirestoreDocument } from '@/hooks/use-firestore-document';
 import { type Setlist, type Song, type SetlistSong } from '@/types';
-import { ArrowLeft, Music, Plus, Minus, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff, HardDriveDownload, MonitorPlay, Bug, Loader2, Dices, Sparkles } from 'lucide-react';
+import { ArrowLeft, Music, Plus, Minus, PlusCircle, Trash2, GripVertical, Check, ChevronsUpDown, Search, Lock, Globe, Edit, Save, X, Eye, EyeOff, HardDriveDownload, MonitorPlay, Bug, Loader2, Dices, Sparkles, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
@@ -66,9 +66,9 @@ export default function SetlistPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
+  const [eventDate, setEventDate] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
   
-  // Estados para o Sorteio
   const [isDrawDialogOpen, setIsDrawDialogOpen] = useState(false);
   const [drawCount, setDrawCount] = useState(1);
   const [drawnSongs, setDrawnSongs] = useState<Song[]>([]);
@@ -84,6 +84,18 @@ export default function SetlistPage() {
     if (setlist) {
         setEditedName(setlist.name);
         setOrderedSongs(setlist.songs || []);
+        
+        if (setlist.eventDate) {
+            let dateStr = '';
+            if (typeof (setlist.eventDate as any).toDate === 'function') {
+                dateStr = (setlist.eventDate as any).toDate().toISOString().split('T')[0];
+            } else if (typeof setlist.eventDate === 'string') {
+                dateStr = setlist.eventDate.split('T')[0];
+            }
+            setEventDate(dateStr);
+        } else {
+            setEventDate('');
+        }
     }
   }, [setlist]);
 
@@ -154,9 +166,21 @@ export default function SetlistPage() {
     await updateSetlistDoc({ isPublic });
   };
   
-   const handleVisibilityToggle = async (isVisible: boolean) => {
+  const handleVisibilityToggle = async (isVisible: boolean) => {
     if (!canChangeSettings) return;
-    await updateSetlistDoc({ isPublic: setlist?.isPublic, isVisible });
+    await updateSetlistDoc({ isVisible });
+  };
+
+  const handleDateChange = async (newDate: string) => {
+      if (!canChangeSettings) return;
+      setEventDate(newDate);
+      await updateSetlistDoc({ 
+          eventDate: newDate ? new Date(newDate + 'T23:59:59') : null 
+      });
+      toast({
+          title: "Data Atualizada",
+          description: "A data do evento foi salva com sucesso.",
+      });
   };
   
   const handleNameSave = async () => {
@@ -337,24 +361,39 @@ export default function SetlistPage() {
            <div className="flex items-center gap-4 flex-wrap">
               {canChangeSettings && (
                 <div className="flex items-center gap-4 flex-wrap">
-                  <div className="flex items-center space-x-2 rounded-md border p-2">
-                    <Label htmlFor="public-switch" className="text-sm font-medium">
+                  <div className="flex flex-col gap-1">
+                      <Label htmlFor="event-date" className="text-[10px] uppercase font-bold text-muted-foreground ml-1">Data do Evento</Label>
+                      <div className="relative">
+                          <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                          <Input 
+                            id="event-date"
+                            type="date"
+                            value={eventDate}
+                            onChange={(e) => handleDateChange(e.target.value)}
+                            className="h-9 pl-8 w-40 text-xs"
+                          />
+                      </div>
+                  </div>
+                  <div className="flex items-center space-x-2 rounded-md border p-2 h-9">
+                    <Label htmlFor="public-switch" className="text-xs font-medium">
                       {setlist?.isPublic ? 'Público' : 'Privado'}
                     </Label>
                     <Switch
                       id="public-switch"
                       checked={setlist?.isPublic || false}
                       onCheckedChange={handlePublicToggle}
+                      className="scale-75"
                     />
                   </div>
-                  <div className="flex items-center space-x-2 rounded-md border p-2">
-                    <Label htmlFor="visibility-switch" className="text-sm font-medium">
+                  <div className="flex items-center space-x-2 rounded-md border p-2 h-9">
+                    <Label htmlFor="visibility-switch" className="text-xs font-medium">
                       {setlist?.isVisible ? 'Visível' : 'Oculto'}
                     </Label>
                     <Switch
                       id="visibility-switch"
                       checked={setlist?.isVisible || false}
                       onCheckedChange={handleVisibilityToggle}
+                      className="scale-75"
                     />
                   </div>
                 </div>

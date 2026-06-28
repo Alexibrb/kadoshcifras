@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { useAuth } from '@/hooks/use-auth';
 import type { Setlist } from '@/types';
-import { ArrowLeft, Globe, Lock, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Globe, Lock, Eye, EyeOff, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -18,6 +18,7 @@ export default function NewSetlistPage() {
   const { addDocument } = useFirestoreCollection<Setlist>('setlists');
   const { appUser } = useAuth();
   const [name, setName] = useState('');
+  const [eventDate, setEventDate] = useState('');
   const [isPublic, setIsPublic] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -36,6 +37,7 @@ export default function NewSetlistPage() {
       creatorName: appUser.displayName,
       isPublic: isPublic,
       isVisible: isVisible,
+      eventDate: eventDate ? new Date(eventDate + 'T23:59:59') : undefined,
     };
     const newSetlistId = await addDocument(newSetlist);
     if (newSetlistId) {
@@ -63,15 +65,31 @@ export default function NewSetlistPage() {
             <CardTitle className="font-headline">Detalhes do Repertório</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome do Repertório</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="ex: Ensaio de Sábado, Show Acústico"
-                required
-              />
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome do Repertório</Label>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="ex: Ensaio de Sábado, Show Acústico"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="eventDate">Data do Evento</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="eventDate"
+                    type="date"
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground">Após esta data, o repertório ficará oculto para outros usuários.</p>
+              </div>
             </div>
             
             <div className="space-y-4">
@@ -88,7 +106,6 @@ export default function NewSetlistPage() {
                     <Switch
                       checked={isPublic}
                       onCheckedChange={setIsPublic}
-                      aria-readonly
                     />
                 </div>
                  <div className="flex items-center space-x-4 rounded-md border p-4">
@@ -104,7 +121,6 @@ export default function NewSetlistPage() {
                     <Switch
                       checked={isVisible}
                       onCheckedChange={setIsVisible}
-                      aria-readonly
                     />
                 </div>
             </div>
