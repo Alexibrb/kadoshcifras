@@ -318,25 +318,25 @@ export default function SetlistPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-       <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-4">
           <div className="flex items-center gap-4">
-            <Button asChild variant="outline" size="icon">
+            <Button asChild variant="outline" size="icon" className="shrink-0">
               <Link href="/setlists">
                 <ArrowLeft className="h-4 w-4" />
                 <span className="sr-only">Voltar para os repertórios</span>
               </Link>
             </Button>
             <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                    {setlist?.isPublic ? <Globe className="h-7 w-7" /> : <Lock className="h-7 w-7" />}
-                    {setlist?.isVisible ? <Eye className="h-7 w-7" /> : <EyeOff className="h-7 w-7" />}
+                <div className="flex items-center gap-2 text-muted-foreground shrink-0">
+                    {setlist?.isPublic ? <Globe className="h-6 w-6" /> : <Lock className="h-6 w-6" />}
+                    {setlist?.isVisible ? <Eye className="h-6 w-6" /> : <EyeOff className="h-6 w-6" />}
                 </div>
-                <div>
+                <div className="min-w-0">
                     {!isEditingName ? (
                       <div className="flex items-center gap-2">
-                         <h2 className="text-3xl font-bold font-headline tracking-tight">{setlist?.name}</h2>
+                         <h2 className="text-2xl md:text-3xl font-bold font-headline tracking-tight truncate">{setlist?.name}</h2>
                          {canChangeSettings && (
-                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsEditingName(true)}>
+                           <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setIsEditingName(true)}>
                               <Edit className="h-4 w-4" />
                            </Button>
                          )}
@@ -347,59 +347,64 @@ export default function SetlistPage() {
                             value={editedName}
                             onChange={(e) => setEditedName(e.target.value)}
                             onKeyDown={handleNameKeyDown}
-                            className="text-2xl font-bold font-headline h-12"
+                            className="text-xl md:text-2xl font-bold font-headline h-10 md:h-12"
                             autoFocus
                         />
-                        <Button size="icon" className="h-10 w-10" onClick={handleNameSave}><Save className="h-5 w-5" /></Button>
-                        <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => { setIsEditingName(false); setEditedName(setlist?.name || ''); }}><X className="h-5 w-5" /></Button>
+                        <Button size="icon" className="h-10 w-10 shrink-0" onClick={handleNameSave}><Save className="h-5 w-5" /></Button>
+                        <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => { setIsEditingName(false); setEditedName(setlist?.name || ''); }}><X className="h-5 w-5" /></Button>
                       </div>
                     )}
-                    <p className="text-muted-foreground">{orderedSongs.length} música(s)</p>
+                    <p className="text-sm text-muted-foreground">{orderedSongs.length} música(s)</p>
                 </div>
             </div>
           </div>
-           <div className="flex items-center gap-4 flex-wrap">
+
+           <div className="flex flex-col gap-4 w-full md:w-auto">
               {canChangeSettings && (
-                <div className="flex items-center gap-4 flex-wrap">
-                  <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-3 w-full">
+                  {/* Linha da Data */}
+                  <div className="flex flex-col gap-1.5">
                       <Label htmlFor="event-date" className="text-[10px] uppercase font-bold text-muted-foreground ml-1">Data do Evento</Label>
                       <div className="relative">
-                          <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                           <Input 
                             id="event-date"
                             type="date"
                             value={eventDate}
                             onChange={(e) => handleDateChange(e.target.value)}
-                            className="h-9 pl-8 w-40 text-xs"
+                            className="h-10 pl-9 w-full md:w-48 text-sm"
                           />
                       </div>
                   </div>
-                  <div className="flex items-center space-x-2 rounded-md border p-2 h-9">
-                    <Label htmlFor="public-switch" className="text-xs font-medium">
-                      {setlist?.isPublic ? 'Público' : 'Privado'}
-                    </Label>
-                    <Switch
-                      id="public-switch"
-                      checked={setlist?.isPublic || false}
-                      onCheckedChange={handlePublicToggle}
-                      className="scale-75"
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2 rounded-md border p-2 h-9">
-                    <Label htmlFor="visibility-switch" className="text-xs font-medium">
-                      {setlist?.isVisible ? 'Visível' : 'Oculto'}
-                    </Label>
-                    <Switch
-                      id="visibility-switch"
-                      checked={setlist?.isVisible || false}
-                      onCheckedChange={handleVisibilityToggle}
-                      className="scale-75"
-                    />
+                  {/* Linha dos Toggles */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center space-x-2 rounded-md border p-2 h-10 bg-card">
+                        <Label htmlFor="public-switch" className="text-xs font-medium">
+                          {setlist?.isPublic ? 'Público' : 'Privado'}
+                        </Label>
+                        <Switch
+                          id="public-switch"
+                          checked={setlist?.isPublic || false}
+                          onCheckedChange={handlePublicToggle}
+                          className="scale-75"
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2 rounded-md border p-2 h-10 bg-card">
+                        <Label htmlFor="visibility-switch" className="text-xs font-medium">
+                          {setlist?.isVisible ? 'Visível' : 'Oculto'}
+                        </Label>
+                        <Switch
+                          id="visibility-switch"
+                          checked={setlist?.isVisible || false}
+                          onCheckedChange={handleVisibilityToggle}
+                          className="scale-75"
+                        />
+                      </div>
                   </div>
                 </div>
               )}
-               <Button onClick={handleOpenSetlist} variant="default" disabled={isSyncing || orderedSongs.length === 0}>
-                    {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MonitorPlay className="mr-2 h-4 w-4" />}
+               <Button onClick={handleOpenSetlist} variant="default" className="w-full md:w-auto h-11" disabled={isSyncing || orderedSongs.length === 0}>
+                    {isSyncing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <MonitorPlay className="mr-2 h-5 w-5" />}
                     Abrir Repertório
                 </Button>
             </div>
