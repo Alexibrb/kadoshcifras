@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { type Setlist } from '@/types';
-import { ListMusic, PlusCircle, Trash2, User, Globe, Lock, Eye, EyeOff, Calendar } from 'lucide-react';
+import { ListMusic, PlusCircle, Trash2, User, Globe, Lock, Eye, EyeOff, Calendar, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
 import {
@@ -137,13 +137,33 @@ export default function SetlistsPage() {
               const canDelete = appUser?.role === 'admin' || appUser?.id === setlist.creatorId;
               const hasSongs = (setlist.songs?.length || 0) > 0;
               const dateText = getEventDateText(setlist.eventDate);
+              
+              const now = new Date();
+              now.setHours(0, 0, 0, 0);
+              
+              let isExpired = false;
+              if (setlist.eventDate) {
+                  let eventDateObj: Date;
+                  if (typeof (setlist.eventDate as any).toDate === 'function') {
+                      eventDateObj = (setlist.eventDate as any).toDate();
+                  } else {
+                      eventDateObj = new Date(setlist.eventDate as any);
+                  }
+                  const compareDate = new Date(eventDateObj);
+                  compareDate.setHours(0, 0, 0, 0);
+                  if (compareDate < now) {
+                      isExpired = true;
+                  }
+              }
 
               return (
               <Card 
                 key={setlist.id} 
                 className={cn(
                     "p-4 flex flex-col border-l-4 transition-all hover:shadow-md",
-                    hasSongs ? "border-l-primary" : "border-l-muted-foreground/30"
+                    isExpired 
+                      ? "border-l-muted-foreground/30 opacity-80 grayscale-[0.3]" 
+                      : (hasSongs ? "border-l-primary shadow-sm" : "border-l-muted-foreground/30")
                 )}
               >
                 <div className="flex items-start justify-between gap-4 flex-grow">
@@ -162,9 +182,15 @@ export default function SetlistsPage() {
                             </span>
                         </div>
                         {dateText && (
-                            <div className="flex items-center gap-1 text-xs font-medium text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/10">
-                                <Calendar className="h-3 w-3" />
+                            <div className={cn(
+                                "flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded border transition-colors",
+                                isExpired 
+                                    ? "text-destructive bg-destructive/5 border-destructive/20" 
+                                    : "text-primary bg-primary/5 border-primary/10"
+                            )}>
+                                {isExpired ? <AlertCircle className="h-3 w-3" /> : <Calendar className="h-3 w-3" />}
                                 {dateText}
+                                {isExpired && <span className="ml-1 text-[9px] uppercase">(Expirado)</span>}
                             </div>
                         )}
                      </div>
