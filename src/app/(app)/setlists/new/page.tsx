@@ -37,6 +37,7 @@ export default function NewSetlistPage() {
       creatorName: appUser.displayName,
       isPublic: isPublic,
       isVisible: isVisible,
+      // Salva no final do dia (local) para o parâmetro de visibilidade
       eventDate: eventDate ? new Date(eventDate + 'T23:59:59') : undefined,
     };
     const newSetlistId = await addDocument(newSetlist);

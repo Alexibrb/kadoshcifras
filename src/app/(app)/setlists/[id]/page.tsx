@@ -87,11 +87,16 @@ export default function SetlistPage() {
         
         if (setlist.eventDate) {
             let dateStr = '';
-            if (typeof (setlist.eventDate as any).toDate === 'function') {
-                dateStr = (setlist.eventDate as any).toDate().toISOString().split('T')[0];
-            } else if (typeof setlist.eventDate === 'string') {
-                dateStr = setlist.eventDate.split('T')[0];
-            }
+            // Converte o Timestamp do Firestore para Date local com segurança
+            const dateObj = typeof (setlist.eventDate as any).toDate === 'function' 
+                ? (setlist.eventDate as any).toDate() 
+                : new Date(setlist.eventDate as any);
+            
+            // Extrai as partes locais da data para o input (YYYY-MM-DD)
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            dateStr = `${year}-${month}-${day}`;
             setEventDate(dateStr);
         } else {
             setEventDate('');
@@ -174,6 +179,7 @@ export default function SetlistPage() {
   const handleDateChange = async (newDate: string) => {
       if (!canChangeSettings) return;
       setEventDate(newDate);
+      // Salva no final do dia (local) para garantir visibilidade até meia-noite
       await updateSetlistDoc({ 
           eventDate: newDate ? new Date(newDate + 'T23:59:59') : null 
       });
@@ -362,7 +368,6 @@ export default function SetlistPage() {
            <div className="flex flex-col gap-4 w-full md:w-auto">
               {canChangeSettings && (
                 <div className="flex flex-col gap-3 w-full">
-                  {/* Linha da Data */}
                   <div className="flex flex-col gap-1.5">
                       <Label htmlFor="event-date" className="text-[10px] uppercase font-bold text-muted-foreground ml-1">Data do Evento</Label>
                       <div className="relative">
@@ -376,7 +381,6 @@ export default function SetlistPage() {
                           />
                       </div>
                   </div>
-                  {/* Linha dos Toggles */}
                   <div className="flex items-center gap-2 flex-wrap">
                       <div className="flex items-center space-x-2 rounded-md border p-2 h-10 bg-card">
                         <Label htmlFor="public-switch" className="text-xs font-medium">
