@@ -1,8 +1,10 @@
 {
+  "id": "/",
   "name": "CifrasKadosh",
   "short_name": "CKadosh",
-  "description": "Seu companheiro definitivo para criar, gerenciar e apresentar músicas.",
+  "description": "Seu companheiro para criar, gerenciar e apresentar músicas.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#F3E5F5",
   "theme_color": "#673AB7",
