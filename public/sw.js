@@ -5,7 +5,7 @@ SERVICE WORKER
 ==================================================
 */
 
-const CACHE_VERSION = 'cifras-kadosh-v3';
+const CACHE_VERSION = 'cifras-kadosh-v4';
 
 const STATIC_CACHE =
   `${CACHE_VERSION}-static`;
@@ -22,6 +22,13 @@ ARQUIVOS ESSENCIAIS
 
 const APP_SHELL = [
   '/',
+  '/dashboard',
+  '/songs',
+  '/songs/new',
+  '/setlists',
+  '/setlists/new',
+  '/tools',
+
   '/offline.html',
   '/manifest.json',
   '/icon-192x192.png',
