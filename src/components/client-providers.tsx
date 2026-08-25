@@ -32,102 +32,110 @@ import {
   ServiceWorkerRegister,
 } from '@/components/pwa/service-worker-register';
 
+import {
+  OfflineNavigation,
+} from '@/components/pwa/offline-navigation';
+
+import {
+  OfflineDataSync,
+} from '@/components/pwa/offline-data-sync';
+
 
 /*
 ==================================================
-ERROS FIREBASE
+ERROS DO FIREBASE
 ==================================================
 */
 
-const FirebaseErrorListener = () => {
+const FirebaseErrorListener =
+  () => {
 
-  const {
-    toast,
-  } =
-    useToast();
-
-
-  useEffect(() => {
-
-    const handleError = (
-      error:
-        FirestorePermissionError
-    ) => {
+    const {
+      toast,
+    } =
+      useToast();
 
 
-      /*
-      ==============================================
-      DEBUG
-      ==============================================
-      */
+    useEffect(() => {
 
-      if (
-        process.env.NODE_ENV ===
-        'development'
-      ) {
-
-        console.warn(
-          'Permissão Negada (Debug):',
-          error.context.path,
-          error.context.operation
-        );
-
-      }
+      const handleError =
+        (
+          error:
+            FirestorePermissionError
+        ) => {
 
 
-      /*
-      ==============================================
-      ERROS DE ESCRITA
-      ==============================================
-      */
+          if (
+            process.env.NODE_ENV ===
+            'development'
+          ) {
 
-      if (
-        error.context.operation !==
-          'list' &&
-        error.context.operation !==
-          'get'
-      ) {
+            console.warn(
 
-        toast({
+              'Permissão Negada (Debug):',
 
-          variant:
-            'destructive',
+              error.context.path,
 
-          title:
-            'Ação não permitida',
+              error.context.operation
 
-          description:
-            'Você não tem permissão para realizar esta operação.',
+            );
 
-        });
-
-      }
-
-    };
+          }
 
 
-    errorEmitter.on(
-      'permission-error',
-      handleError
-    );
+          if (
+            error.context.operation !==
+              'list' &&
+            error.context.operation !==
+              'get'
+          ) {
+
+            toast({
+
+              variant:
+                'destructive',
+
+              title:
+                'Ação não permitida',
+
+              description:
+                'Você não tem permissão para realizar esta operação.',
+
+            });
+
+          }
+
+        };
 
 
-    return () => {
+      errorEmitter.on(
 
-      errorEmitter.off(
         'permission-error',
+
         handleError
+
       );
 
-    };
+
+      return () => {
+
+        errorEmitter.off(
+
+          'permission-error',
+
+          handleError
+
+        );
+
+      };
 
 
-  }, [toast]);
+    }, [toast]);
 
 
-  return null;
+    return null;
 
-};
+  };
 
 
 /*
@@ -167,6 +175,12 @@ export function ClientProviders({
 
 
         <ServiceWorkerRegister />
+
+
+        <OfflineNavigation />
+
+
+        <OfflineDataSync />
 
 
         {children}

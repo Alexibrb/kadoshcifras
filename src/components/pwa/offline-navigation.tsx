@@ -9,269 +9,6 @@ export function OfflineNavigation() {
 
   useEffect(() => {
 
-    let observer:
-      MutationObserver | null = null;
-
-    let timer:
-      ReturnType<typeof setTimeout> | null = null;
-
-
-    /*
-    ==================================================
-    COLETAR LINKS INTERNOS
-    ==================================================
-    */
-
-    const getInternalLinks = () => {
-
-      const anchors =
-        Array.from(
-          document.querySelectorAll<HTMLAnchorElement>(
-            'a[href]'
-          )
-        );
-
-
-      const urls =
-        new Set<string>();
-
-
-      anchors.forEach(
-        anchor => {
-
-          const href =
-            anchor.getAttribute(
-              'href'
-            );
-
-
-          if (!href) {
-
-            return;
-
-          }
-
-
-          /*
-          ------------------------------------------
-          SOMENTE LINKS INTERNOS
-          ------------------------------------------
-          */
-
-          if (
-            !href.startsWith('/')
-          ) {
-
-            return;
-
-          }
-
-
-          /*
-          ------------------------------------------
-          IGNORAR HASH
-          ------------------------------------------
-          */
-
-          if (
-            href.startsWith('/#')
-          ) {
-
-            return;
-
-          }
-
-
-          /*
-          ------------------------------------------
-          ROTAS QUE QUEREMOS DISPONÍVEIS OFFLINE
-          ------------------------------------------
-          */
-
-          const shouldCache =
-
-            href === '/' ||
-
-            href.startsWith(
-              '/dashboard'
-            ) ||
-
-            href.startsWith(
-              '/songs'
-            ) ||
-
-            href.startsWith(
-              '/setlists'
-            ) ||
-
-            href.startsWith(
-              '/tools'
-            );
-
-
-          if (!shouldCache) {
-
-            return;
-
-          }
-
-
-          urls.add(href);
-
-        }
-      );
-
-
-      return Array.from(urls);
-
-    };
-
-
-    /*
-    ==================================================
-    ENVIAR ROTAS PARA O SERVICE WORKER
-    ==================================================
-    */
-
-    const cacheVisibleRoutes =
-      async () => {
-
-        /*
-        ------------------------------------------
-        SOMENTE ONLINE
-        ------------------------------------------
-        */
-
-        if (!navigator.onLine) {
-
-          return;
-
-        }
-
-
-        if (
-          !(
-            'serviceWorker'
-            in navigator
-          )
-        ) {
-
-          return;
-
-        }
-
-
-        try {
-
-          const registration =
-            await navigator
-              .serviceWorker
-              .ready;
-
-
-          const worker =
-
-            registration.active ||
-
-            navigator.serviceWorker
-              .controller;
-
-
-          if (!worker) {
-
-            return;
-
-          }
-
-
-          const urls =
-            getInternalLinks();
-
-
-          if (
-            urls.length === 0
-          ) {
-
-            return;
-
-          }
-
-
-          worker.postMessage({
-
-            type:
-              'CACHE_URLS',
-
-            urls,
-
-          });
-
-
-          console.info(
-            `[PWA] Solicitado cache de ${urls.length} rotas.`
-          );
-
-
-        } catch (error) {
-
-          console.warn(
-            '[PWA] Não foi possível preparar rotas offline:',
-            error
-          );
-
-        }
-
-      };
-
-
-    /*
-    ==================================================
-    AGENDAR CACHE
-    ==================================================
-
-    As músicas chegam depois pelo Firestore.
-    Por isso observamos mudanças na página.
-    ==================================================
-    */
-
-    const scheduleCache = () => {
-
-      if (
-        !navigator.onLine
-      ) {
-
-        return;
-
-      }
-
-
-      if (timer) {
-
-        clearTimeout(
-          timer
-        );
-
-      }
-
-
-      timer =
-        setTimeout(
-          () => {
-
-            void cacheVisibleRoutes();
-
-          },
-          700
-        );
-
-    };
-
-
-    /*
-    ==================================================
-    NAVEGAÇÃO OFFLINE
-    ==================================================
-    */
 
     const handleClick = (
       event: MouseEvent
@@ -279,14 +16,14 @@ export function OfflineNavigation() {
 
 
       /*
-      ------------------------------------------
+      ==================================================
       ONLINE
-
-      Deixa o Next funcionar normalmente.
-      ------------------------------------------
+      ==================================================
       */
 
-      if (navigator.onLine) {
+      if (
+        navigator.onLine
+      ) {
 
         return;
 
@@ -326,10 +63,33 @@ export function OfflineNavigation() {
 
 
       /*
-      ------------------------------------------
-      SOMENTE LINKS INTERNOS
-      ------------------------------------------
+      ==================================================
+      IGNORAR LINKS EXTERNOS
+      ==================================================
       */
+
+      if (
+        href.startsWith(
+          'http://'
+        ) ||
+        href.startsWith(
+          'https://'
+        ) ||
+        href.startsWith(
+          'mailto:'
+        ) ||
+        href.startsWith(
+          'tel:'
+        ) ||
+        href.startsWith(
+          '#'
+        )
+      ) {
+
+        return;
+
+      }
+
 
       if (
         !href.startsWith('/')
@@ -341,17 +101,186 @@ export function OfflineNavigation() {
 
 
       /*
-      ------------------------------------------
-      NAVEGAÇÃO COMPLETA
-
-      Evita o Next tentar buscar RSC pela rede.
-      ------------------------------------------
+      ==================================================
+      PARAR NAVEGAÇÃO DO NEXT
+      ==================================================
       */
 
       event.preventDefault();
 
       event.stopPropagation();
 
+
+      const url =
+        new URL(
+          href,
+          window.location.origin
+        );
+
+
+      const pathname =
+        url.pathname;
+
+
+      /*
+      ==================================================
+      MÚSICA
+      ==================================================
+
+      /songs/ABC123
+
+      Não captura:
+
+      /songs
+      /songs/new
+      /songs/ABC123/edit
+      ==================================================
+      */
+
+      const songMatch =
+        pathname.match(
+          /^\/songs\/([^/]+)$/
+        );
+
+
+      if (
+        songMatch &&
+        songMatch[1] !== 'new'
+      ) {
+
+        const songId =
+          songMatch[1];
+
+
+        const offlineUrl =
+          new URL(
+            '/offline-song',
+            window.location.origin
+          );
+
+
+        offlineUrl.searchParams.set(
+          'id',
+          songId
+        );
+
+
+        /*
+        ------------------------------------------
+        MANTER TRANSPOSIÇÃO
+        ------------------------------------------
+        */
+
+        const transpose =
+          url.searchParams.get(
+            'transpose'
+          );
+
+
+        if (
+          transpose !== null
+        ) {
+
+          offlineUrl.searchParams.set(
+            'transpose',
+            transpose
+          );
+
+        }
+
+
+        /*
+        ------------------------------------------
+        ORIGEM DO REPERTÓRIO
+        ------------------------------------------
+        */
+
+        const fromSetlist =
+          url.searchParams.get(
+            'fromSetlist'
+          );
+
+
+        if (fromSetlist) {
+
+          offlineUrl.searchParams.set(
+            'fromSetlist',
+            fromSetlist
+          );
+
+        }
+
+
+        console.info(
+          '[PWA] Abrindo música offline:',
+          songId
+        );
+
+
+        window.location.assign(
+          offlineUrl.pathname +
+          offlineUrl.search
+        );
+
+
+        return;
+
+      }
+
+
+      /*
+      ==================================================
+      REPERTÓRIO
+      ==================================================
+      */
+
+      const setlistMatch =
+        pathname.match(
+          /^\/setlists\/([^/]+)$/
+        );
+
+
+      if (
+        setlistMatch &&
+        setlistMatch[1] !== 'new'
+      ) {
+
+        const setlistId =
+          setlistMatch[1];
+
+
+        console.info(
+          '[PWA] Abrindo repertório offline:',
+          setlistId
+        );
+
+
+        window.location.assign(
+
+          `/offline-setlist?id=${encodeURIComponent(
+            setlistId
+          )}`
+
+        );
+
+
+        return;
+
+      }
+
+
+      /*
+      ==================================================
+      LINKS NORMAIS
+      ==================================================
+
+      Dashboard
+      músicas
+      repertórios
+      ferramentas
+      etc.
+      ==================================================
+      */
 
       console.info(
         '[PWA] Navegação offline:',
@@ -366,12 +295,6 @@ export function OfflineNavigation() {
     };
 
 
-    /*
-    ==================================================
-    LISTENERS
-    ==================================================
-    */
-
     document.addEventListener(
       'click',
       handleClick,
@@ -379,65 +302,20 @@ export function OfflineNavigation() {
     );
 
 
-    /*
-    ------------------------------------------------
-    QUANDO INTERNET VOLTAR
-    ------------------------------------------------
-    */
-
-    window.addEventListener(
-      'online',
-      scheduleCache
-    );
-
-
-    /*
-    ------------------------------------------------
-    OBSERVAR MÚSICAS / REPERTÓRIOS SENDO CARREGADOS
-    ------------------------------------------------
-    */
-
-    observer =
-      new MutationObserver(
-        () => {
-
-          scheduleCache();
-
-        }
-      );
-
-
-    observer.observe(
-      document.body,
-      {
-
-        childList:
-          true,
-
-        subtree:
-          true,
-
-      }
-    );
-
-
-    /*
-    ------------------------------------------------
-    PRIMEIRO CACHE
-    ------------------------------------------------
-    */
-
-    scheduleCache();
-
-
-    /*
-    ==================================================
-    CLEANUP
-    ==================================================
-    */
-
     return () => {
 
       document.removeEventListener(
         'click',
-        handle
+        handleClick,
+        true
+      );
+
+    };
+
+
+  }, []);
+
+
+  return null;
+
+}
