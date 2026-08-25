@@ -5,7 +5,7 @@ SERVICE WORKER
 ==================================================
 */
 
-const CACHE_VERSION = 'cifras-kadosh-v2';
+const CACHE_VERSION = 'cifras-kadosh-v3';
 
 const STATIC_CACHE =
   `${CACHE_VERSION}-static`;
@@ -26,10 +26,6 @@ const APP_SHELL = [
   '/manifest.json',
   '/icon-192x192.png',
   '/icon-512x512.png',
-  '/apple-touch-icon.png',
-  '/favicon.ico',
-  '/favicon-16x16.png',
-  '/favicon-32x32.png',
 ];
 
 
@@ -72,12 +68,18 @@ self.addEventListener(
                       response.clone()
                     );
 
+
+                    console.info(
+                      '[SW] Cache inicial:',
+                      url
+                    );
+
                   }
 
                 } catch (error) {
 
                   console.warn(
-                    '[SW] Falha ao armazenar:',
+                    '[SW] Não foi possível armazenar:',
                     url
                   );
 
@@ -92,12 +94,6 @@ self.addEventListener(
 
     );
 
-
-    /*
-    ==============================================
-    ATIVAR NOVA VERSÃO IMEDIATAMENTE
-    ==============================================
-    */
 
     self.skipWaiting();
 
@@ -133,6 +129,12 @@ self.addEventListener(
                   cacheName !== STATIC_CACHE &&
                   cacheName !== RUNTIME_CACHE
                 ) {
+
+                  console.info(
+                    '[SW] Removendo cache antigo:',
+                    cacheName
+                  );
+
 
                   return caches.delete(
                     cacheName
@@ -176,9 +178,9 @@ self.addEventListener(
 
 
     /*
-    ==============================================
+    ------------------------------------------------
     APENAS GET
-    ==============================================
+    ------------------------------------------------
     */
 
     if (
@@ -197,13 +199,9 @@ self.addEventListener(
 
 
     /*
-    ==============================================
-    SOMENTE RECURSOS DO PRÓPRIO APP
-    ==============================================
-
-    Firebase / Firestore continua sendo controlado
-    pelo SDK e IndexedDB da Fase 1.
-    ==============================================
+    ------------------------------------------------
+    SOMENTE O PRÓPRIO SITE
+    ------------------------------------------------
     */
 
     if (
@@ -217,9 +215,9 @@ self.addEventListener(
 
 
     /*
-    ==============================================
-    IGNORAR APIs
-    ==============================================
+    ------------------------------------------------
+    IGNORAR API
+    ------------------------------------------------
     */
 
     if (
@@ -234,9 +232,9 @@ self.addEventListener(
 
 
     /*
-    ==============================================
+    ------------------------------------------------
     IGNORAR HOT RELOAD
-    ==============================================
+    ------------------------------------------------
     */
 
     if (
@@ -254,9 +252,9 @@ self.addEventListener(
 
 
     /*
-    ==============================================
+    ==================================================
     NAVEGAÇÃO HTML
-    ==============================================
+    ==================================================
     */
 
     if (
@@ -276,13 +274,9 @@ self.addEventListener(
 
 
     /*
-    ==============================================
+    ==================================================
     NEXT.JS RSC
-
-    O Next adiciona um parâmetro _rsc variável.
-    Removemos esse parâmetro da chave do cache para
-    que a mesma página possa ser encontrada offline.
-    ==============================================
+    ==================================================
     */
 
     if (
@@ -303,9 +297,9 @@ self.addEventListener(
 
 
     /*
-    ==============================================
+    ==================================================
     ARQUIVOS ESTÁTICOS
-    ==============================================
+    ==================================================
     */
 
     if (
@@ -334,9 +328,9 @@ self.addEventListener(
 
 
     /*
-    ==============================================
-    DEMAIS REQUISIÇÕES
-    ==============================================
+    ==================================================
+    OUTRAS REQUISIÇÕES
+    ==================================================
     */
 
     event.respondWith(
@@ -351,7 +345,8 @@ self.addEventListener(
 
 /*
 ==================================================
-NAVEGAÇÃO - NETWORK FIRST
+NAVEGAÇÃO
+NETWORK FIRST
 ==================================================
 */
 
@@ -359,13 +354,19 @@ async function networkFirstNavigation(
   request
 ) {
 
-  const cache =
+  const runtimeCache =
     await caches.open(
       RUNTIME_CACHE
     );
 
 
   try {
+
+    /*
+    ------------------------------------------------
+    ONLINE
+    ------------------------------------------------
+    */
 
     const response =
       await fetch(
@@ -378,8 +379,41 @@ async function networkFirstNavigation(
       response.ok
     ) {
 
-      await cache.put(
+      /*
+      ----------------------------------------------
+      GUARDA A PÁGINA VISITADA
+      ----------------------------------------------
+      */
+
+      await runtimeCache.put(
         request,
+        response.clone()
+      );
+
+
+      /*
+      ----------------------------------------------
+      TAMBÉM GUARDA SOMENTE PELO PATHNAME
+
+      Evita problemas com parâmetros de URL.
+      ----------------------------------------------
+      */
+
+      const requestUrl =
+        new URL(
+          request.url
+        );
+
+
+      const cleanRequest =
+        new Request(
+          requestUrl.origin +
+          requestUrl.pathname
+        );
+
+
+      await runtimeCache.put(
+        cleanRequest,
         response.clone()
       );
 
@@ -393,28 +427,40 @@ async function networkFirstNavigation(
 
 
     /*
-    ==============================================
-    PÁGINA EXATA
-    ==============================================
+    ==================================================
+    OFFLINE
+    ==================================================
     */
 
-    const cachedPage =
-      await cache.match(
+
+    /*
+    ------------------------------------------------
+    1. TENTAR A REQUISIÇÃO EXATA
+    ------------------------------------------------
+    */
+
+    const exactPage =
+      await runtimeCache.match(
         request
       );
 
 
-    if (cachedPage) {
+    if (exactPage) {
 
-      return cachedPage;
+      console.info(
+        '[SW] Navegação offline pelo runtime cache.'
+      );
+
+
+      return exactPage;
 
     }
 
 
     /*
-    ==============================================
-    TENTAR PELO PATHNAME
-    ==============================================
+    ------------------------------------------------
+    2. TENTAR APENAS PATHNAME
+    ------------------------------------------------
     */
 
     const url =
@@ -423,30 +469,35 @@ async function networkFirstNavigation(
       );
 
 
-    const pathRequest =
+    const cleanRequest =
       new Request(
         url.origin +
         url.pathname
       );
 
 
-    const cachedPath =
-      await cache.match(
-        pathRequest
+    const pathPage =
+      await runtimeCache.match(
+        cleanRequest
       );
 
 
-    if (cachedPath) {
+    if (pathPage) {
 
-      return cachedPath;
+      console.info(
+        '[SW] Navegação offline pelo pathname.'
+      );
+
+
+      return pathPage;
 
     }
 
 
     /*
-    ==============================================
-    FALLBACK OFFLINE
-    ==============================================
+    ------------------------------------------------
+    3. TENTAR CACHE ESTÁTICO
+    ------------------------------------------------
     */
 
     const staticCache =
@@ -454,6 +505,65 @@ async function networkFirstNavigation(
         STATIC_CACHE
       );
 
+
+    /*
+    ------------------------------------------------
+    TENTA A ROTA EXATA NO CACHE ESTÁTICO
+    ------------------------------------------------
+    */
+
+    const staticExact =
+      await staticCache.match(
+        url.pathname
+      );
+
+
+    if (staticExact) {
+
+      console.info(
+        '[SW] Navegação offline pelo cache estático.'
+      );
+
+
+      return staticExact;
+
+    }
+
+
+    /*
+    ------------------------------------------------
+    4. IMPORTANTE:
+
+    SE O PWA ESTIVER SENDO ABERTO DO ZERO,
+    USA A PÁGINA PRINCIPAL "/" DO APP.
+
+    Esse era o ponto que estava faltando.
+    ------------------------------------------------
+    */
+
+    const homePage =
+      await staticCache.match(
+        '/'
+      );
+
+
+    if (homePage) {
+
+      console.info(
+        '[SW] Inicialização offline usando App Shell.'
+      );
+
+
+      return homePage;
+
+    }
+
+
+    /*
+    ------------------------------------------------
+    5. ÚLTIMO FALLBACK
+    ------------------------------------------------
+    */
 
     const offlinePage =
       await staticCache.match(
@@ -469,15 +579,23 @@ async function networkFirstNavigation(
 
 
     return new Response(
+
       'CifrasKadosh está offline.',
+
       {
-        status: 503,
+
+        status:
+          503,
 
         headers: {
+
           'Content-Type':
             'text/plain; charset=utf-8',
+
         },
+
       }
+
     );
 
   }
@@ -487,7 +605,7 @@ async function networkFirstNavigation(
 
 /*
 ==================================================
-NEXT RSC - NETWORK FIRST
+NEXT.JS RSC
 ==================================================
 */
 
@@ -507,12 +625,6 @@ async function networkFirstRSC(
     );
 
 
-  /*
-  ==============================================
-  REMOVER PARÂMETRO ALEATÓRIO DO NEXT
-  ==============================================
-  */
-
   originalUrl.searchParams.delete(
     '_rsc'
   );
@@ -522,7 +634,9 @@ async function networkFirstRSC(
     new Request(
       originalUrl.toString(),
       {
-        method: 'GET',
+        method:
+          'GET',
+
         headers:
           request.headers,
       }
@@ -667,39 +781,49 @@ async function cacheFirst(
 
 
     /*
-    ==============================================
-    ATUALIZA EM SEGUNDO PLANO
-    ==============================================
+    ------------------------------------------------
+    DEVOLVE IMEDIATAMENTE O CACHE
+    ------------------------------------------------
+    */
+
+    /*
+    ------------------------------------------------
+    TENTA ATUALIZAR EM SEGUNDO PLANO
+    ------------------------------------------------
     */
 
     fetch(
       request
     )
-      .then(response => {
+      .then(
+        response => {
 
-        if (
-          response &&
-          response.ok &&
-          response.type ===
-            'basic'
-        ) {
+          if (
+            response &&
+            response.ok &&
+            response.type ===
+              'basic'
+          ) {
 
-          cache.put(
-            request,
-            response.clone()
-          );
+            void cache.put(
+              request,
+              response.clone()
+            );
+
+          }
 
         }
+      )
+      .catch(
+        () => {
 
-      })
-      .catch(() => {
+          /*
+          Offline.
+          Mantém o cache existente.
+          */
 
-        /*
-        Offline.
-        Usa versão já armazenada.
-        */
-
-      });
+        }
+      );
 
 
     return cached;
@@ -708,9 +832,9 @@ async function cacheFirst(
 
 
   /*
-  ==============================================
-  NÃO ESTÁ NO CACHE
-  ==============================================
+  ------------------------------------------------
+  PRIMEIRO ACESSO
+  ------------------------------------------------
   */
 
   try {
