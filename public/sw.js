@@ -5,7 +5,7 @@ SERVICE WORKER
 ==================================================
 */
 
-const CACHE_VERSION = 'cifras-kadosh-v4';
+const CACHE_VERSION = 'cifras-kadosh-v6';
 
 const STATIC_CACHE =
   `${CACHE_VERSION}-static`;
@@ -168,6 +168,211 @@ self.addEventListener(
 
   }
 );
+
+
+/*
+==================================================
+MENSAGENS DO APLICATIVO
+==================================================
+
+Recebe URLs internas encontradas na interface.
+
+Enquanto há internet, músicas, repertórios e
+demais páginas são armazenados no runtime cache.
+==================================================
+*/
+
+self.addEventListener(
+  'message',
+  event => {
+
+    const data =
+      event.data;
+
+
+    if (
+      !data ||
+      data.type !== 'CACHE_URLS'
+    ) {
+
+      return;
+
+    }
+
+
+    const urls =
+      Array.isArray(
+        data.urls
+      )
+        ? data.urls
+        : [];
+
+
+    if (
+      urls.length === 0
+    ) {
+
+      return;
+
+    }
+
+
+    event.waitUntil(
+      cacheApplicationUrls(
+        urls
+      )
+    );
+
+  }
+);
+
+
+/*
+==================================================
+PRÉ-CACHE DE ROTAS DINÂMICAS
+==================================================
+*/
+
+async function cacheApplicationUrls(
+  urls
+) {
+
+  const cache =
+    await caches.open(
+      RUNTIME_CACHE
+    );
+
+
+  const uniqueUrls =
+    [...new Set(urls)];
+
+
+  for (
+    const url of uniqueUrls
+  ) {
+
+    try {
+
+      /*
+      ----------------------------------------------
+      Busca HTML normal.
+
+      Não queremos RSC aqui.
+      ----------------------------------------------
+      */
+
+      const response =
+        await fetch(
+          url,
+          {
+
+            method:
+              'GET',
+
+            credentials:
+              'same-origin',
+
+            headers: {
+
+              Accept:
+                'text/html,application/xhtml+xml',
+
+            },
+
+          }
+        );
+
+
+      if (
+        !response ||
+        !response.ok
+      ) {
+
+        continue;
+
+      }
+
+
+      const contentType =
+        response.headers.get(
+          'content-type'
+        ) || '';
+
+
+      if (
+        !contentType.includes(
+          'text/html'
+        )
+      ) {
+
+        continue;
+
+      }
+
+
+      const absoluteUrl =
+        new URL(
+          url,
+          self.location.origin
+        );
+
+
+      absoluteUrl.searchParams.delete(
+        '_rsc'
+      );
+
+
+      const cacheKey =
+        new Request(
+          absoluteUrl.toString()
+        );
+
+
+      await cache.put(
+        cacheKey,
+        response.clone()
+      );
+
+
+      /*
+      ----------------------------------------------
+      Também guarda somente pelo pathname.
+
+      Isso ajuda quando a URL chega com parâmetros.
+      ----------------------------------------------
+      */
+
+      const pathnameKey =
+        new Request(
+          absoluteUrl.origin +
+          absoluteUrl.pathname
+        );
+
+
+      await cache.put(
+        pathnameKey,
+        response.clone()
+      );
+
+
+      console.info(
+        '[SW] Rota preparada para offline:',
+        absoluteUrl.pathname
+      );
+
+
+    } catch (error) {
+
+      console.warn(
+        '[SW] Não foi possível preparar rota:',
+        url
+      );
+
+    }
+
+  }
+
+}
 
 
 /*
@@ -388,7 +593,7 @@ async function networkFirstNavigation(
 
       /*
       ----------------------------------------------
-      GUARDA A PÁGINA VISITADA
+      Guarda requisição exata
       ----------------------------------------------
       */
 
@@ -400,9 +605,7 @@ async function networkFirstNavigation(
 
       /*
       ----------------------------------------------
-      TAMBÉM GUARDA SOMENTE PELO PATHNAME
-
-      Evita problemas com parâmetros de URL.
+      Guarda também somente pathname
       ----------------------------------------------
       */
 
@@ -442,7 +645,7 @@ async function networkFirstNavigation(
 
     /*
     ------------------------------------------------
-    1. TENTAR A REQUISIÇÃO EXATA
+    1. REQUISIÇÃO EXATA
     ------------------------------------------------
     */
 
@@ -466,7 +669,7 @@ async function networkFirstNavigation(
 
     /*
     ------------------------------------------------
-    2. TENTAR APENAS PATHNAME
+    2. PATHNAME
     ------------------------------------------------
     */
 
@@ -503,7 +706,9 @@ async function networkFirstNavigation(
 
     /*
     ------------------------------------------------
-    3. TENTAR CACHE ESTÁTICO
+    3. CACHE ESTÁTICO
+
+    Serve as telas principais.
     ------------------------------------------------
     */
 
@@ -512,12 +717,6 @@ async function networkFirstNavigation(
         STATIC_CACHE
       );
 
-
-    /*
-    ------------------------------------------------
-    TENTA A ROTA EXATA NO CACHE ESTÁTICO
-    ------------------------------------------------
-    */
 
     const staticExact =
       await staticCache.match(
@@ -539,36 +738,15 @@ async function networkFirstNavigation(
 
     /*
     ------------------------------------------------
-    4. IMPORTANTE:
+    4. FALLBACK OFFLINE
 
-    SE O PWA ESTIVER SENDO ABERTO DO ZERO,
-    USA A PÁGINA PRINCIPAL "/" DO APP.
+    IMPORTANTE:
 
-    Esse era o ponto que estava faltando.
-    ------------------------------------------------
-    */
+    Não usamos mais "/" como fallback para músicas
+    e repertórios desconhecidos.
 
-    const homePage =
-      await staticCache.match(
-        '/'
-      );
-
-
-    if (homePage) {
-
-      console.info(
-        '[SW] Inicialização offline usando App Shell.'
-      );
-
-
-      return homePage;
-
-    }
-
-
-    /*
-    ------------------------------------------------
-    5. ÚLTIMO FALLBACK
+    Isso evita voltar para a tela inicial quando uma
+    rota dinâmica não estiver no cache.
     ------------------------------------------------
     */
 
@@ -641,11 +819,13 @@ async function networkFirstRSC(
     new Request(
       originalUrl.toString(),
       {
+
         method:
           'GET',
 
         headers:
           request.headers,
+
       }
     );
 
@@ -686,6 +866,32 @@ async function networkFirstRSC(
     if (cached) {
 
       return cached;
+
+    }
+
+
+    /*
+    ------------------------------------------------
+    Tenta também sem headers especiais do RSC.
+    ------------------------------------------------
+    */
+
+    const cleanKey =
+      new Request(
+        originalUrl.origin +
+        originalUrl.pathname
+      );
+
+
+    const cleanCached =
+      await cache.match(
+        cleanKey
+      );
+
+
+    if (cleanCached) {
+
+      return cleanCached;
 
     }
 
@@ -786,16 +992,9 @@ async function cacheFirst(
 
   if (cached) {
 
-
     /*
     ------------------------------------------------
-    DEVOLVE IMEDIATAMENTE O CACHE
-    ------------------------------------------------
-    */
-
-    /*
-    ------------------------------------------------
-    TENTA ATUALIZAR EM SEGUNDO PLANO
+    Tenta atualizar silenciosamente em segundo plano
     ------------------------------------------------
     */
 
@@ -826,7 +1025,7 @@ async function cacheFirst(
 
           /*
           Offline.
-          Mantém o cache existente.
+          Mantém cache atual.
           */
 
         }
