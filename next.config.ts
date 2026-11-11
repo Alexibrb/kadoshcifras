@@ -1,29 +1,145 @@
-
-
 /** @type {import('next').NextConfig} */
+
 const nextConfig = {
+
+
+  /*
+  ==================================================
+  TYPESCRIPT
+  ==================================================
+  */
+
   typescript: {
-    ignoreBuildErrors: true,
+
+    ignoreBuildErrors:
+      true,
+
   },
+
+
+  /*
+  ==================================================
+  ESLINT
+  ==================================================
+  */
+
   eslint: {
-    ignoreDuringBuilds: true,
+
+    ignoreDuringBuilds:
+      true,
+
   },
+
+
+  /*
+  ==================================================
+  IMAGENS
+  ==================================================
+  */
+
   images: {
+
     remotePatterns: [
+
       {
-        protocol: 'https',
-        hostname: 'placehold.co',
-        port: '',
-        pathname: '/**',
+
+        protocol:
+          'https',
+
+        hostname:
+          'placehold.co',
+
+        port:
+          '',
+
+        pathname:
+          '/**',
+
       },
+
     ],
+
   },
+
+
+  /*
+  ==================================================
+  DESENVOLVIMENTO
+  ==================================================
+  */
+
   devIndicators: {
-    allowedDevOrigins: ['*'],
-    position: 'bottom-right',
+
+    allowedDevOrigins: [
+      '*',
+    ],
+
+    position:
+      'bottom-right',
+
   },
-  transpilePackages: ['next-themes'],
+
+
+  /*
+  ==================================================
+  NEXT THEMES
+  ==================================================
+  */
+
+  transpilePackages: [
+
+    'next-themes',
+
+  ],
+
+
+  /*
+  ==================================================
+  SERVICE WORKER
+  ==================================================
+  */
+
+  async headers() {
+
+    return [
+
+      {
+
+        source:
+          '/sw.js',
+
+        headers: [
+
+          {
+
+            key:
+              'Cache-Control',
+
+            value:
+              'public, max-age=0, must-revalidate',
+
+          },
+
+          {
+
+            key:
+              'Service-Worker-Allowed',
+
+            value:
+              '/',
+
+          },
+
+        ],
+
+      },
+
+    ];
+
+  },
+
 };
 
 
-module.exports = nextConfig;
+module.exports =
+  nextConfig;
