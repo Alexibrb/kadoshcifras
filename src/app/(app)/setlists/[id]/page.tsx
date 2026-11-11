@@ -87,12 +87,10 @@ export default function SetlistPage() {
         
         if (setlist.eventDate) {
             let dateStr = '';
-            // Converte o Timestamp do Firestore para Date local com segurança
             const dateObj = typeof (setlist.eventDate as any).toDate === 'function' 
                 ? (setlist.eventDate as any).toDate() 
                 : new Date(setlist.eventDate as any);
             
-            // Extrai as partes locais da data para o input (YYYY-MM-DD)
             const year = dateObj.getFullYear();
             const month = String(dateObj.getMonth() + 1).padStart(2, '0');
             const day = String(dateObj.getDate()).padStart(2, '0');
@@ -114,6 +112,18 @@ export default function SetlistPage() {
     if (!appUser || !setlist) return false;
     return appUser.role === 'admin' || appUser.id === setlist.creatorId;
   }, [appUser, setlist]);
+
+  const isExpired = useMemo(() => {
+    if (!setlist?.eventDate) return false;
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const eventDateObj = typeof (setlist.eventDate as any).toDate === 'function' 
+        ? (setlist.eventDate as any).toDate() 
+        : new Date(setlist.eventDate as any);
+    const compareDate = new Date(eventDateObj);
+    compareDate.setHours(0, 0, 0, 0);
+    return compareDate < now;
+  }, [setlist]);
 
   const songMap = useMemo(() => new Map(allSongs.map(s => [s.id, s])), [allSongs]);
 
@@ -179,7 +189,6 @@ export default function SetlistPage() {
   const handleDateChange = async (newDate: string) => {
       if (!canChangeSettings) return;
       setEventDate(newDate);
-      // Salva no final do dia (local) para garantir visibilidade até meia-noite
       await updateSetlistDoc({ 
           eventDate: newDate ? new Date(newDate + 'T23:59:59') : null 
       });
@@ -294,8 +303,11 @@ export default function SetlistPage() {
     notFound();
   }
 
-  if (isClient && setlist && appUser && setlist.isVisible === false && setlist.creatorId !== appUser.id && appUser.role !== 'admin') {
-      notFound();
+  // REGRAS DE ACESSO: Bloqueia se for invisível OU expirado (a menos que seja o dono/admin)
+  if (isClient && setlist && appUser && !canChangeSettings) {
+      if (setlist.isVisible === false || isExpired) {
+          notFound();
+      }
   }
 
   if (loading) {

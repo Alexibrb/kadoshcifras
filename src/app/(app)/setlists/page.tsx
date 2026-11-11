@@ -29,14 +29,12 @@ export default function SetlistsPage() {
   const { appUser, loading: authLoading } = useAuth();
   const [isClient, setIsClient] = useState(false);
   
-  // Busca os repertórios do PRÓPRIO usuário
   const { data: mySetlistsData, loading: loadingMySetlists } = useFirestoreCollection<Setlist>(
     'setlists',
     undefined,
     appUser ? [['creatorId', '==', appUser.id]] : [['id', '==', 'none']]
   );
 
-  // Busca os repertórios que sejam VISÍVEIS
   const { data: otherSetlistsData, loading: loadingOtherSetlists } = useFirestoreCollection<Setlist>(
     'setlists',
     undefined,
@@ -57,7 +55,6 @@ export default function SetlistsPage() {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
-    // Combina tudo o que o usuário pode ver
     const combined = [...mySetlistsData, ...otherSetlistsData];
     const uniqueSetlists = Array.from(new Map(combined.map(item => [item.id, item])).values());
     
@@ -65,7 +62,7 @@ export default function SetlistsPage() {
     const expired: Setlist[] = [];
 
     uniqueSetlists.forEach(s => {
-      const isOwner = s.creatorId === appUser.id || appUser.role === 'admin';
+      const isOwnerOrAdmin = s.creatorId === appUser.id || appUser.role === 'admin';
       
       let isPast = false;
       if (s.eventDate) {
@@ -82,13 +79,16 @@ export default function SetlistsPage() {
         }
       }
 
-      if (isOwner) {
-        // Donos veem tudo, separado por data
-        if (isPast) expired.push(s);
-        else active.push(s);
+      if (isPast) {
+        // Se expirou, SÓ aparece na aba de expirados se o usuário logado for o dono ou admin
+        if (isOwnerOrAdmin) {
+          expired.push(s);
+        }
       } else {
-        // Outros usuários só veem os que não expiraram (regra de negócio definida anteriormente)
-        if (!isPast) active.push(s);
+        // Se não expirou, aparece na aba de ativos se for dono/admin OU se estiver visível
+        if (isOwnerOrAdmin || s.isVisible) {
+          active.push(s);
+        }
       }
     });
 

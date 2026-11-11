@@ -21,14 +21,10 @@ service cloud.firestore {
 
     // USERS: Regras para usuários
     match /users/{userId} {
-      // Separamos list e get para maior clareza e segurança
       allow list: if isAdmin();
       allow get: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      
       allow create: if isAuthenticated() && request.auth.uid == userId;
       allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      
-      // Permitir exclusão para administradores
       allow delete: if isAdmin();
     }
     
@@ -46,16 +42,21 @@ service cloud.firestore {
 
     // REPERTÓRIOS
     match /setlists/{setlistId} {
-      // Regra de Leitura Segura:
-      // 1. Criador e Admin sempre podem ler.
-      // 2. Outros podem ler se isVisible for true E (se houver eventDate, ela não tiver passado).
-      allow read: if isAuthenticated() && (
+      // Listagem: Permite listar se for dono, admin ou se for marcado como visível
+      // O filtro de expiração para terceiros é feito no código da UI para evitar erros de permissão em queries de coleção.
+      allow list: if isAuthenticated() && (
+        resource.data.creatorId == request.auth.uid || 
+        isAdmin() || 
+        resource.data.isVisible == true
+      );
+      
+      // Leitura individual (get): Bloqueio rígido para expirados se não for dono/admin
+      allow get: if isAuthenticated() && (
         resource.data.creatorId == request.auth.uid || 
         isAdmin() || 
         (resource.data.isVisible == true && (resource.data.eventDate == null || resource.data.eventDate >= request.time))
       );
       
-      // Escrita: Apenas usuários autenticados (a lógica de quem pode editar o que é tratada via UI e visibilidade)
       allow write: if isAuthenticated();
     }
   }
