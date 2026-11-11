@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Song, PedalSettings, Setlist } from '@/types';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Play, Pause, X, Loader2, FileDown, Sun, Edit, Youtube, Save, Check, FileText } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Play, Pause, X, Loader2, FileDown, Sun, Edit, Youtube, Save, Check, FileText, Mic, MicOff } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
@@ -69,6 +69,7 @@ export default function SongPage() {
   const [isSavingTranspose, setIsSavingTranspose] = useState(false);
   const [isWakeLockActive, setIsWakeLockActive] = useState(false);
   const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
   
   const wakeLockRef = useRef<any>(null);
   const lastScrollTime = useRef<number>(0);
@@ -76,6 +77,7 @@ export default function SongPage() {
   const requestRef = useRef<number>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
   
   const finalFontSize = appUser?.fontSize ?? 14;
   const finalLinesPerPage = appUser?.linesPerPage ?? 14;
@@ -104,6 +106,83 @@ export default function SongPage() {
       }
     }
   }, []);
+
+  // Voice Recognition Logic
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'pt-BR';
+    recognition.continuous = true;
+    recognition.interimResults = false;
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
+      console.log('Voice Command Received:', transcript);
+
+      if (transcript.includes('avançar tela')) {
+        api?.scrollNext();
+      } else if (transcript.includes('voltar tela')) {
+        api?.scrollPrev();
+      } else if (transcript.includes('rolar tela')) {
+        setIsContinuousMode(true);
+        setIsAutoScrolling(true);
+      } else if (transcript.includes('parar tela')) {
+        setIsAutoScrolling(false);
+      }
+    };
+
+    recognition.onend = () => {
+      if (recognitionRef.current?.isActive) {
+        try {
+          recognition.start();
+        } catch (e) {
+          console.error('Failed to restart recognition', e);
+        }
+      }
+    };
+
+    recognitionRef.current = {
+      instance: recognition,
+      isActive: false
+    };
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.isActive = false;
+        recognitionRef.current.instance.stop();
+      }
+    };
+  }, [api]);
+
+  const toggleVoice = () => {
+    if (!recognitionRef.current) {
+      toast({
+        variant: "destructive",
+        title: "Não Suportado",
+        description: "Reconhecimento de voz não está disponível neste navegador."
+      });
+      return;
+    }
+
+    if (isVoiceActive) {
+      recognitionRef.current.isActive = false;
+      recognitionRef.current.instance.stop();
+      setIsVoiceActive(false);
+      toast({ title: "Voz Desativada", description: "Microfone desligado." });
+    } else {
+      recognitionRef.current.isActive = true;
+      try {
+        recognitionRef.current.instance.start();
+        setIsVoiceActive(true);
+        toast({ title: "Voz Ativada", description: "Ouvindo: 'avançar tela', 'voltar tela', 'rolar tela', 'parar tela'." });
+      } catch (e) {
+        console.error('Error starting voice recognition:', e);
+      }
+    }
+  };
 
   useEffect(() => {
     setIsClient(true);
@@ -390,6 +469,18 @@ export default function SongPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
+                  <Button 
+                    onClick={toggleVoice} 
+                    variant="ghost" 
+                    size="icon" 
+                    className={cn(
+                      "h-9 w-9 transition-colors", 
+                      isVoiceActive ? "text-primary bg-primary/10 animate-pulse" : "text-muted-foreground"
+                    )}
+                    title={isVoiceActive ? "Desativar Comandos de Voz" : "Ativar Comandos de Voz"}
+                  >
+                    {isVoiceActive ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+                  </Button>
                   {song.url && (
                     <Button asChild variant="ghost" size="icon" className="h-9 w-9 text-red-600 hover:text-red-700 hover:bg-red-50" title="Ver Vídeo">
                       <a href={song.url} target="_blank" rel="noopener noreferrer">
@@ -444,7 +535,10 @@ export default function SongPage() {
                   <FileText className="h-3 w-3 mr-1" /> {currentPartIndex + 1} / {songParts.length}
                 </div>
               </div>
-              <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8 shrink-0"><PanelTopOpen className="h-5 w-5" /></Button>
+              <div className="flex items-center gap-1">
+                {isVoiceActive && <div className="w-2 h-2 rounded-full bg-primary animate-pulse mr-1" />}
+                <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8 shrink-0"><PanelTopOpen className="h-5 w-5" /></Button>
+              </div>
             </div>
           )}
         </CardContent>

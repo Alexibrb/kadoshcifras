@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun, FileDown, FileText } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun, FileDown, FileText, Mic, MicOff } from 'lucide-react';
 import { SongDisplay } from '@/components/song-display';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -111,6 +111,7 @@ export default function OfflineSetlistPage() {
   const lastScrollTime = useRef<number>(0);
   const scrollPosRef = useRef<number>(0); 
   const containerRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   const [offlineData, setOfflineData] = useState<OfflineSetlist | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -132,6 +133,7 @@ export default function OfflineSetlistPage() {
   const [isWakeLockActive, setIsWakeLockActive] = useState(false);
   const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
 
   const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', {
     pedalType: '4-buttons',
@@ -152,6 +154,83 @@ export default function OfflineSetlistPage() {
       }
     }
   }, []);
+
+  // Voice Recognition Logic
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'pt-BR';
+    recognition.continuous = true;
+    recognition.interimResults = false;
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
+      console.log('Voice Command Received:', transcript);
+
+      if (transcript.includes('avançar tela')) {
+        api?.scrollNext();
+      } else if (transcript.includes('voltar tela')) {
+        api?.scrollPrev();
+      } else if (transcript.includes('rolar tela')) {
+        setIsContinuousMode(true);
+        setIsAutoScrolling(true);
+      } else if (transcript.includes('parar tela')) {
+        setIsAutoScrolling(false);
+      }
+    };
+
+    recognition.onend = () => {
+      if (recognitionRef.current?.isActive) {
+        try {
+          recognition.start();
+        } catch (e) {
+          console.error('Failed to restart recognition', e);
+        }
+      }
+    };
+
+    recognitionRef.current = {
+      instance: recognition,
+      isActive: false
+    };
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.isActive = false;
+        recognitionRef.current.instance.stop();
+      }
+    };
+  }, [api]);
+
+  const toggleVoice = () => {
+    if (!recognitionRef.current) {
+      toast({
+        variant: "destructive",
+        title: "Não Suportado",
+        description: "Reconhecimento de voz não está disponível neste navegador."
+      });
+      return;
+    }
+
+    if (isVoiceActive) {
+      recognitionRef.current.isActive = false;
+      recognitionRef.current.instance.stop();
+      setIsVoiceActive(false);
+      toast({ title: "Voz Desativada", description: "Microfone desligado." });
+    } else {
+      recognitionRef.current.isActive = true;
+      try {
+        recognitionRef.current.instance.start();
+        setIsVoiceActive(true);
+        toast({ title: "Voz Ativada", description: "Ouvindo: 'avançar tela', 'voltar tela', 'rolar tela', 'parar tela'." });
+      } catch (e) {
+        console.error('Error starting voice recognition:', e);
+      }
+    }
+  };
 
   const animateScroll = useCallback((time: number) => {
     if (lastScrollTime.current > 0 && scrollAreaRef.current) {
@@ -471,7 +550,21 @@ export default function OfflineSetlistPage() {
                   </div>
                 </div>
               </div>
-              <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon" className="shrink-0"><PanelTopClose className="h-5 w-5" /></Button>
+              <div className="flex items-center gap-1 shrink-0">
+                <Button 
+                    onClick={toggleVoice} 
+                    variant="ghost" 
+                    size="icon" 
+                    className={cn(
+                      "h-9 w-9 transition-colors", 
+                      isVoiceActive ? "text-primary bg-primary/10 animate-pulse" : "text-muted-foreground"
+                    )}
+                    title={isVoiceActive ? "Desativar Comandos de Voz" : "Ativar Comandos de Voz"}
+                >
+                    {isVoiceActive ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+                </Button>
+                <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon" className="shrink-0"><PanelTopClose className="h-5 w-5" /></Button>
+              </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
                 <div className="flex items-center gap-1 border rounded-md p-1 bg-background h-10 w-full sm:w-48">
@@ -503,7 +596,10 @@ export default function OfflineSetlistPage() {
                     <span className="flex items-center"><FileText className="h-3 w-3 mr-1" /> {currentPageInSong} / {totalPagesInSong}</span>
                 </div>
             </div>
-            <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8 shrink-0"><PanelTopOpen className="h-5 w-5" /></Button>
+            <div className="flex items-center gap-1">
+              {isVoiceActive && <div className="w-2 h-2 rounded-full bg-primary animate-pulse mr-1" />}
+              <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8 shrink-0"><PanelTopOpen className="h-5 w-5" /></Button>
+            </div>
           </div>
         )}
       </Card>
