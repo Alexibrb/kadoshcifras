@@ -72,7 +72,7 @@ export const transposeContent = (content: string, semitones: number): string => 
 };
 
 /**
- * Quebra o conteúdo de forma inteligente para manter cifras alinhadas.
+ * Quebra o conteúdo de forma inteligente para manter cifras alinhadas sem cortar palavras.
  */
 export const smartWrapContent = (content: string, maxChars: number): string => {
   if (!maxChars || maxChars <= 0) return content;
@@ -96,23 +96,42 @@ export const smartWrapContent = (content: string, maxChars: number): string => {
       while (start < maxLen) {
         let end = start + maxChars;
         
-        // Tenta não quebrar palavras no meio se possível (opcional, mas aqui substring pura mantém alinhamento)
+        if (end < maxLen) {
+          // Procura o último espaço na linha de letra antes do limite para não quebrar palavras
+          const subLyric = lyricLine.substring(start, end + 1);
+          const lastSpace = subLyric.lastIndexOf(' ');
+          
+          // Se encontrou um espaço (que não seja o primeiro caractere da linha atual)
+          if (lastSpace > 0) {
+            end = start + lastSpace;
+          }
+        }
+
         const chordPart = chordLine.substring(start, end);
         const lyricPart = lyricLine.substring(start, end);
 
-        result.push(chordPart);
-        result.push(lyricPart);
+        result.push(chordPart.trimEnd());
+        result.push(lyricPart.trimEnd());
+        
         start = end;
+        // Pula o espaço se a quebra ocorreu exatamente em um
+        if (lyricLine[start] === ' ') start++;
       }
     } else {
-      // Linha isolada (só letra, só cifra ou comentário)
+      // Linha isolada
       let start = 0;
       if (line.length === 0) {
         result.push('');
       } else {
         while (start < line.length) {
-          result.push(line.substring(start, start + maxChars));
-          start += maxChars;
+          let end = start + maxChars;
+          if (end < line.length) {
+            const lastSpace = line.substring(start, end + 1).lastIndexOf(' ');
+            if (lastSpace > 0) end = start + lastSpace;
+          }
+          result.push(line.substring(start, end).trimEnd());
+          start = end;
+          if (line[start] === ' ') start++;
         }
       }
     }

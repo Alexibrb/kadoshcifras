@@ -69,16 +69,16 @@ export function MaxCharsSettingsForm() {
       <CardHeader>
         <div className="flex items-center gap-2">
           <AlignLeft className="w-6 h-6 text-primary" />
-          <CardTitle className="font-headline text-xl">Largura da Linha (Caracteres)</CardTitle>
+          <CardTitle className="font-headline text-xl">Quebra de Linha Automática</CardTitle>
         </div>
         <CardDescription>
-          Limite o número de letras por linha para evitar quebras desordenadas em telas pequenas.
+          Ajuste a largura das músicas para que elas caibam na tela sem cortar palavras ao meio.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-8 pt-4">
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <Label>Caracteres por Linha</Label>
+                <Label>Largura da Linha (Caracteres)</Label>
                 <span className="font-mono font-bold text-primary text-lg bg-primary/10 px-3 py-1 rounded-md">
                     {maxChars === 0 ? "Desativado" : maxChars}
                 </span>
@@ -97,7 +97,9 @@ export function MaxCharsSettingsForm() {
         </div>
 
         <div className="bg-muted/30 p-4 rounded-lg border border-dashed text-xs text-muted-foreground leading-relaxed">
-            <strong>Dica:</strong> Para celulares, um valor entre 35 e 45 é ideal. Isso garante que a cifra e a letra quebrem juntas, mantendo o alinhamento perfeito. Use "0" para deixar o texto livre.
+            <strong>Como funciona:</strong> O sistema buscará o último espaço entre palavras antes do limite de caracteres definido para realizar a quebra. Isso evita que palavras sejam cortadas e mantém as cifras alinhadas com o texto.
+            <br/><br/>
+            <strong>Dica:</strong> Para a maioria dos celulares, um valor entre <strong>35 e 45</strong> oferece o melhor equilíbrio visual.
         </div>
       </CardContent>
       <CardFooter className="flex justify-between">
