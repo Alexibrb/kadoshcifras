@@ -452,10 +452,10 @@ export default function SongPage() {
         <CardContent className={cn("transition-all", isPanelVisible ? "p-4 space-y-4" : "p-1.5")}>
           {isPanelVisible ? (
             <div className="flex flex-col gap-4">
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between gap-2">
                 <Button asChild variant="outline" size="icon" className="shrink-0"><Link href={fromSetlistId ? `/setlists/${fromSetlistId}` : '/songs'}><ArrowLeft className="h-4 w-4" /></Link></Button>
-                <div className="text-center flex-1 px-4">
-                  <h1 className="text-sm font-bold uppercase tracking-widest text-muted-foreground leading-tight">
+                <div className="text-center flex-1 min-w-0">
+                  <h1 className="text-sm font-bold uppercase tracking-widest text-muted-foreground leading-tight break-words">
                     {song.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
                   </h1>
                   <div className="flex items-center justify-center gap-2 mt-1">
@@ -469,18 +469,6 @@ export default function SongPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <Button 
-                    onClick={toggleVoice} 
-                    variant="ghost" 
-                    size="icon" 
-                    className={cn(
-                      "h-9 w-9 transition-colors", 
-                      isVoiceActive ? "text-primary bg-primary/10 animate-pulse" : "text-muted-foreground"
-                    )}
-                    title={isVoiceActive ? "Desativar Comandos de Voz" : "Ativar Comandos de Voz"}
-                  >
-                    {isVoiceActive ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
-                  </Button>
                   {song.url && (
                     <Button asChild variant="ghost" size="icon" className="h-9 w-9 text-red-600 hover:text-red-700 hover:bg-red-50" title="Ver Vídeo">
                       <a href={song.url} target="_blank" rel="noopener noreferrer">
@@ -525,17 +513,17 @@ export default function SongPage() {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-between min-h-8 py-1">
+            <div className="flex items-center justify-between min-h-8 py-1 gap-2">
               <Button asChild variant="outline" size="icon" className="h-8 w-8 shrink-0"><Link href={fromSetlistId ? `/setlists/${fromSetlistId}` : '/songs'}><ArrowLeft className="h-4 w-4" /></Link></Button>
-              <div className="flex-1 flex flex-col items-center justify-center px-2">
-                <h1 className="text-sm font-bold w-full text-center leading-tight">
+              <div className="flex-1 flex flex-col items-center justify-center px-2 min-w-0">
+                <h1 className="text-sm font-bold w-full text-center leading-tight break-words">
                   {song.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
                 </h1>
                 <div className="text-[12px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none mt-1 flex items-center justify-center" style={{ fontFamily: 'Arial, sans-serif' }}>
                   <FileText className="h-3 w-3 mr-1" /> {currentPartIndex + 1} / {songParts.length}
                 </div>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0">
                 {isVoiceActive && <div className="w-2 h-2 rounded-full bg-primary animate-pulse mr-1" />}
                 <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8 shrink-0"><PanelTopOpen className="h-5 w-5" /></Button>
               </div>
@@ -603,11 +591,23 @@ export default function SongPage() {
 
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t z-50">
           <div className="max-w-xl mx-auto flex items-center gap-4 p-2 rounded-lg border bg-muted/20">
+              <Button 
+                onClick={toggleVoice} 
+                variant="ghost" 
+                size="icon" 
+                className={cn(
+                  "h-9 w-9 shrink-0 transition-colors", 
+                  isVoiceActive ? "text-primary bg-primary/10 animate-pulse" : "text-muted-foreground"
+                )}
+                title={isVoiceActive ? "Desativar Comandos de Voz" : "Ativar Comandos de Voz"}
+              >
+                {isVoiceActive ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+              </Button>
               {!isContinuousMode && showChords ? (
-                  <Button onClick={handleStartScrolling} className="h-9 gap-2 px-8 w-36"><Play className="h-4 w-4" /><span className="text-xs font-bold uppercase tracking-wider">Iniciar</span></Button>
+                  <Button onClick={handleStartScrolling} className="h-9 gap-2 px-8 flex-1 sm:flex-none sm:w-36"><Play className="h-4 w-4" /><span className="text-xs font-bold uppercase tracking-wider">Iniciar</span></Button>
               ) : (
-                  <div className="flex gap-2">
-                      <Button variant={isAutoScrolling ? "destructive" : "default"} onClick={handleToggleScrolling} className="h-9 w-36">{isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
+                  <div className="flex gap-2 flex-1 sm:flex-none">
+                      <Button variant={isAutoScrolling ? "destructive" : "default"} onClick={handleToggleScrolling} className="h-9 flex-1 sm:w-36">{isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
                       {showChords && (
                         <Button variant="outline" onClick={() => { setIsExitDialogOpen(true); setTimeout(() => containerRef.current?.focus(), 50); }} className="h-9 w-12"><X className="h-4 w-4" /></Button>
                       )}

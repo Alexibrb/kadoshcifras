@@ -254,10 +254,10 @@ export default function OfflineSetlistPage() {
       <Card className={cn("mb-4 bg-accent/10 transition-all", isPanelVisible ? "p-4 space-y-4" : "p-1.5")}>
         {isPanelVisible ? (
           <div className="flex flex-col gap-4">
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between gap-2">
               <Button asChild variant="outline" size="icon" className="shrink-0"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
-              <div className="text-center flex-1 px-4">
-                <h1 className="text-xl font-bold font-headline leading-tight truncate">{currentSong.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}</h1>
+              <div className="text-center flex-1 min-w-0">
+                <h1 className="text-xl font-bold font-headline leading-tight break-words">{currentSong.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}</h1>
                 <div className="flex items-center justify-center gap-2 mt-1">
                   <Badge variant="outline">Offline</Badge>
                   <Sun className={cn("h-3 w-3 transition-opacity", isWakeLockActive ? "text-orange-500" : "text-muted-foreground opacity-30")} />
@@ -268,7 +268,6 @@ export default function OfflineSetlistPage() {
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <Button onClick={toggleVoice} variant="ghost" size="icon" className={cn("h-9 w-9", isVoiceActive && "text-primary bg-primary/10 animate-pulse")}><Mic className="h-5 w-5" /></Button>
                 <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon"><PanelTopClose className="h-5 w-5" /></Button>
               </div>
             </div>
@@ -285,13 +284,13 @@ export default function OfflineSetlistPage() {
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-between min-h-8 py-1">
+          <div className="flex items-center justify-between min-h-8 py-1 gap-2">
             <Button asChild variant="outline" size="icon" className="h-8 w-8 shrink-0"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
-            <div className="flex-1 flex flex-col items-center justify-center px-2">
-                <h1 className="text-sm font-bold w-full text-center truncate">{currentSong.title} {currentKey && <span className="text-primary">({currentKey})</span>}</h1>
+            <div className="flex-1 flex flex-col items-center justify-center px-2 min-w-0">
+                <h1 className="text-sm font-bold w-full text-center break-words">{currentSong.title} {currentKey && <span className="text-primary">({currentKey})</span>}</h1>
                 <div className="text-[12px] font-bold text-blue-600 uppercase mt-1"><Music className="h-3 w-3 mr-1 inline" /> {currentSec.songIndex + 1} / {offlineData.songs.length}</div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               {isVoiceActive && <div className="w-2 h-2 rounded-full bg-primary animate-pulse mr-1" />}
               <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8"><PanelTopOpen className="h-5 w-5" /></Button>
             </div>
@@ -355,11 +354,12 @@ export default function OfflineSetlistPage() {
 
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t z-50">
           <div className="max-w-xl mx-auto flex items-center gap-4 p-2 rounded-lg border bg-muted/20">
+                <Button onClick={toggleVoice} variant="ghost" size="icon" className={cn("h-9 w-9 shrink-0", isVoiceActive && "text-primary bg-primary/10 animate-pulse")}><Mic className="h-5 w-5" /></Button>
                 {!isContinuousMode && showChords ? (
-                    <Button onClick={() => { setIsContinuousMode(true); setIsAutoScrolling(true); setIsPanelVisible(false); }} className="h-9 w-36 gap-2"><Play className="h-4 w-4" />Iniciar</Button>
+                    <Button onClick={() => { setIsContinuousMode(true); setIsAutoScrolling(true); setIsPanelVisible(false); }} className="h-9 flex-1 sm:w-36 gap-2"><Play className="h-4 w-4" />Iniciar</Button>
                 ) : (
-                    <div className="flex gap-2">
-                        <Button variant={isAutoScrolling ? "destructive" : "default"} onClick={() => setIsAutoScrolling(!isAutoScrolling)} className="h-9 w-36">{isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
+                    <div className="flex gap-2 flex-1 sm:flex-none">
+                        <Button variant={isAutoScrolling ? "destructive" : "default"} onClick={() => setIsAutoScrolling(!isAutoScrolling)} className="h-9 flex-1 sm:w-36">{isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
                         {showChords && <Button variant="outline" onClick={() => setIsExitDialogOpen(true)} className="h-9 w-12"><X className="h-4 w-4" /></Button>}
                     </div>
                 )}
