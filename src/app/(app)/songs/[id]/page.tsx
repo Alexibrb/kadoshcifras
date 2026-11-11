@@ -77,6 +77,7 @@ export default function SongPage() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const lastVoiceCommandTime = useRef<number>(0);
   
   const finalFontSize = appUser?.fontSize ?? 14;
   const finalLinesPerPage = appUser?.linesPerPage ?? 14;
@@ -114,22 +115,40 @@ export default function SongPage() {
     const recognition = new SpeechRecognition();
     recognition.lang = 'pt-BR';
     recognition.continuous = true;
-    recognition.interimResults = false;
+    recognition.interimResults = true; // RESPOSTA EM TEMPO REAL
 
     recognition.onresult = (event: any) => {
-      const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
-      console.log('Voice Command Received:', transcript);
+      const now = Date.now();
+      if (now - lastVoiceCommandTime.current < 800) return; // Evita comandos duplicados rápidos demais
 
-      if (transcript.includes('avançar tela')) {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript.toLowerCase();
+      }
+
+      console.log('Voz (Interim):', transcript);
+
+      // PP - Próxima Página (Pê Pê)
+      if (transcript.includes('pp') || transcript.includes('pê pê') || transcript.includes('pepe')) {
         api?.scrollNext();
-      } else if (transcript.includes('voltar tela')) {
+        lastVoiceCommandTime.current = now;
+      } 
+      // PA - Página Anterior (Pê Á)
+      else if (transcript.includes('pa') || transcript.includes('pê á') || transcript.includes('pea')) {
         api?.scrollPrev();
-      } else if (transcript.includes('rolar tela')) {
+        lastVoiceCommandTime.current = now;
+      } 
+      // Rolar
+      else if (transcript.includes('rolar')) {
         setIsContinuousMode(true);
         setIsAutoScrolling(true);
         setIsPanelVisible(false);
-      } else if (transcript.includes('parar tela')) {
+        lastVoiceCommandTime.current = now;
+      } 
+      // Parar
+      else if (transcript.includes('parar')) {
         setIsAutoScrolling(false);
+        lastVoiceCommandTime.current = now;
       }
     };
 
@@ -176,7 +195,10 @@ export default function SongPage() {
       try {
         recognitionRef.current.instance.start();
         setIsVoiceActive(true);
-        toast({ title: "Voz Ativada", description: "Ouvindo: 'avançar tela', 'voltar tela', 'rolar tela', 'parar tela'." });
+        toast({ 
+          title: "Voz Ativada", 
+          description: "Comandos: 'PP' (Próxima), 'PA' (Anterior), 'Rolar' e 'Parar'." 
+        });
       } catch (e) {
         console.error('Error starting voice recognition:', e);
       }

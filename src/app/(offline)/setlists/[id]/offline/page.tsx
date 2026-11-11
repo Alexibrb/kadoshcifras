@@ -65,6 +65,7 @@ export default function OfflineSetlistPage() {
   const scrollPosRef = useRef<number>(0); 
   const containerRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const lastVoiceCommandTime = useRef<number>(0);
 
   const [offlineData, setOfflineData] = useState<OfflineSetlist | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -114,20 +115,31 @@ export default function OfflineSetlistPage() {
     const recognition = new SpeechRecognition();
     recognition.lang = 'pt-BR';
     recognition.continuous = true;
-    recognition.interimResults = false;
+    recognition.interimResults = true;
 
     recognition.onresult = (event: any) => {
-      const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
-      if (transcript.includes('avançar tela')) {
+      const now = Date.now();
+      if (now - lastVoiceCommandTime.current < 800) return;
+
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript.toLowerCase();
+      }
+
+      if (transcript.includes('pp') || transcript.includes('pê pê') || transcript.includes('pepe')) {
         api?.scrollNext();
-      } else if (transcript.includes('voltar tela')) {
+        lastVoiceCommandTime.current = now;
+      } else if (transcript.includes('pa') || transcript.includes('pê á') || transcript.includes('pea')) {
         api?.scrollPrev();
-      } else if (transcript.includes('rolar tela')) {
+        lastVoiceCommandTime.current = now;
+      } else if (transcript.includes('rolar')) {
         setIsContinuousMode(true);
         setIsAutoScrolling(true);
         setIsPanelVisible(false);
-      } else if (transcript.includes('parar tela')) {
+        lastVoiceCommandTime.current = now;
+      } else if (transcript.includes('parar')) {
         setIsAutoScrolling(false);
+        lastVoiceCommandTime.current = now;
       }
     };
 
@@ -142,7 +154,7 @@ export default function OfflineSetlistPage() {
       recognitionRef.current.isActive = false; recognitionRef.current.instance.stop(); setIsVoiceActive(false);
       toast({ title: "Voz Desativada" });
     } else {
-      recognitionRef.current.isActive = true; try { recognitionRef.current.instance.start(); setIsVoiceActive(true); toast({ title: "Voz Ativada" }); } catch(e){}
+      recognitionRef.current.isActive = true; try { recognitionRef.current.instance.start(); setIsVoiceActive(true); toast({ title: "Voz Ativada", description: "Comandos PP e PA ativos." }); } catch(e){}
     }
   };
 
@@ -360,7 +372,7 @@ export default function OfflineSetlistPage() {
                 ) : (
                     <div className="flex gap-2 flex-1 sm:flex-none">
                         <Button variant={isAutoScrolling ? "destructive" : "default"} onClick={() => setIsAutoScrolling(!isAutoScrolling)} className="h-9 flex-1 sm:w-36">{isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
-                        {showChords && <Button variant="outline" onClick={() => setIsExitDialogOpen(true)} className="h-9 w-12"><X className="h-4 w-4" /></Button>}
+                        {showChords && <Button variant="outline" onClick={() => { setIsContinuousMode(false); setIsAutoScrolling(false); }} className="h-9 w-12"><X className="h-4 w-4" /></Button>}
                     </div>
                 )}
               {(isContinuousMode || !showChords) && (

@@ -40,6 +40,7 @@ export default function OfflineSongPage() {
   const scrollPosRef = useRef<number>(0); 
   const containerRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const lastVoiceCommandTime = useRef<number>(0);
 
   const [song, setSong] = useState<Song | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -91,20 +92,31 @@ export default function OfflineSongPage() {
     const recognition = new SpeechRecognition();
     recognition.lang = 'pt-BR';
     recognition.continuous = true;
-    recognition.interimResults = false;
+    recognition.interimResults = true;
 
     recognition.onresult = (event: any) => {
-      const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
-      if (transcript.includes('avançar tela')) {
+      const now = Date.now();
+      if (now - lastVoiceCommandTime.current < 800) return;
+
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript.toLowerCase();
+      }
+
+      if (transcript.includes('pp') || transcript.includes('pê pê') || transcript.includes('pepe')) {
         api?.scrollNext();
-      } else if (transcript.includes('voltar tela')) {
+        lastVoiceCommandTime.current = now;
+      } else if (transcript.includes('pa') || transcript.includes('pê á') || transcript.includes('pea')) {
         api?.scrollPrev();
-      } else if (transcript.includes('rolar tela')) {
+        lastVoiceCommandTime.current = now;
+      } else if (transcript.includes('rolar')) {
         setIsContinuousMode(true);
         setIsAutoScrolling(true);
         setIsPanelVisible(false);
-      } else if (transcript.includes('parar tela')) {
+        lastVoiceCommandTime.current = now;
+      } else if (transcript.includes('parar')) {
         setIsAutoScrolling(false);
+        lastVoiceCommandTime.current = now;
       }
     };
 
@@ -138,7 +150,7 @@ export default function OfflineSongPage() {
       try {
         recognitionRef.current.instance.start();
         setIsVoiceActive(true);
-        toast({ title: "Voz Ativada", description: "Diga: 'avançar tela', 'rolar tela', etc." });
+        toast({ title: "Voz Ativada", description: "Diga 'PP' ou 'PA' para navegar." });
       } catch (e) {}
     }
   };
