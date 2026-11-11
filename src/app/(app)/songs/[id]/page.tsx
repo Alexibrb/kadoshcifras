@@ -115,37 +115,31 @@ export default function SongPage() {
     const recognition = new SpeechRecognition();
     recognition.lang = 'pt-BR';
     recognition.continuous = true;
-    recognition.interimResults = true; // RESPOSTA EM TEMPO REAL
+    recognition.interimResults = true;
 
     recognition.onresult = (event: any) => {
       const now = Date.now();
-      if (now - lastVoiceCommandTime.current < 800) return; // Evita comandos duplicados rápidos demais
+      if (now - lastVoiceCommandTime.current < 800) return;
 
       let transcript = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         transcript += event.results[i][0].transcript.toLowerCase();
       }
 
-      console.log('Voz (Interim):', transcript);
-
-      // PP - Próxima Página (Pê Pê)
       if (transcript.includes('pp') || transcript.includes('pê pê') || transcript.includes('pepe')) {
         api?.scrollNext();
         lastVoiceCommandTime.current = now;
       } 
-      // PA - Página Anterior (Pê Á)
       else if (transcript.includes('pa') || transcript.includes('pê á') || transcript.includes('pea')) {
         api?.scrollPrev();
         lastVoiceCommandTime.current = now;
       } 
-      // Rolar
       else if (transcript.includes('rolar')) {
         setIsContinuousMode(true);
         setIsAutoScrolling(true);
         setIsPanelVisible(false);
         lastVoiceCommandTime.current = now;
       } 
-      // Parar
       else if (transcript.includes('parar')) {
         setIsAutoScrolling(false);
         lastVoiceCommandTime.current = now;
@@ -584,6 +578,14 @@ export default function SongPage() {
                         '--chords-color': finalColorSettings?.chordsColor,
                     } as React.CSSProperties} 
                   />
+                  {/* Indicador de Fim da Música */}
+                  {idx === songParts.length - 1 && (
+                    <div className="mt-12 mb-8 flex items-center gap-4 opacity-50 px-4">
+                        <div className="h-px bg-muted-foreground/30 flex-1" />
+                        <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground whitespace-nowrap">Fim da Música</span>
+                        <div className="h-px bg-muted-foreground/30 flex-1" />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -603,6 +605,14 @@ export default function SongPage() {
                         '--chords-color': finalColorSettings?.chordsColor,
                       } as React.CSSProperties} 
                     />
+                    {/* Indicador de Fim da Música em modo Slide */}
+                    {index === songParts.length - 1 && (
+                        <div className="mt-12 mb-8 flex items-center gap-4 opacity-50 px-4">
+                            <div className="h-px bg-muted-foreground/30 flex-1" />
+                            <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground whitespace-nowrap">Fim da Música</span>
+                            <div className="h-px bg-muted-foreground/30 flex-1" />
+                        </div>
+                    )}
                   </ScrollArea>
                 </CarouselItem>
               ))}

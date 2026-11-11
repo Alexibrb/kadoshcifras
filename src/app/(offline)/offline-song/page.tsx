@@ -330,6 +330,14 @@ export default function OfflineSongPage() {
                             content={transposeContent(part, transpose)}
                             showChords={showChords} 
                         />
+                        {/* Indicador de Fim da Música em modo contínuo */}
+                        {idx === songParts.length - 1 && (
+                          <div className="mt-12 mb-8 flex items-center gap-4 opacity-50 px-4">
+                              <div className="h-px bg-muted-foreground/30 flex-1" />
+                              <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground whitespace-nowrap">Fim da Música</span>
+                              <div className="h-px bg-muted-foreground/30 flex-1" />
+                          </div>
+                        )}
                     </div>
                 ))}
               </div>
@@ -345,6 +353,14 @@ export default function OfflineSongPage() {
                         content={transposeContent(part, transpose)}
                         showChords={showChords} 
                     />
+                    {/* Indicador de Fim da Música em modo Slide */}
+                    {index === songParts.length - 1 && (
+                      <div className="mt-12 mb-8 flex items-center gap-4 opacity-50 px-4">
+                          <div className="h-px bg-muted-foreground/30 flex-1" />
+                          <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground whitespace-nowrap">Fim da Música</span>
+                          <div className="h-px bg-muted-foreground/30 flex-1" />
+                      </div>
+                    )}
                   </ScrollArea>
                 </CarouselItem>
               ))}

@@ -49,6 +49,7 @@ interface Section {
     id: string;
     songIndex: number;
     partIndex: number;
+    totalParts: number; // Nova propriedade para o formato X/Y
     content: string;
     isLastSectionOfSong: boolean;
     isLastSectionOfSetlist: boolean;
@@ -214,6 +215,7 @@ export default function OfflineSetlistPage() {
                 id: `${songIndex}-${partIndex}`,
                 songIndex,
                 partIndex,
+                totalParts: parts.length,
                 content: part,
                 isLastSectionOfSong: partIndex === parts.length - 1,
                 isLastSectionOfSetlist: partIndex === parts.length - 1 && songIndex === offlineData.songs.length - 1,
@@ -275,7 +277,7 @@ export default function OfflineSetlistPage() {
                   <Sun className={cn("h-3 w-3 transition-opacity", isWakeLockActive ? "text-orange-500" : "text-muted-foreground opacity-30")} />
                   <div className="flex items-center gap-1">
                     <Badge variant="secondary" className="text-[12px] h-5 font-bold"><Music className="h-3 w-3 mr-1" /> {currentSec.songIndex + 1} / {offlineData.songs.length}</Badge>
-                    <Badge variant="secondary" className="text-[12px] h-5 font-bold"><FileText className="h-3 w-3 mr-1" /> {currentSec.partIndex + 1}</Badge>
+                    <Badge variant="secondary" className="text-[12px] h-5 font-bold"><FileText className="h-3 w-3 mr-1" /> {currentSec.partIndex + 1} / {currentSec.totalParts}</Badge>
                   </div>
                 </div>
               </div>
@@ -300,7 +302,10 @@ export default function OfflineSetlistPage() {
             <Button asChild variant="outline" size="icon" className="h-8 w-8 shrink-0"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
             <div className="flex-1 flex flex-col items-center justify-center px-2 min-w-0">
                 <h1 className="text-sm font-bold w-full text-center break-words">{currentSong.title} {currentKey && <span className="text-primary">({currentKey})</span>}</h1>
-                <div className="text-[12px] font-bold text-blue-600 uppercase mt-1"><Music className="h-3 w-3 mr-1 inline" /> {currentSec.songIndex + 1} / {offlineData.songs.length}</div>
+                <div className="text-[12px] font-bold text-blue-600 uppercase mt-1 flex items-center gap-2">
+                  <span><Music className="h-3 w-3 mr-0.5 inline" /> {currentSec.songIndex + 1} / {offlineData.songs.length}</span>
+                  <span><FileText className="h-3 w-3 mr-0.5 inline" /> {currentSec.partIndex + 1} / {currentSec.totalParts}</span>
+                </div>
             </div>
             <div className="flex items-center gap-1 shrink-0">
               {isVoiceActive && <div className="w-2 h-2 rounded-full bg-primary animate-pulse mr-1" />}
@@ -339,6 +344,14 @@ export default function OfflineSetlistPage() {
                                     content={transposeContent(sec.content, transpositions[songIdx] || 0)}
                                     showChords={showChords} 
                                 />
+                                {/* Indicador de Fim da Música em modo contínuo */}
+                                {sec.isLastSectionOfSong && (
+                                  <div className="mt-12 mb-8 flex items-center gap-4 opacity-50 px-4">
+                                      <div className="h-px bg-muted-foreground/30 flex-1" />
+                                      <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground whitespace-nowrap">Fim da Música</span>
+                                      <div className="h-px bg-muted-foreground/30 flex-1" />
+                                  </div>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -356,6 +369,14 @@ export default function OfflineSetlistPage() {
                         content={transposeContent(section.content, transpositions[section.songIndex] || 0)}
                         showChords={showChords} 
                     />
+                    {/* Indicador de Fim da Música em modo Slide */}
+                    {section.isLastSectionOfSong && (
+                      <div className="mt-12 mb-8 flex items-center gap-4 opacity-50 px-4">
+                          <div className="h-px bg-muted-foreground/30 flex-1" />
+                          <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground whitespace-nowrap">Fim da Música</span>
+                          <div className="h-px bg-muted-foreground/30 flex-1" />
+                      </div>
+                    )}
                   </ScrollArea>
                 </CarouselItem>
               ))}
