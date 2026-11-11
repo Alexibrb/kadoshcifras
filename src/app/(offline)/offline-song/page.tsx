@@ -296,6 +296,21 @@ export default function OfflineSongPage() {
       </Card>
 
       <div className="flex-1 flex flex-col min-h-0 relative">
+        {!isContinuousMode && showChords && (
+          <div className="absolute inset-0 z-10 flex pointer-events-none">
+            <div 
+                className="w-[30%] h-full cursor-pointer pointer-events-auto" 
+                onClick={(e) => { e.stopPropagation(); api?.scrollPrev(); }} 
+                title="Página Anterior" 
+            />
+            <div 
+                className="w-[70%] h-full cursor-pointer pointer-events-auto" 
+                onClick={(e) => { e.stopPropagation(); api?.scrollNext(); }} 
+                title="Próxima Página" 
+            />
+          </div>
+        )}
+
         {isContinuousMode || !showChords ? (
           <ScrollArea ref={scrollAreaRef} className="h-full bg-white dark:bg-black">
               <div className="p-4 md:p-8 pb-48">

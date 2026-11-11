@@ -1,4 +1,3 @@
-
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -107,7 +106,6 @@ export default function SongPage() {
     }
   }, []);
 
-  // Voice Recognition Logic
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -129,6 +127,7 @@ export default function SongPage() {
       } else if (transcript.includes('rolar tela')) {
         setIsContinuousMode(true);
         setIsAutoScrolling(true);
+        setIsPanelVisible(false);
       } else if (transcript.includes('parar tela')) {
         setIsAutoScrolling(false);
       }
@@ -431,6 +430,7 @@ export default function SongPage() {
   const handleStartScrolling = () => {
     setIsContinuousMode(true);
     setIsAutoScrolling(true);
+    setIsPanelVisible(false);
     setTimeout(() => containerRef.current?.focus(), 50);
   };
 
@@ -547,9 +547,16 @@ export default function SongPage() {
       <div className="flex-1 flex flex-col min-h-0 relative">
         {!isContinuousMode && showChords && (
           <div className="absolute inset-0 z-10 flex pointer-events-none">
-            <div className="w-1/4 h-full cursor-pointer pointer-events-auto" onClick={() => api?.scrollPrev()} title="Página Anterior" />
-            <div className="flex-1 h-full" />
-            <div className="w-1/4 h-full cursor-pointer pointer-events-auto" onClick={() => api?.scrollNext()} title="Próxima Página" />
+            <div 
+                className="w-[30%] h-full cursor-pointer pointer-events-auto" 
+                onClick={(e) => { e.stopPropagation(); api?.scrollPrev(); }} 
+                title="Página Anterior" 
+            />
+            <div 
+                className="w-[70%] h-full cursor-pointer pointer-events-auto" 
+                onClick={(e) => { e.stopPropagation(); api?.scrollNext(); }} 
+                title="Próxima Página" 
+            />
           </div>
         )}
 
