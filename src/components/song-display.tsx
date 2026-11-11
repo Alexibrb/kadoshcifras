@@ -50,7 +50,7 @@ const Line = ({ text, isChord, showChords, style }: { text: string; isChord: boo
         <p
             style={finalStyle}
             className={cn(
-                'whitespace-pre', // Mudado de pre-wrap para pre para honrar a quebra inteligente manual
+                'whitespace-pre', 
                 'break-words', 
                 isChord ? 'font-bold mb-1' : 'mb-2'
             )}
@@ -76,6 +76,8 @@ export function SongDisplay({ content, className, showChords, style, ...props }:
                     return null;
                 }
                 
+                // Se a linha for vazia e não estivermos mostrando cifras, 
+                // e a linha anterior era cifra, removemos o espaço extra.
                 if(line.trim() === '' && !showChords && lineIndex > 0 && isChordLine(lines[lineIndex - 1])) {
                     return null;
                 }
@@ -86,7 +88,7 @@ export function SongDisplay({ content, className, showChords, style, ...props }:
                         text={line}
                         isChord={isChord}
                         showChords={showChords}
-                        style={style || {}} // Passa o objeto de estilo completo para cada linha
+                        style={style || {}} 
                     />
                 );
             })}

@@ -79,63 +79,81 @@ export const smartWrapContent = (content: string, maxChars: number): string => {
   
   const lines = content.split('\n');
   const result: string[] = [];
+  
+  let i = 0;
+  while (i < lines.length) {
+    const chordLines: string[] = [];
+    
+    // Coleta linhas de cifras consecutivas
+    while (i < lines.length && isChordLine(lines[i])) {
+      chordLines.push(lines[i]);
+      i++;
+    }
+    
+    // Pega a próxima linha de letra se existir e não for apenas espaço
+    const lyricLine = (i < lines.length && lines[i].trim() !== '') ? lines[i] : null;
+    if (lyricLine !== null) i++; 
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const nextLine = lines[i + 1];
-
-    // Verifica se é um par Cifra + Letra
-    if (isChordLine(line) && nextLine !== undefined && !isChordLine(nextLine) && nextLine.trim() !== '') {
-      const chordLine = line;
-      const lyricLine = nextLine;
-      i++; // Pula a próxima linha pois já foi processada aqui
-
+    if (chordLines.length > 0 && lyricLine) {
+      // Bloco de Cifras + Letra: Quebra juntos
       let start = 0;
-      const maxLen = Math.max(chordLine.length, lyricLine.length);
-
-      while (start < maxLen) {
+      const maxLength = Math.max(...chordLines.map(l => l.length), lyricLine.length);
+      
+      while (start < maxLength) {
         let end = start + maxChars;
-        
-        if (end < maxLen) {
-          // Procura o último espaço na linha de letra antes do limite para não quebrar palavras
+        if (end < maxLength) {
+          // Busca o último espaço na letra para não quebrar palavras
           const subLyric = lyricLine.substring(start, end + 1);
           const lastSpace = subLyric.lastIndexOf(' ');
-          
-          // Se encontrou um espaço (que não seja o primeiro caractere da linha atual)
           if (lastSpace > 0) {
             end = start + lastSpace;
           }
         }
-
-        const chordPart = chordLine.substring(start, end);
-        const lyricPart = lyricLine.substring(start, end);
-
-        result.push(chordPart.trimEnd());
-        result.push(lyricPart.trimEnd());
+        
+        // Adiciona as partes de cifras (se não estiverem vazias nesse chunk) e depois a letra
+        chordLines.forEach(cl => {
+          const part = cl.substring(start, end).trimEnd();
+          if (part !== '') {
+            result.push(part);
+          }
+        });
+        result.push(lyricLine.substring(start, end).trimEnd());
         
         start = end;
-        // Pula o espaço se a quebra ocorreu exatamente em um
         if (lyricLine[start] === ' ') start++;
       }
-    } else {
-      // Linha isolada
-      let start = 0;
-      if (line.length === 0) {
-        result.push('');
-      } else {
-        while (start < line.length) {
-          let end = start + maxChars;
-          if (end < line.length) {
-            const lastSpace = line.substring(start, end + 1).lastIndexOf(' ');
-            if (lastSpace > 0) end = start + lastSpace;
-          }
-          result.push(line.substring(start, end).trimEnd());
-          start = end;
-          if (line[start] === ' ') start++;
-        }
-      }
+    } else if (chordLines.length > 0) {
+       // Apenas cifras (Intro, Solo, etc)
+       chordLines.forEach(cl => {
+         let start = 0;
+         while (start < cl.length) {
+           let end = start + maxChars;
+           result.push(cl.substring(start, end).trimEnd());
+           start = end;
+         }
+       });
+    } else if (i < lines.length) {
+       // Linha de letra isolada ou linha vazia
+       const currentLine = lines[i];
+       if (currentLine.trim() === '') {
+         result.push('');
+       } else {
+         let start = 0;
+         while (start < currentLine.length) {
+           let end = start + maxChars;
+           if (end < currentLine.length) {
+             const lastSpace = currentLine.substring(start, end + 1).lastIndexOf(' ');
+             if (lastSpace > 0) end = start + lastSpace;
+           }
+           result.push(currentLine.substring(start, end).trimEnd());
+           start = end;
+           if (currentLine[start] === ' ') start++;
+         }
+       }
+       i++;
     }
   }
+  
   return result.join('\n');
 };
 
