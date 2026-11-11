@@ -8,17 +8,19 @@ export const isChordLine = (line: string): boolean => {
   const trimmedLine = line.trim();
   if (!trimmedLine) return false;
 
-  // 1. Remove common non-chord annotations
+  // 1. Remove anotações comuns que não são acordes (ex: [Refrão], (2x))
   const lineWithoutAnnotations = trimmedLine.replace(/\[.*?\]/g, '').replace(/\(.*?\)/g, '').trim();
   if (!lineWithoutAnnotations) return true;
 
-  // 2. Remove potential chords and see what's left.
-  const withoutChords = lineWithoutAnnotations.replace(/([A-G](?:#|b)?Parentheses(?:m|M|maj|min|dim|aug|sus|add|°|\+|-)?(?:\d)?(?:(?:Parentheses\/[A-G](?:#|b)?))?)/g, '');
+  // 2. Remove acordes potenciais e vê o que sobra.
+  // Expressão regular robusta para capturar acordes, incluindo tensões e baixos.
+  const chordRegex = /([A-G](?:#|b)?(?:m|M|maj|min|dim|aug|sus|add|°|\+|-)?(?:\d+)?(?:\([#b]?\d+\))?(?:\/[A-G](?:#|b)?)?)/g;
+  const withoutChords = lineWithoutAnnotations.replace(chordRegex, '');
 
-  // 3. Clean common characters
-  const cleanLine = withoutChords.replace(/[\s/|\d.x]/gi, '');
+  // 3. Limpa caracteres comuns em linhas de cifras (barras, números, pontos, espaços, hifens)
+  const cleanLine = withoutChords.replace(/[\s/|\d.x-]/gi, '');
 
-  // 4. If almost nothing left, it's chords
+  // 4. Se sobrar quase nada, é uma linha de cifras.
   return cleanLine.length <= 2;
 };
 
@@ -82,73 +84,98 @@ export const smartWrapContent = (content: string, maxChars: number): string => {
   
   let i = 0;
   while (i < lines.length) {
-    const chordLines: string[] = [];
+    const line = lines[i];
     
-    // Coleta linhas de cifras consecutivas
-    while (i < lines.length && isChordLine(lines[i])) {
-      chordLines.push(lines[i]);
+    // Ignora marcadores especiais de cabeçalho
+    if (line.startsWith('[title]')) {
+      result.push(line);
       i++;
+      continue;
     }
-    
-    // Pega a próxima linha de letra se existir e não for apenas espaço
-    const lyricLine = (i < lines.length && lines[i].trim() !== '') ? lines[i] : null;
-    if (lyricLine !== null) i++; 
 
-    if (chordLines.length > 0 && lyricLine) {
-      // Bloco de Cifras + Letra: Quebra juntos
-      let start = 0;
-      const maxLength = Math.max(...chordLines.map(l => l.length), lyricLine.length);
+    // Preserva linhas vazias
+    if (line.trim() === '') {
+      result.push('');
+      i++;
+      continue;
+    }
+
+    if (isChordLine(line)) {
+      // Coleta linhas de cifras consecutivas (ex: Intro ou solos com múltiplas linhas)
+      const chordLines: string[] = [];
+      while (i < lines.length && isChordLine(lines[i])) {
+        chordLines.push(lines[i]);
+        i++;
+      }
       
-      while (start < maxLength) {
-        let end = start + maxChars;
-        if (end < maxLength) {
-          // Busca o último espaço na letra para não quebrar palavras
-          const subLyric = lyricLine.substring(start, end + 1);
-          const lastSpace = subLyric.lastIndexOf(' ');
-          if (lastSpace > 0) {
-            end = start + lastSpace;
-          }
-        }
+      // Busca a próxima linha de letra pareada (pulando apenas linhas vazias)
+      let lyricLine: string | null = null;
+      let tempI = i;
+      while (tempI < lines.length && lines[tempI].trim() === '') {
+        tempI++;
+      }
+      
+      // Se encontramos uma linha de letra (não é cifra, nem cabeçalho, nem vazia)
+      if (tempI < lines.length && !isChordLine(lines[tempI]) && !lines[tempI].startsWith('[title]')) {
+        lyricLine = lines[tempI];
+        // Avança o ponteiro principal para ignorar as linhas vazias e a linha de letra já processada
+        i = tempI + 1;
+      }
+
+      if (lyricLine) {
+        // Bloco de Cifras + Letra: Quebra ambos juntos intercaladamente
+        let start = 0;
+        const maxLength = Math.max(...chordLines.map(l => l.length), lyricLine.length);
         
-        // Adiciona as partes de cifras (se não estiverem vazias nesse chunk) e depois a letra
+        while (start < maxLength) {
+          let end = start + maxChars;
+          if (end < maxLength) {
+            // Busca o último espaço na letra para não quebrar palavras ao meio
+            const subLyric = lyricLine.substring(start, end + 1);
+            const lastSpace = subLyric.lastIndexOf(' ');
+            if (lastSpace > 0) {
+              end = start + lastSpace;
+            }
+          }
+          
+          // Adiciona os pedaços das cifras (se houver conteúdo nesse chunk)
+          chordLines.forEach(cl => {
+            const part = cl.substring(start, end).trimEnd();
+            if (part !== '') {
+              result.push(part);
+            }
+          });
+          
+          // Adiciona o pedaço da letra correspondente
+          result.push(lyricLine.substring(start, end).trimEnd());
+          
+          start = end;
+          // Pula o espaço inicial no próximo chunk de letra se houver
+          if (lyricLine[start] === ' ') start++;
+        }
+      } else {
+        // Apenas cifras (Intro, Solo, etc.) - Quebra normalmente sem par
         chordLines.forEach(cl => {
-          const part = cl.substring(start, end).trimEnd();
-          if (part !== '') {
-            result.push(part);
+          let start = 0;
+          while (start < cl.length) {
+            let end = start + maxChars;
+            result.push(cl.substring(start, end).trimEnd());
+            start = end;
           }
         });
-        result.push(lyricLine.substring(start, end).trimEnd());
-        
-        start = end;
-        if (lyricLine[start] === ' ') start++;
       }
-    } else if (chordLines.length > 0) {
-       // Apenas cifras (Intro, Solo, etc)
-       chordLines.forEach(cl => {
-         let start = 0;
-         while (start < cl.length) {
-           let end = start + maxChars;
-           result.push(cl.substring(start, end).trimEnd());
-           start = end;
+    } else {
+       // Linha de letra isolada (sem cifras acima)
+       let start = 0;
+       while (start < line.length) {
+         let end = start + maxChars;
+         if (end < line.length) {
+           const lastSpace = line.substring(start, end + 1).lastIndexOf(' ');
+           if (lastSpace > 0) end = start + lastSpace;
          }
-       });
-    } else if (i < lines.length) {
-       // Linha de letra isolada ou linha vazia
-       const currentLine = lines[i];
-       if (currentLine.trim() === '') {
-         result.push('');
-       } else {
-         let start = 0;
-         while (start < currentLine.length) {
-           let end = start + maxChars;
-           if (end < currentLine.length) {
-             const lastSpace = currentLine.substring(start, end + 1).lastIndexOf(' ');
-             if (lastSpace > 0) end = start + lastSpace;
-           }
-           result.push(currentLine.substring(start, end).trimEnd());
-           start = end;
-           if (currentLine[start] === ' ') start++;
-         }
+         result.push(line.substring(start, end).trimEnd());
+         start = end;
+         if (line[start] === ' ') start++;
        }
        i++;
     }
@@ -159,21 +186,16 @@ export const smartWrapContent = (content: string, maxChars: number): string => {
 
 /**
  * Divide o conteúdo em páginas de forma inteligente.
- * @param content Conteúdo da música.
- * @param linesPerPage Quantidade alvo de linhas por página.
- * @returns Array de strings, onde cada item é uma página.
  */
 export const paginateContent = (content: string, linesPerPage: number = 14): string[] => {
   if (!content) return [];
 
-  // Primeiro divide pelo marcador manual "--" em uma linha própria
   const manualBlocks = content.split(/\n\s*--\s*\n/).filter(p => p.trim());
   const finalPages: string[] = [];
 
   manualBlocks.forEach(block => {
     const lines = block.split('\n');
     
-    // Se o bloco já cabe na página, adiciona inteiro
     if (lines.length <= linesPerPage) {
       finalPages.push(block.trim());
       return;
@@ -188,16 +210,12 @@ export const paginateContent = (content: string, linesPerPage: number = 14): str
       const isChord = isChordLine(line);
       const isLastLine = i === lines.length - 1;
 
-      // Lógica Smart Split:
-      // Só corta se atingiu o limite E não for uma linha de cifra (para não separar da letra abaixo)
-      // Ou se for a última linha do bloco
       if ((isLimitReached && !isChord) || isLastLine) {
         finalPages.push(currentPageLines.join('\n').trim());
         currentPageLines = [];
       }
     }
     
-    // Adiciona rebarba se sobrou algo
     if (currentPageLines.length > 0) {
       finalPages.push(currentPageLines.join('\n').trim());
     }
