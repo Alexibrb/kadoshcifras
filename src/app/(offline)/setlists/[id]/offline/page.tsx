@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -14,7 +15,7 @@ import { Slider } from '@/components/ui/slider';
 import Link from 'next/link';
 import { PedalSettings, ColorSettings } from '@/types';
 import { Carousel, CarouselApi, CarouselContent, CarouselItem } from '@/components/ui/carousel';
-import { transposeChord, transposeContent, isChordLine, paginateContent } from '@/lib/music';
+import { transposeChord, transposeContent, isChordLine, paginateContent, smartWrapContent } from '@/lib/music';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -117,6 +118,7 @@ export default function OfflineSetlistPage() {
 
   const [fontSize] = useLocalStorage('song-font-size', 14);
   const [linesPerPage] = useLocalStorage('song-lines-per-page', 14);
+  const [maxChars] = useLocalStorage('song-max-chars', 0);
   const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
   const [isPanelVisible, setIsPanelVisible] = useState(false);
   const [isContinuousMode, setIsContinuousMode] = useState(false);
@@ -186,7 +188,6 @@ export default function OfflineSetlistPage() {
     };
   }, [requestWakeLock]);
 
-  // Efeito para focar o container apenas quando ele estiver disponível no DOM
   useEffect(() => {
     if (isClient && !loading && offlineData && containerRef.current) {
         containerRef.current.focus();
@@ -197,7 +198,8 @@ export default function OfflineSetlistPage() {
     if (!offlineData) return [];
     const sections: Section[] = [];
     offlineData.songs.forEach((song, songIndex) => {
-        const parts = paginateContent(song.content, linesPerPage);
+        const wrappedContent = smartWrapContent(song.content, maxChars);
+        const parts = paginateContent(wrappedContent, linesPerPage);
         parts.forEach((part, partIndex) => {
             sections.push({
                 id: `${songIndex}-${partIndex}`,
@@ -210,7 +212,7 @@ export default function OfflineSetlistPage() {
         });
     });
     return sections;
-  }, [offlineData, linesPerPage]);
+  }, [offlineData, linesPerPage, maxChars]);
 
   const stopAutoScroll = useCallback(() => {
     setIsAutoScrolling(false);
@@ -336,7 +338,7 @@ export default function OfflineSetlistPage() {
       
       const allLines: { songIdx: number; songLines: string[] }[] = offlineData.songs.map((song, idx) => ({
           songIdx: idx,
-          songLines: transposeContent(song.content, transpositions[idx] || 0).split('\n')
+          songLines: transposeContent(smartWrapContent(song.content, maxChars), transpositions[idx] || 0).split('\n')
       }));
 
       const longestLineCount = Math.max(...allLines.flatMap(s => s.songLines.map(l => l.length)));

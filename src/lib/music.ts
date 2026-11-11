@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -12,7 +13,7 @@ export const isChordLine = (line: string): boolean => {
   if (!lineWithoutAnnotations) return true;
 
   // 2. Remove potential chords and see what's left.
-  const withoutChords = lineWithoutAnnotations.replace(/([A-G](?:#|b)?(?:m|M|maj|min|dim|aug|sus|add|°|\+|-)?(?:\d)?(?:(?:\/[A-G](?:#|b)?))?)/g, '');
+  const withoutChords = lineWithoutAnnotations.replace(/([A-G](?:#|b)?Parentheses(?:m|M|maj|min|dim|aug|sus|add|°|\+|-)?(?:\d)?(?:(?:Parentheses\/[A-G](?:#|b)?))?)/g, '');
 
   // 3. Clean common characters
   const cleanLine = withoutChords.replace(/[\s/|\d.x]/gi, '');
@@ -68,6 +69,55 @@ export const transposeContent = (content: string, semitones: number): string => 
     }
     return line;
   }).join('\n');
+};
+
+/**
+ * Quebra o conteúdo de forma inteligente para manter cifras alinhadas.
+ */
+export const smartWrapContent = (content: string, maxChars: number): string => {
+  if (!maxChars || maxChars <= 0) return content;
+  
+  const lines = content.split('\n');
+  const result: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const nextLine = lines[i + 1];
+
+    // Verifica se é um par Cifra + Letra
+    if (isChordLine(line) && nextLine !== undefined && !isChordLine(nextLine) && nextLine.trim() !== '') {
+      const chordLine = line;
+      const lyricLine = nextLine;
+      i++; // Pula a próxima linha pois já foi processada aqui
+
+      let start = 0;
+      const maxLen = Math.max(chordLine.length, lyricLine.length);
+
+      while (start < maxLen) {
+        let end = start + maxChars;
+        
+        // Tenta não quebrar palavras no meio se possível (opcional, mas aqui substring pura mantém alinhamento)
+        const chordPart = chordLine.substring(start, end);
+        const lyricPart = lyricLine.substring(start, end);
+
+        result.push(chordPart);
+        result.push(lyricPart);
+        start = end;
+      }
+    } else {
+      // Linha isolada (só letra, só cifra ou comentário)
+      let start = 0;
+      if (line.length === 0) {
+        result.push('');
+      } else {
+        while (start < line.length) {
+          result.push(line.substring(start, start + maxChars));
+          start += maxChars;
+        }
+      }
+    }
+  }
+  return result.join('\n');
 };
 
 /**

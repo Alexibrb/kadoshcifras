@@ -54,6 +54,7 @@ export interface User {
     colorSettings?: ColorSettings;
     fontSize?: number;
     linesPerPage?: number;
+    maxCharsPerLine?: number;
 }
 
 export interface MetadataItem {

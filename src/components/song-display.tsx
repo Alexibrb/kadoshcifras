@@ -50,7 +50,7 @@ const Line = ({ text, isChord, showChords, style }: { text: string; isChord: boo
         <p
             style={finalStyle}
             className={cn(
-                'whitespace-pre-wrap', 
+                'whitespace-pre', // Mudado de pre-wrap para pre para honrar a quebra inteligente manual
                 'break-words', 
                 isChord ? 'font-bold mb-1' : 'mb-2'
             )}

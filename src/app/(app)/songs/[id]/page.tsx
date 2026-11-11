@@ -1,3 +1,4 @@
+
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,7 @@ import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Play, Pause, X, Lo
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { transposeContent, isChordLine, transposeChord, paginateContent } from '@/lib/music';
+import { transposeContent, isChordLine, transposeChord, paginateContent, smartWrapContent } from '@/lib/music';
 import { SongDisplay } from '@/components/song-display';
 import { Card, CardContent } from '@/components/ui/card';
 import { Carousel, CarouselApi, CarouselContent, CarouselItem } from '@/components/ui/carousel';
@@ -78,6 +79,7 @@ export default function SongPage() {
   
   const finalFontSize = appUser?.fontSize ?? 14;
   const finalLinesPerPage = appUser?.linesPerPage ?? 14;
+  const finalMaxChars = appUser?.maxCharsPerLine ?? 0;
   const finalColorSettings = appUser?.colorSettings;
 
   useEffect(() => {
@@ -111,7 +113,6 @@ export default function SongPage() {
     };
   }, [requestWakeLock]);
 
-  // Efeito para focar o container apenas quando ele estiver disponível no DOM
   useEffect(() => {
     if (isClient && !loadingSong && song && containerRef.current) {
         containerRef.current.focus();
@@ -129,8 +130,10 @@ export default function SongPage() {
   }, [api, currentPartIndex]);
 
   const contentToDisplay = useMemo(() => {
-    return song?.content ? transposeContent(song.content, transpose) : '';
-  }, [song, transpose]);
+    if (!song?.content) return '';
+    const transposed = transposeContent(song.content, transpose);
+    return smartWrapContent(transposed, finalMaxChars);
+  }, [song, transpose, finalMaxChars]);
 
   const currentKey = useMemo(() => {
     if (!song?.key) return null;
