@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -55,52 +54,6 @@ interface Section {
     isLastSectionOfSetlist: boolean;
 }
 
-function SongPresenter({ 
-    section, 
-    transposeValue, 
-    fontSize, 
-    showChords, 
-    colorSettings,
-    song,
-} : { 
-    section: Section | undefined, 
-    transposeValue: number, 
-    fontSize: number, 
-    showChords: boolean, 
-    colorSettings: ColorSettings | null,
-    song: OfflineSong | undefined,
-}) {
-    if (!section || !song) return null;
-    const content = transposeContent(section.content, transposeValue);
-
-    return (
-        <Card className="w-full h-full flex flex-col bg-white dark:bg-black shadow-none border-none relative">
-            <CardContent className="flex-1 h-full p-0">
-                <ScrollArea className="h-full p-4 md:p-8">
-                    <SongDisplay 
-                        style={{ 
-                            fontSize: `${fontSize}px`,
-                            '--lyrics-color': colorSettings?.lyricsColor,
-                            '--chords-color': colorSettings?.chordsColor,
-                        } as React.CSSProperties} 
-                        content={content} 
-                        showChords={showChords} 
-                    />
-                    {section.isLastSectionOfSong && !section.isLastSectionOfSetlist && (
-                        <div className="mt-8 text-center text-muted-foreground pb-20">
-                            <Separator className="my-4" />
-                            <div className="flex items-center justify-center gap-2 text-sm">
-                                <Music className="h-4 w-4" />
-                                <span>Fim da Música</span>
-                            </div>
-                        </div>
-                    )}
-                </ScrollArea>
-            </CardContent>
-        </Card>
-    );
-}
-
 export default function OfflineSetlistPage() {
   const params = useParams();
   const setlistId = params.id as string;
@@ -149,13 +102,10 @@ export default function OfflineSetlistPage() {
         wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
         setIsWakeLockActive(true);
         wakeLockRef.current.addEventListener('release', () => setIsWakeLockActive(false));
-      } catch (err) {
-        console.warn('Wake Lock request failed');
-      }
+      } catch (err) {}
     }
   }, []);
 
-  // Voice Recognition Logic
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -168,8 +118,6 @@ export default function OfflineSetlistPage() {
 
     recognition.onresult = (event: any) => {
       const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
-      console.log('Voice Command Received:', transcript);
-
       if (transcript.includes('avançar tela')) {
         api?.scrollNext();
       } else if (transcript.includes('voltar tela')) {
@@ -177,58 +125,24 @@ export default function OfflineSetlistPage() {
       } else if (transcript.includes('rolar tela')) {
         setIsContinuousMode(true);
         setIsAutoScrolling(true);
+        setIsPanelVisible(false);
       } else if (transcript.includes('parar tela')) {
         setIsAutoScrolling(false);
       }
     };
 
-    recognition.onend = () => {
-      if (recognitionRef.current?.isActive) {
-        try {
-          recognition.start();
-        } catch (e) {
-          console.error('Failed to restart recognition', e);
-        }
-      }
-    };
-
-    recognitionRef.current = {
-      instance: recognition,
-      isActive: false
-    };
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.isActive = false;
-        recognitionRef.current.instance.stop();
-      }
-    };
+    recognition.onend = () => { if (recognitionRef.current?.isActive) try { recognition.start(); } catch(e){} };
+    recognitionRef.current = { instance: recognition, isActive: false };
+    return () => { if (recognitionRef.current) { recognitionRef.current.isActive = false; recognitionRef.current.instance.stop(); } };
   }, [api]);
 
   const toggleVoice = () => {
-    if (!recognitionRef.current) {
-      toast({
-        variant: "destructive",
-        title: "Não Suportado",
-        description: "Reconhecimento de voz não está disponível neste navegador."
-      });
-      return;
-    }
-
+    if (!recognitionRef.current) return;
     if (isVoiceActive) {
-      recognitionRef.current.isActive = false;
-      recognitionRef.current.instance.stop();
-      setIsVoiceActive(false);
-      toast({ title: "Voz Desativada", description: "Microfone desligado." });
+      recognitionRef.current.isActive = false; recognitionRef.current.instance.stop(); setIsVoiceActive(false);
+      toast({ title: "Voz Desativada" });
     } else {
-      recognitionRef.current.isActive = true;
-      try {
-        recognitionRef.current.instance.start();
-        setIsVoiceActive(true);
-        toast({ title: "Voz Ativada", description: "Ouvindo: 'avançar tela', 'voltar tela', 'rolar tela', 'parar tela'." });
-      } catch (e) {
-        console.error('Error starting voice recognition:', e);
-      }
+      recognitionRef.current.isActive = true; try { recognitionRef.current.instance.start(); setIsVoiceActive(true); toast({ title: "Voz Ativada" }); } catch(e){}
     }
   };
 
@@ -253,37 +167,41 @@ export default function OfflineSetlistPage() {
     if (isAutoScrolling) {
         lastScrollTime.current = performance.now();
         requestRef.current = requestAnimationFrame(animateScroll);
-    } else if (requestRef.current) {
-        cancelAnimationFrame(requestRef.current);
-    }
+    } else if (requestRef.current) cancelAnimationFrame(requestRef.current);
     return () => { if (requestRef.current) cancelAnimationFrame(requestRef.current); };
   }, [isAutoScrolling, animateScroll]);
 
   useEffect(() => {
     setIsClient(true);
     requestWakeLock();
-    return () => {
-        if (wakeLockRef.current) wakeLockRef.current.release();
-    };
-  }, [requestWakeLock]);
-
-  useEffect(() => {
-    if (isClient && !loading && offlineData && containerRef.current) {
-        containerRef.current.focus();
+    if (typeof window !== 'undefined') {
+      try {
+        const item = localStorage.getItem(`offline-setlist-${setlistId}`);
+        if (item) {
+          const data = JSON.parse(item) as OfflineSetlist;
+          setOfflineData(data);
+          setTranspositions(data.songs.map(s => s.initialTranspose || 0));
+        } else setError("Repertório não encontrado offline.");
+      } catch (e) { setError("Erro ao carregar dados."); } finally { setLoading(false); }
     }
-  }, [isClient, loading, offlineData]);
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    const stored = localStorage.getItem('user-color-settings');
+    if (stored) setFinalColorSettings(JSON.parse(stored));
+    else setFinalColorSettings({ lyricsColor: isDarkMode ? '#FFF' : '#000', chordsColor: isDarkMode ? '#F59E0B' : '#000' });
+    return () => { if (wakeLockRef.current) wakeLockRef.current.release(); };
+  }, [setlistId, requestWakeLock]);
 
   const allSections = useMemo((): Section[] => {
     if (!offlineData) return [];
     const sections: Section[] = [];
     offlineData.songs.forEach((song, songIndex) => {
-        const wrappedContent = smartWrapContent(song.content, maxChars);
-        const parts = paginateContent(wrappedContent, linesPerPage);
+        const wrapped = smartWrapContent(song.content, maxChars);
+        const parts = paginateContent(wrapped, linesPerPage);
         parts.forEach((part, partIndex) => {
             sections.push({
                 id: `${songIndex}-${partIndex}`,
-                songIndex: songIndex,
-                partIndex: partIndex,
+                songIndex,
+                partIndex,
                 content: part,
                 isLastSectionOfSong: partIndex === parts.length - 1,
                 isLastSectionOfSetlist: partIndex === parts.length - 1 && songIndex === offlineData.songs.length - 1,
@@ -292,59 +210,6 @@ export default function OfflineSetlistPage() {
     });
     return sections;
   }, [offlineData, linesPerPage, maxChars]);
-
-  const stopAutoScroll = useCallback(() => {
-    setIsAutoScrolling(false);
-    setIsContinuousMode(false);
-    setIsExitDialogOpen(false);
-    setTimeout(() => {
-        if (api) api.scrollTo(currentSectionIndex, false);
-        containerRef.current?.focus();
-    }, 100);
-  }, [api, currentSectionIndex]);
-
-  useEffect(() => {
-    if (isClient) {
-      const isDarkMode = document.documentElement.classList.contains('dark');
-      const storedSettings = localStorage.getItem('user-color-settings');
-      if (storedSettings) {
-           try { setFinalColorSettings(JSON.parse(storedSettings)); } catch(e) { setFinalColorSettings({ lyricsColor: isDarkMode ? '#FFF' : '#000', chordsColor: isDarkMode ? '#F59E0B' : '#000' }); }
-      } else { setFinalColorSettings({ lyricsColor: isDarkMode ? '#FFF' : '#000', chordsColor: isDarkMode ? '#F59E0B' : '#000' }); }
-    }
-  }, [isClient]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setLoading(true);
-      try {
-        const item = localStorage.getItem(`offline-setlist-${setlistId}`);
-        if (item) {
-          const parsedData = JSON.parse(item) as OfflineSetlist;
-          setOfflineData(parsedData);
-          setTranspositions(parsedData.songs.map(s => s.initialTranspose || 0));
-        } else { setError("Repertório não encontrado offline."); }
-      } catch (e) { setError("Erro ao carregar dados."); } finally { setLoading(false); }
-    }
-  }, [setlistId]);
-  
-  useEffect(() => {
-    if (!isContinuousMode || !isClient || !offlineData) return;
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-                const idx = parseInt(entry.target.getAttribute('data-section-index') || '0', 10);
-                setCurrentSectionIndex(idx);
-            }
-        });
-    }, { 
-        root: scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]'), 
-        threshold: 0, 
-        rootMargin: '-10% 0px -85% 0px' 
-    });
-    
-    document.querySelectorAll('[data-section-index]').forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, [isContinuousMode, isClient, offlineData, allSections]);
 
   useEffect(() => {
     if (!api || isContinuousMode) return;
@@ -355,157 +220,27 @@ export default function OfflineSetlistPage() {
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     const { nextSong, prevSong, nextPage, prevPage, pedalType } = pedalSettings;
-
     if (pedalType === '4-buttons' && e.key === nextSong) {
       e.preventDefault();
-      if (isExitDialogOpen) {
-        stopAutoScroll();
-      } else if (!isContinuousMode) {
-        setIsContinuousMode(true);
-        setIsAutoScrolling(true);
-      } else {
-        setIsExitDialogOpen(true);
-      }
+      if (isExitDialogOpen) stopAutoScroll();
+      else if (!isContinuousMode) { setIsContinuousMode(true); setIsAutoScrolling(true); setIsPanelVisible(false); }
+      else setIsExitDialogOpen(true);
       return;
     }
-
     if (isContinuousMode) {
-        const isPauseKey = e.key === prevSong || (pedalType === '2-buttons' && e.key === nextPage);
-        if (isPauseKey) {
-            e.preventDefault();
-            setIsAutoScrolling(!isAutoScrolling);
-            return;
+        if (e.key === prevSong || (pedalType === '2-buttons' && e.key === nextPage)) {
+            e.preventDefault(); setIsAutoScrolling(!isAutoScrolling);
         }
     } else {
-        if (e.key === nextPage || e.key === "ArrowRight") {
-            e.preventDefault();
-            api?.scrollNext();
-        } else if (e.key === prevPage || e.key === "ArrowLeft") {
-            e.preventDefault();
-            api?.scrollPrev();
-        }
+        if (e.key === nextPage || e.key === "ArrowRight") { e.preventDefault(); api?.scrollNext(); }
+        else if (e.key === prevPage || e.key === "ArrowLeft") { e.preventDefault(); api?.scrollPrev(); }
     }
-  }, [api, pedalSettings, isAutoScrolling, isContinuousMode, stopAutoScroll, isExitDialogOpen]);
-  
-  const changeTranspose = (change: number) => {
-    const cur = allSections[currentSectionIndex];
-    if (!cur) return;
-    setTranspositions(prev => {
-        const next = [...prev];
-        next[cur.songIndex] = Math.min(12, Math.max(-12, (next[cur.songIndex] || 0) + change));
-        return next;
-    });
-  };
+  }, [api, pedalSettings, isAutoScrolling, isContinuousMode, isExitDialogOpen]);
 
-  const handleStartScrolling = () => {
-    setIsContinuousMode(true);
-    setIsAutoScrolling(true);
-    setTimeout(() => containerRef.current?.focus(), 50);
-  };
-
-  const handleToggleScrolling = () => {
-    setIsAutoScrolling(!isAutoScrolling);
-    setTimeout(() => containerRef.current?.focus(), 50);
-  };
-
-  const handleExportPDF = async () => {
-    if (!offlineData) return;
-    setIsExporting(true);
-    try {
-      const standardPageSize = 38;
-      const tolerance = 3;
-      
-      const allLines: { songIdx: number; songLines: string[] }[] = offlineData.songs.map((song, idx) => ({
-          songIdx: idx,
-          songLines: transposeContent(smartWrapContent(song.content, maxChars), transpositions[idx] || 0).split('\n')
-      }));
-
-      const longestLineCount = Math.max(...allLines.flatMap(s => s.songLines.map(l => l.length)));
-      const ptWidth = Math.max(400, longestLineCount * 7.5 + 100);
-      const ptHeight = (standardPageSize + tolerance) * 12 * 1.5 + 150;
-
-      const pdf = new jsPDF('p', 'pt', [ptWidth, ptHeight]);
-
-      const container = document.createElement('div');
-      container.style.position = 'fixed';
-      container.style.left = '-9999px';
-      container.style.top = '0';
-      container.style.backgroundColor = '#fff';
-      container.style.color = '#000';
-      container.style.fontFamily = 'monospace';
-      container.style.fontSize = '12pt';
-      container.style.lineHeight = '1.4';
-      container.style.padding = '40pt';
-      container.style.width = `${ptWidth}pt`;
-      document.body.appendChild(container);
-
-      let firstOverallPage = true;
-
-      for (let songIdx = 0; songIdx < offlineData.songs.length; songIdx++) {
-        const song = offlineData.songs[songIdx];
-        const lines = allLines[songIdx].songLines;
-        
-        const songPages: string[][] = [];
-        let currentIdx = 0;
-        while (currentIdx < lines.length) {
-            let remainingLinesTotal = lines.length - currentIdx;
-            let currentPageSize = standardPageSize;
-
-            if (remainingLinesTotal <= standardPageSize + tolerance) {
-                currentPageSize = remainingLinesTotal;
-            } else {
-                if (isChordLine(lines[currentIdx + standardPageSize - 1])) {
-                    currentPageSize = standardPageSize - 1;
-                }
-            }
-
-            let pageLines = lines.slice(currentIdx, currentIdx + currentPageSize);
-            currentIdx += currentPageSize;
-
-            while (pageLines.length < standardPageSize) {
-                pageLines.push(' ');
-            }
-            songPages.push(pageLines);
-        }
-
-        for (let i = 0; i < songPages.length; i++) {
-          if (!firstOverallPage) pdf.addPage([ptWidth, ptHeight]);
-          firstOverallPage = false;
-
-          const headerHtml = i === 0 ? `
-            <div style="margin-bottom: 20pt; border-bottom: 1px solid #eee; padding-bottom: 10pt;">
-              <h1 style="font-size: 24pt; margin: 0; color: #000;">${song.title}</h1>
-              <p style="font-size: 14pt; margin: 5pt 0 0 0; color: #666;">${song.artist}</p>
-            </div>
-          ` : '';
-
-          container.innerHTML = `
-            ${headerHtml}
-            <div style="white-space: pre-wrap; font-family: monospace; font-size: 12pt; color: #000;">
-              ${songPages[i].join('\n')}
-            </div>
-            <div style="margin-top: 20pt; text-align: right; font-size: 8pt; color: #aaa;">
-              ${offlineData.name} • Música ${songIdx + 1} de ${offlineData.songs.length} • Página ${i + 1} • CifrasKadosh
-            </div>
-          `;
-
-          await new Promise(r => setTimeout(r, 150));
-          const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-          const imgData = canvas.toDataURL('image/png');
-          pdf.addImage(imgData, 'PNG', 0, 0, ptWidth, ptHeight);
-        }
-      }
-
-      pdf.save(`${offlineData.name}.pdf`);
-      document.body.removeChild(container);
-      toast({ title: "Repertório Exportado", description: "O PDF foi gerado com sucesso." });
-    } catch (err) {
-      console.error(err);
-      toast({ variant: "destructive", title: "Erro ao gerar PDF", description: "Ocorreu um problema ao exportar o repertório." });
-    } finally {
-      setIsExporting(false);
-    }
-  };
+  const stopAutoScroll = useCallback(() => {
+    setIsAutoScrolling(false); setIsContinuousMode(false); setIsExitDialogOpen(false);
+    setTimeout(() => { if (api) api.scrollTo(currentSectionIndex, false); containerRef.current?.focus(); }, 100);
+  }, [api, currentSectionIndex]);
 
   if (loading || !isClient || !finalColorSettings) return <div className="flex items-center justify-center h-screen"><Loader2 className="animate-spin" /></div>;
   if (error || !offlineData) return <div className="flex flex-col items-center justify-center h-screen"><p className="text-destructive mb-4">{error}</p><Button asChild><Link href={`/setlists/${setlistId}`}><ArrowLeft className="mr-2" />Voltar</Link></Button></div>;
@@ -514,114 +249,63 @@ export default function OfflineSetlistPage() {
   const currentSong = offlineData.songs[currentSec.songIndex];
   const currentKey = currentSong.key ? transposeChord(currentSong.key, transpositions[currentSec.songIndex]) : null;
 
-  const totalSongs = offlineData.songs.length;
-  const currentSongNum = currentSec.songIndex + 1;
-  const sectionsOfCurrentSong = allSections.filter(s => s.songIndex === currentSec.songIndex);
-  const totalPagesInSong = sectionsOfCurrentSong.length;
-  const currentPageInSong = sectionsOfCurrentSong.findIndex(s => s.id === currentSec.id) + 1;
-
   return (
-    <div 
-      ref={containerRef}
-      className="flex-1 flex flex-col p-4 md:p-8 pt-6 h-screen outline-none bg-background overflow-hidden relative" 
-      onKeyDownCapture={handleKeyDown} 
-      tabIndex={0}
-    >
+    <div ref={containerRef} className="flex-1 flex flex-col p-4 md:p-8 pt-6 h-screen outline-none bg-background overflow-hidden relative" onKeyDownCapture={handleKeyDown} tabIndex={0}>
       <Card className={cn("mb-4 bg-accent/10 transition-all", isPanelVisible ? "p-4 space-y-4" : "p-1.5")}>
         {isPanelVisible ? (
           <div className="flex flex-col gap-4">
             <div className="flex items-start justify-between">
               <Button asChild variant="outline" size="icon" className="shrink-0"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
               <div className="text-center flex-1 px-4">
-                <h1 className="text-xl font-bold font-headline leading-tight">
-                  {currentSong.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
-                </h1>
+                <h1 className="text-xl font-bold font-headline leading-tight truncate">{currentSong.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}</h1>
                 <div className="flex items-center justify-center gap-2 mt-1">
                   <Badge variant="outline">Offline</Badge>
-                  <Sun className={cn("h-3 w-3 transition-opacity", isWakeLockActive ? "text-orange-500 opacity-100" : "text-muted-foreground opacity-30")} />
-                  <span className="text-[10px] text-muted-foreground uppercase font-bold">{isWakeLockActive ? 'Tela Ativa' : 'Tela Normal'}</span>
+                  <Sun className={cn("h-3 w-3 transition-opacity", isWakeLockActive ? "text-orange-500" : "text-muted-foreground opacity-30")} />
                   <div className="flex items-center gap-1">
-                    <Badge variant="secondary" className="text-[12px] py-0 px-1.5 h-5 text-blue-600 dark:text-blue-400 font-bold flex items-center" style={{ fontFamily: 'Arial, sans-serif' }}>
-                        <Music className="h-3 w-3 mr-1" /> {currentSongNum} / {totalSongs}
-                    </Badge>
-                    <Badge variant="secondary" className="text-[12px] py-0 px-1.5 h-5 text-blue-600 dark:text-blue-400 font-bold flex items-center" style={{ fontFamily: 'Arial, sans-serif' }}>
-                        <FileText className="h-3 w-3 mr-1" /> {currentPageInSong} / {totalPagesInSong}
-                    </Badge>
+                    <Badge variant="secondary" className="text-[12px] h-5 font-bold"><Music className="h-3 w-3 mr-1" /> {currentSec.songIndex + 1} / {offlineData.songs.length}</Badge>
+                    <Badge variant="secondary" className="text-[12px] h-5 font-bold"><FileText className="h-3 w-3 mr-1" /> {currentSec.partIndex + 1}</Badge>
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <Button 
-                    onClick={toggleVoice} 
-                    variant="ghost" 
-                    size="icon" 
-                    className={cn(
-                      "h-9 w-9 transition-colors", 
-                      isVoiceActive ? "text-primary bg-primary/10 animate-pulse" : "text-muted-foreground"
-                    )}
-                    title={isVoiceActive ? "Desativar Comandos de Voz" : "Ativar Comandos de Voz"}
-                >
-                    {isVoiceActive ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
-                </Button>
-                <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon" className="shrink-0"><PanelTopClose className="h-5 w-5" /></Button>
+                <Button onClick={toggleVoice} variant="ghost" size="icon" className={cn("h-9 w-9", isVoiceActive && "text-primary bg-primary/10 animate-pulse")}><Mic className="h-5 w-5" /></Button>
+                <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon"><PanelTopClose className="h-5 w-5" /></Button>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
                 <div className="flex items-center gap-1 border rounded-md p-1 bg-background h-10 w-full sm:w-48">
-                    <Button variant="ghost" size="icon" onClick={() => changeTranspose(-1)}><Minus className="h-4 w-4" /></Button>
-                    <Badge variant="secondary" className="flex-1 text-center justify-center">Tom: {currentKey || 'N/A'}</Badge>
-                    <Button variant="ghost" size="icon" onClick={() => changeTranspose(1)}><Plus className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => setTranspositions(prev => { const n = [...prev]; n[currentSec.songIndex]--; return n; })}><Minus className="h-4 w-4" /></Button>
+                    <Badge variant="secondary" className="flex-1 text-center">Tom: {currentKey || 'N/A'}</Badge>
+                    <Button variant="ghost" size="icon" onClick={() => setTranspositions(prev => { const n = [...prev]; n[currentSec.songIndex]++; return n; })}><Plus className="h-4 w-4" /></Button>
                 </div>
-                <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-full sm:w-56">
-                    <div className="flex items-center gap-2">
-                        <Label className="text-xs">Cifras</Label>
-                        <Switch checked={showChords} onCheckedChange={setShowChords} />
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 ml-2 border" onClick={handleExportPDF} disabled={isExporting}>
-                        {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                    </Button>
+                <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-full sm:w-44">
+                    <Label className="text-xs">Cifras</Label>
+                    <Switch checked={showChords} onCheckedChange={setShowChords} />
                 </div>
             </div>
           </div>
         ) : (
           <div className="flex items-center justify-between min-h-8 py-1">
             <Button asChild variant="outline" size="icon" className="h-8 w-8 shrink-0"><Link href={`/setlists/${setlistId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
-            <div className="flex-1 flex flex-col items-center justify-center px-2 overflow-hidden">
-                <h1 className="text-sm font-bold w-full text-center leading-tight">
-                    {currentSong.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}
-                </h1>
-                <div className="flex items-center gap-3 text-[12px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none mt-1" style={{ fontFamily: 'Arial, sans-serif' }}>
-                    <span className="flex items-center"><Music className="h-3 w-3 mr-1" /> {currentSongNum} / {totalSongs}</span>
-                    <Separator orientation="vertical" className="h-2 bg-blue-200 dark:bg-blue-800" />
-                    <span className="flex items-center"><FileText className="h-3 w-3 mr-1" /> {currentPageInSong} / {totalPagesInSong}</span>
-                </div>
+            <div className="flex-1 flex flex-col items-center justify-center px-2">
+                <h1 className="text-sm font-bold w-full text-center truncate">{currentSong.title} {currentKey && <span className="text-primary">({currentKey})</span>}</h1>
+                <div className="text-[12px] font-bold text-blue-600 uppercase mt-1"><Music className="h-3 w-3 mr-1 inline" /> {currentSec.songIndex + 1} / {offlineData.songs.length}</div>
             </div>
             <div className="flex items-center gap-1">
               {isVoiceActive && <div className="w-2 h-2 rounded-full bg-primary animate-pulse mr-1" />}
-              <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8 shrink-0"><PanelTopOpen className="h-5 w-5" /></Button>
+              <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8"><PanelTopOpen className="h-5 w-5" /></Button>
             </div>
           </div>
         )}
       </Card>
 
       <div className="flex-1 flex flex-col min-h-0 relative">
-        {!isContinuousMode && showChords && (
-          <div className="absolute inset-0 z-10 flex pointer-events-none">
-            <div className="w-1/4 h-full cursor-pointer pointer-events-auto" onClick={() => api?.scrollPrev()} title="Página Anterior" />
-            <div className="flex-1 h-full" />
-            <div className="w-1/4 h-full cursor-pointer pointer-events-auto" onClick={() => api?.scrollNext()} title="Próxima Página" />
-          </div>
-        )}
-
         {isContinuousMode || !showChords ? (
           <ScrollArea ref={scrollAreaRef} className="h-full bg-white dark:bg-black">
               <div className="p-4 md:p-8 pb-48">
                 {offlineData.songs.map((song, songIdx) => (
-                    <div key={songIdx} className="flex flex-col mb-16">
-                        <div className="mb-8 border-l-4 border-primary/20 pl-4">
-                            <h2 className="text-2xl font-bold text-primary">{song.title}</h2>
-                            <p className="text-sm text-muted-foreground">{song.artist}</p>
-                        </div>
+                    <div key={songIdx} className="mb-16">
+                        <h2 className="text-2xl font-bold text-primary mb-8">{song.title}</h2>
                         {allSections.filter(s => s.songIndex === songIdx).map((sec) => (
                             <div key={sec.id} data-section-index={allSections.findIndex(s => s.id === sec.id)}>
                                 <SongDisplay 
@@ -636,18 +320,17 @@ export default function OfflineSetlistPage() {
               </div>
           </ScrollArea>
         ) : (
-          <Carousel className="w-full h-full" setApi={setApi} opts={{ loop: false }}>
+          <Carousel className="w-full h-full" setApi={setApi}>
             <CarouselContent className="h-full">
               {allSections.map((section, index) => (
                 <CarouselItem key={section.id} className="h-full">
-                    <SongPresenter 
-                        section={section} 
-                        transposeValue={transpositions[section.songIndex] || 0} 
-                        fontSize={fontSize} 
+                  <ScrollArea className="h-full p-4 md:p-8 bg-white dark:bg-black">
+                    <SongDisplay 
+                        style={{ fontSize: `${fontSize}px`, '--lyrics-color': finalColorSettings.lyricsColor, '--chords-color': finalColorSettings.chordsColor } as React.CSSProperties}
+                        content={transposeContent(section.content, transpositions[section.songIndex] || 0)}
                         showChords={showChords} 
-                        colorSettings={finalColorSettings}
-                        song={offlineData.songs[section.songIndex]}
                     />
+                  </ScrollArea>
                 </CarouselItem>
               ))}
             </CarouselContent>
@@ -658,13 +341,11 @@ export default function OfflineSetlistPage() {
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t z-50">
           <div className="max-w-xl mx-auto flex items-center gap-4 p-2 rounded-lg border bg-muted/20">
                 {!isContinuousMode && showChords ? (
-                    <Button onClick={handleStartScrolling} className="h-9 w-36 gap-2"><Play className="h-4 w-4" />Iniciar</Button>
+                    <Button onClick={() => { setIsContinuousMode(true); setIsAutoScrolling(true); setIsPanelVisible(false); }} className="h-9 w-36 gap-2"><Play className="h-4 w-4" />Iniciar</Button>
                 ) : (
                     <div className="flex gap-2">
-                        <Button variant={isAutoScrolling ? "destructive" : "default"} onClick={handleToggleScrolling} className="h-9 w-36">{isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
-                        {showChords && (
-                          <Button variant="outline" onClick={() => { setIsExitDialogOpen(true); setTimeout(() => containerRef.current?.focus(), 50); }} className="h-9 w-12"><X className="h-4 w-4" /></Button>
-                        )}
+                        <Button variant={isAutoScrolling ? "destructive" : "default"} onClick={() => setIsAutoScrolling(!isAutoScrolling)} className="h-9 w-36">{isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
+                        {showChords && <Button variant="outline" onClick={() => setIsExitDialogOpen(true)} className="h-9 w-12"><X className="h-4 w-4" /></Button>}
                     </div>
                 )}
               {(isContinuousMode || !showChords) && (
@@ -678,13 +359,10 @@ export default function OfflineSetlistPage() {
 
       <AlertDialog open={isExitDialogOpen} onOpenChange={setIsExitDialogOpen}>
           <AlertDialogContent>
-              <AlertDialogHeader>
-                  <AlertDialogTitle>Sair do Modo Rolagem?</AlertDialogTitle>
-                  <AlertDialogDescription>Deseja voltar ao modo de slides exatamente nesta posição?</AlertDialogDescription>
-              </AlertDialogHeader>
+              <AlertDialogHeader><AlertDialogTitle>Sair do Modo Rolagem?</AlertDialogTitle></AlertDialogHeader>
               <AlertDialogFooter>
-                  <AlertDialogCancel onClick={() => { setIsExitDialogOpen(false); containerRef.current?.focus(); }}>Não</AlertDialogCancel>
-                  <AlertDialogAction onClick={stopAutoScroll}>Sim, Confirmar</AlertDialogAction>
+                  <AlertDialogCancel onClick={() => setIsExitDialogOpen(false)}>Não</AlertDialogCancel>
+                  <AlertDialogAction onClick={stopAutoScroll}>Sim</AlertDialogAction>
               </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>

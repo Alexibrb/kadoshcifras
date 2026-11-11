@@ -1,1006 +1,328 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
-
-import {
-  ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
-  Minus,
-  Music,
-  Plus,
-} from 'lucide-react';
-
-import {
-  Button,
-} from '@/components/ui/button';
-
-import {
-  Badge,
-} from '@/components/ui/badge';
-
-import {
-  Card,
-  CardContent,
-} from '@/components/ui/card';
-
-import {
-  Label,
-} from '@/components/ui/label';
-
-import {
-  Switch,
-} from '@/components/ui/switch';
-
-import {
-  SongDisplay,
-} from '@/components/song-display';
-
-import {
-  paginateContent,
-  transposeChord,
-  transposeContent,
-} from '@/lib/music';
-
-import {
-  useLocalStorage,
-} from '@/hooks/use-local-storage';
-
-import type {
-  PedalSettings,
-} from '@/types';
-
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
+import { useLocalStorage } from '@/hooks/use-local-storage';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Minus, Plus, PanelTopClose, PanelTopOpen, Music, Loader2, Play, Pause, X, Sun, FileDown, FileText, Mic, MicOff } from 'lucide-react';
+import { SongDisplay } from '@/components/song-display';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
+import Link from 'next/link';
+import { PedalSettings, ColorSettings } from '@/types';
+import { Carousel, CarouselApi, CarouselContent, CarouselItem } from '@/components/ui/carousel';
+import { transposeChord, transposeContent, isChordLine, paginateContent, smartWrapContent } from '@/lib/music';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface OfflineSong {
-  id: string;
-  title: string;
-  artist: string;
-  content: string;
-  key?: string;
-  initialTranspose: number;
+    id: string;
+    title: string;
+    artist: string;
+    content: string;
+    key?: string;
+    initialTranspose: number;
 }
-
 
 interface OfflineSetlist {
-  id: string;
-  name: string;
-  songs: OfflineSong[];
+    id: string;
+    name: string;
+    songs: OfflineSong[];
 }
-
 
 interface Section {
-  songIndex: number;
-  pageIndex: number;
-  content: string;
+    id: string;
+    songIndex: number;
+    partIndex: number;
+    content: string;
 }
 
-
 export default function OfflineSetlistPage() {
+  const { toast } = useToast();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const wakeLockRef = useRef<any>(null);
+  const requestRef = useRef<number>(null);
+  const lastScrollTime = useRef<number>(0);
+  const scrollPosRef = useRef<number>(0); 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
 
-  const [
-    data,
-    setData,
-  ] =
-    useState<OfflineSetlist | null>(
-      null
-    );
+  const [offlineData, setOfflineData] = useState<OfflineSetlist | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
+  const [fontSize] = useLocalStorage('song-font-size', 14);
+  const [linesPerPage] = useLocalStorage('song-lines-per-page', 14);
+  const [maxChars] = useLocalStorage('song-max-chars', 0);
+  const [showChords, setShowChords] = useLocalStorage('song-show-chords', true);
+  const [isPanelVisible, setIsPanelVisible] = useState(false);
+  const [isContinuousMode, setIsContinuousMode] = useState(false);
+  const [isAutoScrolling, setIsAutoScrolling] = useState(false);
+  const [scrollSpeed, setScrollSpeed] = useState(10);
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  const [transpositions, setTranspositions] = useState<number[]>([]);
+  const [isClient, setIsClient] = useState(false);
+  const [finalColorSettings, setFinalColorSettings] = useState<ColorSettings | null>(null);
+  const [api, setApi] = useState<CarouselApi>();
+  const [isWakeLockActive, setIsWakeLockActive] = useState(false);
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
 
-  const [
-    loading,
-    setLoading,
-  ] =
-    useState(true);
+  const [pedalSettings] = useLocalStorage<PedalSettings>('pedal-settings', {
+    pedalType: '4-buttons',
+    prevPage: ',',
+    nextPage: '.',
+    prevSong: '[',
+    nextSong: ']',
+  });
 
-
-  const [
-    error,
-    setError,
-  ] =
-    useState<string | null>(
-      null
-    );
-
-
-  const [
-    currentSection,
-    setCurrentSection,
-  ] =
-    useState(0);
-
-
-  const [
-    transpositions,
-    setTranspositions,
-  ] =
-    useState<number[]>(
-      []
-    );
-
-
-  const [
-    showChords,
-    setShowChords,
-  ] =
-    useLocalStorage(
-      'song-show-chords',
-      true
-    );
-
-
-  const [
-    fontSize,
-  ] =
-    useLocalStorage(
-      'song-font-size',
-      14
-    );
-
-
-  const [
-    linesPerPage,
-  ] =
-    useLocalStorage(
-      'song-lines-per-page',
-      14
-    );
-
-
-  const [
-    pedalSettings,
-  ] =
-    useLocalStorage<PedalSettings>(
-      'pedal-settings',
-      {
-
-        pedalType:
-          '4-buttons',
-
-        prevPage:
-          ',',
-
-        nextPage:
-          '.',
-
-        prevSong:
-          '[',
-
-        nextSong:
-          ']',
-
-      }
-    );
-
-
-  /*
-  ==================================================
-  CARREGAR REPERTÓRIO
-  ==================================================
-  */
-
-  useEffect(() => {
-
-    const params =
-      new URLSearchParams(
-        window.location.search
-      );
-
-
-    const setlistId =
-      params.get('id');
-
-
-    if (!setlistId) {
-
-      setError(
-        'Repertório não informado.'
-      );
-
-      setLoading(false);
-
-      return;
-
+  const requestWakeLock = useCallback(async () => {
+    if (typeof window !== 'undefined' && 'wakeLock' in navigator) {
+      try {
+        wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+        setIsWakeLockActive(true);
+        wakeLockRef.current.addEventListener('release', () => setIsWakeLockActive(false));
+      } catch (err) {}
     }
-
-
-    try {
-
-      const stored =
-        localStorage.getItem(
-          `offline-setlist-${setlistId}`
-        );
-
-
-      if (!stored) {
-
-        setError(
-          'Este repertório ainda não está disponível offline.'
-        );
-
-        setLoading(false);
-
-        return;
-
-      }
-
-
-      const parsed =
-        JSON.parse(
-          stored
-        ) as OfflineSetlist;
-
-
-      setData(
-        parsed
-      );
-
-
-      setTranspositions(
-
-        parsed.songs.map(
-          song =>
-            song.initialTranspose ||
-            0
-        )
-
-      );
-
-
-      setLoading(false);
-
-
-    } catch (error) {
-
-      console.error(
-        '[Offline] Erro carregando repertório:',
-        error
-      );
-
-
-      setError(
-        'Erro ao carregar repertório.'
-      );
-
-
-      setLoading(false);
-
-    }
-
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
 
-  /*
-  ==================================================
-  GERAR TODAS AS PÁGINAS
-  ==================================================
-  */
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'pt-BR';
+    recognition.continuous = true;
+    recognition.interimResults = false;
 
-  const sections =
-    useMemo(() => {
-
-      if (!data) {
-
-        return [];
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
+      if (transcript.includes('avançar tela')) {
+        api?.scrollNext();
+      } else if (transcript.includes('voltar tela')) {
+        api?.scrollPrev();
+      } else if (transcript.includes('rolar tela')) {
+        setIsContinuousMode(true);
+        setIsAutoScrolling(true);
+        setIsPanelVisible(false);
+      } else if (transcript.includes('parar tela')) {
+        setIsAutoScrolling(false);
       }
-
-
-      const result:
-        Section[] = [];
-
-
-      data.songs.forEach(
-        (
-          song,
-          songIndex
-        ) => {
-
-          const transpose =
-            transpositions[
-              songIndex
-            ] || 0;
-
-
-          const content =
-            transposeContent(
-              song.content,
-              transpose
-            );
-
-
-          const pages =
-            paginateContent(
-              content,
-              linesPerPage
-            );
-
-
-          pages.forEach(
-            (
-              page,
-              pageIndex
-            ) => {
-
-              result.push({
-
-                songIndex,
-
-                pageIndex,
-
-                content:
-                  page,
-
-              });
-
-            }
-          );
-
-        }
-      );
-
-
-      return result;
-
-    }, [
-      data,
-      transpositions,
-      linesPerPage,
-    ]);
-
-
-  const section =
-    sections[
-      currentSection
-    ];
-
-
-  const song =
-    data &&
-    section
-      ? data.songs[
-          section.songIndex
-        ]
-      : null;
-
-
-  /*
-  ==================================================
-  TOM ATUAL
-  ==================================================
-  */
-
-  const currentKey =
-    useMemo(() => {
-
-      if (
-        !song?.key ||
-        !section
-      ) {
-
-        return null;
-
-      }
-
-
-      return transposeChord(
-
-        song.key,
-
-        transpositions[
-          section.songIndex
-        ] || 0
-
-      );
-
-    }, [
-      song,
-      section,
-      transpositions,
-    ]);
-
-
-  /*
-  ==================================================
-  ANTERIOR
-  ==================================================
-  */
-
-  const previous =
-    useCallback(() => {
-
-      setCurrentSection(
-        current =>
-          Math.max(
-            0,
-            current - 1
-          )
-      );
-
-    }, []);
-
-
-  /*
-  ==================================================
-  PRÓXIMO
-  ==================================================
-  */
-
-  const next =
-    useCallback(() => {
-
-      setCurrentSection(
-        current =>
-          Math.min(
-            Math.max(
-              0,
-              sections.length - 1
-            ),
-            current + 1
-          )
-      );
-
-    }, [
-      sections.length,
-    ]);
-
-
-  /*
-  ==================================================
-  ALTERAR TOM DA MÚSICA ATUAL
-  ==================================================
-  */
-
-  const changeTranspose =
-    (
-      amount: number
-    ) => {
-
-      if (!section) {
-
-        return;
-
-      }
-
-
-      setTranspositions(
-        current => {
-
-          const nextValues =
-            [...current];
-
-
-          const index =
-            section.songIndex;
-
-
-          nextValues[index] =
-            Math.max(
-              -12,
-              Math.min(
-                12,
-                (
-                  nextValues[
-                    index
-                  ] || 0
-                ) + amount
-              )
-            );
-
-
-          return nextValues;
-
-        }
-      );
-
-
-      /*
-      ------------------------------------------
-      Voltar à primeira página da música atual
-      ------------------------------------------
-      */
-
-      const firstPageIndex =
-        sections.findIndex(
-          item =>
-            item.songIndex ===
-            section.songIndex
-        );
-
-
-      if (
-        firstPageIndex >= 0
-      ) {
-
-        setCurrentSection(
-          firstPageIndex
-        );
-
-      }
-
     };
 
+    recognition.onend = () => { if (recognitionRef.current?.isActive) try { recognition.start(); } catch(e){} };
+    recognitionRef.current = { instance: recognition, isActive: false };
+    return () => { if (recognitionRef.current) { recognitionRef.current.isActive = false; recognitionRef.current.instance.stop(); } };
+  }, [api]);
 
-  /*
-  ==================================================
-  PEDAL / TECLADO
-  ==================================================
-  */
+  const toggleVoice = () => {
+    if (!recognitionRef.current) return;
+    if (isVoiceActive) {
+      recognitionRef.current.isActive = false; recognitionRef.current.instance.stop(); setIsVoiceActive(false);
+    } else {
+      recognitionRef.current.isActive = true; try { recognitionRef.current.instance.start(); setIsVoiceActive(true); } catch(e){}
+    }
+  };
+
+  const animateScroll = useCallback((time: number) => {
+    if (lastScrollTime.current > 0 && scrollAreaRef.current) {
+        const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
+        if (viewport) {
+            const deltaTime = (time - lastScrollTime.current) / 1000;
+            const pixelsToMove = (scrollSpeed * 2) * deltaTime;
+            scrollPosRef.current += pixelsToMove;
+            if (scrollPosRef.current >= 1) {
+                viewport.scrollTop += Math.floor(scrollPosRef.current);
+                scrollPosRef.current -= Math.floor(scrollPosRef.current);
+            }
+        }
+    }
+    lastScrollTime.current = time;
+    requestRef.current = requestAnimationFrame(animateScroll);
+  }, [scrollSpeed]);
 
   useEffect(() => {
+    if (isAutoScrolling) {
+        lastScrollTime.current = performance.now();
+        requestRef.current = requestAnimationFrame(animateScroll);
+    } else if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    return () => { if (requestRef.current) cancelAnimationFrame(requestRef.current); };
+  }, [isAutoScrolling, animateScroll]);
 
-    const handler =
-      (
-        event: KeyboardEvent
-      ) => {
+  useEffect(() => {
+    setIsClient(true);
+    requestWakeLock();
+    const params = new URLSearchParams(window.location.search);
+    const setlistId = params.get('id');
+    if (setlistId) {
+      const item = localStorage.getItem(`offline-setlist-${setlistId}`);
+      if (item) {
+        const data = JSON.parse(item) as OfflineSetlist;
+        setOfflineData(data);
+        setTranspositions(data.songs.map(s => s.initialTranspose || 0));
+      } else setError("Repertório não encontrado offline.");
+    }
+    setLoading(false);
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    const stored = localStorage.getItem('user-color-settings');
+    if (stored) setFinalColorSettings(JSON.parse(stored));
+    else setFinalColorSettings({ lyricsColor: isDarkMode ? '#FFF' : '#000', chordsColor: isDarkMode ? '#F59E0B' : '#000' });
+  }, [requestWakeLock]);
 
-        if (
-          event.key ===
-            pedalSettings.nextPage ||
-          event.key ===
-            'ArrowRight'
-        ) {
+  const allSections = useMemo((): Section[] => {
+    if (!offlineData) return [];
+    const sections: Section[] = [];
+    offlineData.songs.forEach((song, songIndex) => {
+        const wrapped = smartWrapContent(song.content, maxChars);
+        const parts = paginateContent(wrapped, linesPerPage);
+        parts.forEach((part, partIndex) => {
+            sections.push({ id: `${songIndex}-${partIndex}`, songIndex, partIndex, content: part });
+        });
+    });
+    return sections;
+  }, [offlineData, linesPerPage, maxChars]);
 
-          event.preventDefault();
+  useEffect(() => {
+    if (!api || isContinuousMode) return;
+    const onSelect = () => setCurrentSectionIndex(api.selectedScrollSnap());
+    api.on("select", onSelect);
+    return () => { api.off("select", onSelect); }
+  }, [api, isContinuousMode]);
 
-          next();
-
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    const { nextSong, prevSong, nextPage, prevPage, pedalType } = pedalSettings;
+    if (pedalType === '4-buttons' && e.key === nextSong) {
+      e.preventDefault();
+      if (!isContinuousMode) { setIsContinuousMode(true); setIsAutoScrolling(true); setIsPanelVisible(false); }
+      else setIsAutoScrolling(!isAutoScrolling);
+      return;
+    }
+    if (isContinuousMode) {
+        if (e.key === prevSong || (pedalType === '2-buttons' && e.key === nextPage)) {
+            e.preventDefault(); setIsAutoScrolling(!isAutoScrolling);
         }
+    } else {
+        if (e.key === nextPage || e.key === "ArrowRight") { e.preventDefault(); api?.scrollNext(); }
+        else if (e.key === prevPage || e.key === "ArrowLeft") { e.preventDefault(); api?.scrollPrev(); }
+    }
+  }, [api, pedalSettings, isAutoScrolling, isContinuousMode]);
 
+  if (loading || !isClient || !finalColorSettings) return <div className="flex items-center justify-center h-screen"><Loader2 className="animate-spin" /></div>;
+  if (error || !offlineData) return <div className="flex flex-col items-center justify-center h-screen"><p className="text-destructive mb-4">{error}</p><Button asChild><Link href="/setlists"><ArrowLeft className="mr-2" />Voltar</Link></Button></div>;
 
-        if (
-          event.key ===
-            pedalSettings.prevPage ||
-          event.key ===
-            'ArrowLeft'
-        ) {
-
-          event.preventDefault();
-
-          previous();
-
-        }
-
-      };
-
-
-    window.addEventListener(
-      'keydown',
-      handler
-    );
-
-
-    return () => {
-
-      window.removeEventListener(
-        'keydown',
-        handler
-      );
-
-    };
-
-
-  }, [
-    pedalSettings,
-    next,
-    previous,
-  ]);
-
-
-  if (loading) {
-
-    return (
-
-      <div
-        className="flex min-h-screen items-center justify-center"
-      >
-
-        Carregando...
-
-      </div>
-
-    );
-
-  }
-
-
-  if (
-    error ||
-    !data ||
-    !song ||
-    !section
-  ) {
-
-    return (
-
-      <div
-        className="flex min-h-screen flex-col items-center justify-center gap-4 p-6 text-center"
-      >
-
-        <Music
-          className="h-10 w-10 text-muted-foreground"
-        />
-
-
-        <p>
-
-          {
-            error ||
-            'Repertório não encontrado.'
-          }
-
-        </p>
-
-
-        <Button
-          type="button"
-          onClick={
-            () =>
-              window.location.assign(
-                '/setlists'
-              )
-          }
-        >
-
-          Voltar para repertórios
-
-        </Button>
-
-      </div>
-
-    );
-
-  }
-
-
-  /*
-  ==================================================
-  CONTADORES
-  ==================================================
-  */
-
-  const songNumber =
-    section.songIndex + 1;
-
-
-  const pagesOfCurrentSong =
-    sections.filter(
-      item =>
-        item.songIndex ===
-        section.songIndex
-    );
-
-
-  const pageNumber =
-    pagesOfCurrentSong.findIndex(
-      item =>
-        item.pageIndex ===
-        section.pageIndex
-    ) + 1;
-
+  const currentSec = allSections[currentSectionIndex] || allSections[0];
+  const currentSong = offlineData.songs[currentSec.songIndex];
+  const currentKey = currentSong.key ? transposeChord(currentSong.key, transpositions[currentSec.songIndex]) : null;
 
   return (
-
-    <div
-      className="flex min-h-screen flex-col bg-background p-3 md:p-6"
-    >
-
-      <Card
-        className="mb-3"
-      >
-
-        <CardContent
-          className="p-3"
-        >
-
-          <div
-            className="flex items-center gap-3"
-          >
-
-            <Button
-
-              type="button"
-
-              variant="outline"
-
-              size="icon"
-
-              onClick={
-                () =>
-                  window.location.assign(
-                    '/setlists'
-                  )
-              }
-
-            >
-
-              <ArrowLeft
-                className="h-4 w-4"
-              />
-
-            </Button>
-
-
-            <div
-              className="min-w-0 flex-1 text-center"
-            >
-
-              <p
-                className="truncate text-xs text-muted-foreground"
-              >
-
-                {data.name}
-
-              </p>
-
-
-              <h1
-                className="truncate text-lg font-bold"
-              >
-
-                {song.title}
-
-              </h1>
-
-
-              <p
-                className="truncate text-sm text-muted-foreground"
-              >
-
-                {song.artist}
-
-              </p>
-
+    <div ref={containerRef} className="flex-1 flex flex-col p-4 md:p-8 h-screen outline-none bg-background overflow-hidden relative" onKeyDownCapture={handleKeyDown} tabIndex={0}>
+      <Card className={cn("mb-4 bg-accent/10 transition-all", isPanelVisible ? "p-4 space-y-4" : "p-1.5")}>
+        {isPanelVisible ? (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-start justify-between">
+              <Button asChild variant="outline" size="icon" className="shrink-0"><Link href="/setlists"><ArrowLeft className="h-4 w-4" /></Link></Button>
+              <div className="text-center flex-1 px-4">
+                <h1 className="text-xl font-bold font-headline leading-tight truncate">{currentSong.title} {currentKey && <span className="text-primary ml-1">({currentKey})</span>}</h1>
+                <div className="flex items-center justify-center gap-2 mt-1">
+                  <Badge variant="outline">Offline</Badge>
+                  <Sun className={cn("h-3 w-3", isWakeLockActive ? "text-orange-500" : "text-muted-foreground opacity-30")} />
+                  <Badge variant="secondary" className="text-[12px] h-5 font-bold"><Music className="h-3 w-3 mr-1" /> {currentSec.songIndex + 1} / {offlineData.songs.length}</Badge>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <Button onClick={toggleVoice} variant="ghost" size="icon" className={cn("h-9 w-9", isVoiceActive && "text-primary bg-primary/10 animate-pulse")}><Mic className="h-5 w-5" /></Button>
+                <Button onClick={() => setIsPanelVisible(false)} variant="ghost" size="icon"><PanelTopClose className="h-5 w-5" /></Button>
+              </div>
             </div>
-
-
-            <Badge
-              variant="secondary"
-            >
-
-              Offline
-
-            </Badge>
-
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                <div className="flex items-center gap-1 border rounded-md p-1 bg-background h-10 w-full sm:w-48">
+                    <Button variant="ghost" size="icon" onClick={() => setTranspositions(prev => { const n = [...prev]; n[currentSec.songIndex]--; return n; })}><Minus className="h-4 w-4" /></Button>
+                    <Badge variant="secondary" className="flex-1 text-center">Tom: {currentKey || 'N/A'}</Badge>
+                    <Button variant="ghost" size="icon" onClick={() => setTranspositions(prev => { const n = [...prev]; n[currentSec.songIndex]++; return n; })}><Plus className="h-4 w-4" /></Button>
+                </div>
+                <div className="flex items-center justify-between border rounded-md p-1 px-3 bg-background h-10 w-full sm:w-44">
+                    <Label className="text-xs">Cifras</Label>
+                    <Switch checked={showChords} onCheckedChange={setShowChords} />
+                </div>
+            </div>
           </div>
-
-
-          <div
-            className="mt-3 flex flex-wrap items-center justify-center gap-2"
-          >
-
-            <Badge
-              variant="outline"
-            >
-
-              Música {
-                songNumber
-              } / {
-                data.songs.length
-              }
-
-            </Badge>
-
-
-            <Badge
-              variant="outline"
-            >
-
-              Página {
-                pageNumber
-              } / {
-                Math.max(
-                  1,
-                  pagesOfCurrentSong.length
-                )
-              }
-
-            </Badge>
-
-
-            <div
-              className="flex items-center rounded-md border"
-            >
-
-              <Button
-
-                type="button"
-
-                variant="ghost"
-
-                size="icon"
-
-                onClick={
-                  () =>
-                    changeTranspose(
-                      -1
-                    )
-                }
-
-              >
-
-                <Minus
-                  className="h-4 w-4"
-                />
-
-              </Button>
-
-
-              <Badge
-                variant="outline"
-                className="min-w-20 justify-center"
-              >
-
-                Tom: {
-                  currentKey ||
-                  'N/A'
-                }
-
-              </Badge>
-
-
-              <Button
-
-                type="button"
-
-                variant="ghost"
-
-                size="icon"
-
-                onClick={
-                  () =>
-                    changeTranspose(
-                      1
-                    )
-                }
-
-              >
-
-                <Plus
-                  className="h-4 w-4"
-                />
-
-              </Button>
-
+        ) : (
+          <div className="flex items-center justify-between min-h-8 py-1">
+            <Button asChild variant="outline" size="icon" className="h-8 w-8 shrink-0"><Link href="/setlists"><ArrowLeft className="h-4 w-4" /></Link></Button>
+            <div className="flex-1 flex flex-col items-center justify-center px-2">
+                <h1 className="text-sm font-bold w-full text-center truncate">{currentSong.title} {currentKey && <span className="text-primary">({currentKey})</span>}</h1>
+                <div className="text-[12px] font-bold text-blue-600 uppercase mt-1"><Music className="h-3 w-3 mr-1 inline" /> {currentSec.songIndex + 1} / {offlineData.songs.length}</div>
             </div>
-
-
-            <div
-              className="flex items-center gap-2 rounded-md border px-3 py-2"
-            >
-
-              <Label>
-
-                Cifras
-
-              </Label>
-
-
-              <Switch
-
-                checked={
-                  showChords
-                }
-
-                onCheckedChange={
-                  setShowChords
-                }
-
-              />
-
+            <div className="flex items-center gap-1">
+              {isVoiceActive && <div className="w-2 h-2 rounded-full bg-primary animate-pulse mr-1" />}
+              <Button onClick={() => setIsPanelVisible(true)} variant="ghost" size="icon" className="h-8 w-8"><PanelTopOpen className="h-5 w-5" /></Button>
             </div>
-
           </div>
-
-        </CardContent>
-
+        )}
       </Card>
 
-
-      <Card
-        className="flex-1"
-      >
-
-        <CardContent
-          className="p-4 md:p-8"
-        >
-
-          <SongDisplay
-
-            content={
-              section.content
-            }
-
-            showChords={
-              showChords
-            }
-
-            style={{
-              fontSize:
-                `${fontSize}px`,
-            }}
-
-          />
-
-        </CardContent>
-
-      </Card>
-
-
-      <div
-        className="mt-3 flex items-center justify-between gap-3"
-      >
-
-        <Button
-
-          type="button"
-
-          variant="outline"
-
-          disabled={
-            currentSection <= 0
-          }
-
-          onClick={
-            previous
-          }
-
-        >
-
-          <ChevronLeft
-            className="mr-1 h-4 w-4"
-          />
-
-          Anterior
-
-        </Button>
-
-
-        <Badge
-          variant="secondary"
-        >
-
-          {
-            currentSection + 1
-          } / {
-            sections.length
-          }
-
-        </Badge>
-
-
-        <Button
-
-          type="button"
-
-          variant="outline"
-
-          disabled={
-            currentSection >=
-            sections.length - 1
-          }
-
-          onClick={
-            next
-          }
-
-        >
-
-          Próxima
-
-          <ChevronRight
-            className="ml-1 h-4 w-4"
-          />
-
-        </Button>
-
+      <div className="flex-1 flex flex-col min-h-0 relative">
+        {isContinuousMode || !showChords ? (
+          <ScrollArea ref={scrollAreaRef} className="h-full bg-white dark:bg-black">
+              <div className="p-4 md:p-8 pb-48">
+                {offlineData.songs.map((song, songIdx) => (
+                    <div key={songIdx} className="mb-16">
+                        <h2 className="text-2xl font-bold text-primary mb-8">{song.title}</h2>
+                        {allSections.filter(s => s.songIndex === songIdx).map((sec, idx) => (
+                            <div key={sec.id} data-section-index={allSections.findIndex(s => s.id === sec.id)}>
+                                <SongDisplay 
+                                    style={{ fontSize: `${fontSize}px`, '--lyrics-color': finalColorSettings.lyricsColor, '--chords-color': finalColorSettings.chordsColor } as React.CSSProperties}
+                                    content={transposeContent(sec.content, transpositions[songIdx] || 0)}
+                                    showChords={showChords} 
+                                />
+                            </div>
+                        ))}
+                    </div>
+                ))}
+              </div>
+          </ScrollArea>
+        ) : (
+          <Carousel className="w-full h-full" setApi={setApi}>
+            <CarouselContent className="h-full">
+              {allSections.map((section, index) => (
+                <CarouselItem key={section.id} className="h-full">
+                  <ScrollArea className="h-full p-4 md:p-8 bg-white dark:bg-black">
+                    <SongDisplay 
+                        style={{ fontSize: `${fontSize}px`, '--lyrics-color': finalColorSettings.lyricsColor, '--chords-color': finalColorSettings.chordsColor } as React.CSSProperties}
+                        content={transposeContent(section.content, transpositions[section.songIndex] || 0)}
+                        showChords={showChords} 
+                    />
+                  </ScrollArea>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
+        )}
       </div>
 
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t z-50">
+          <div className="max-w-xl mx-auto flex items-center gap-4 p-2 rounded-lg border bg-muted/20">
+                {!isContinuousMode && showChords ? (
+                    <Button onClick={() => { setIsContinuousMode(true); setIsAutoScrolling(true); setIsPanelVisible(false); }} className="h-9 w-36 gap-2"><Play className="h-4 w-4" />Iniciar</Button>
+                ) : (
+                    <div className="flex gap-2">
+                        <Button variant={isAutoScrolling ? "destructive" : "default"} onClick={() => setIsAutoScrolling(!isAutoScrolling)} className="h-9 w-36">{isAutoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
+                        {showChords && <Button variant="outline" onClick={() => { setIsContinuousMode(false); setIsAutoScrolling(false); }} className="h-9 w-12"><X className="h-4 w-4" /></Button>}
+                    </div>
+                )}
+              {(isContinuousMode || !showChords) && (
+                  <div className="flex-1 flex items-center gap-3">
+                      <Slider value={[scrollSpeed]} onValueChange={(val) => setScrollSpeed(val[0])} max={100} min={1} />
+                      <span className="text-[10px] font-mono font-bold w-10 text-primary">{scrollSpeed}</span>
+                  </div>
+              )}
+          </div>
+      </div>
     </div>
-
   );
-
 }
