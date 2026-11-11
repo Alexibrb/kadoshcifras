@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useFirestoreCollection } from '@/hooks/use-firestore-collection';
 import { type Setlist } from '@/types';
-import { ListMusic, PlusCircle, Trash2, User, Globe, Lock, Eye, EyeOff, Calendar, AlertCircle } from 'lucide-react';
+import { ListMusic, PlusCircle, Trash2, User, Globe, Lock, Eye, EyeOff, Calendar, AlertCircle, History } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
 import {
@@ -23,6 +23,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function SetlistsPage() {
   const { appUser, loading: authLoading } = useAuth();
@@ -50,34 +51,51 @@ export default function SetlistsPage() {
     setIsClient(true);
   }, []);
   
-  const setlists = useMemo(() => {
-    if (!isClient || !appUser) return [];
+  const { activeSetlists, expiredSetlists } = useMemo(() => {
+    if (!isClient || !appUser) return { activeSetlists: [], expiredSetlists: [] };
 
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
-    // Filtra outros repertórios para remover os expirados
-    const filteredOthers = otherSetlistsData.filter(s => {
-        if (s.creatorId === appUser.id) return false;
-        
-        if (s.eventDate) {
-            let eventDate: Date;
-            if (typeof (s.eventDate as any).toDate === 'function') {
-                eventDate = (s.eventDate as any).toDate();
-            } else {
-                eventDate = new Date(s.eventDate as any);
-            }
-            // Se a data do evento já passou, oculta para os outros
-            if (eventDate < now) return false;
-        }
-        
-        return true;
-    });
-
-    const combined = [...mySetlistsData, ...filteredOthers];
+    // Combina tudo o que o usuário pode ver
+    const combined = [...mySetlistsData, ...otherSetlistsData];
     const uniqueSetlists = Array.from(new Map(combined.map(item => [item.id, item])).values());
     
-    return uniqueSetlists.sort((a,b) => a.name.localeCompare(b.name));
+    const active: Setlist[] = [];
+    const expired: Setlist[] = [];
+
+    uniqueSetlists.forEach(s => {
+      const isOwner = s.creatorId === appUser.id || appUser.role === 'admin';
+      
+      let isPast = false;
+      if (s.eventDate) {
+        let eventDateObj: Date;
+        if (typeof (s.eventDate as any).toDate === 'function') {
+          eventDateObj = (s.eventDate as any).toDate();
+        } else {
+          eventDateObj = new Date(s.eventDate as any);
+        }
+        const compareDate = new Date(eventDateObj);
+        compareDate.setHours(0, 0, 0, 0);
+        if (compareDate < now) {
+          isPast = true;
+        }
+      }
+
+      if (isOwner) {
+        // Donos veem tudo, separado por data
+        if (isPast) expired.push(s);
+        else active.push(s);
+      } else {
+        // Outros usuários só veem os que não expiraram (regra de negócio definida anteriormente)
+        if (!isPast) active.push(s);
+      }
+    });
+
+    return {
+      activeSetlists: active.sort((a, b) => a.name.localeCompare(b.name)),
+      expiredSetlists: expired.sort((a, b) => a.name.localeCompare(b.name))
+    };
   }, [mySetlistsData, otherSetlistsData, appUser, isClient]);
 
 
@@ -96,44 +114,26 @@ export default function SetlistsPage() {
       return format(date, "dd/MM/yyyy", { locale: ptBR });
   };
 
-  return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold font-headline tracking-tight">Repertórios</h2>
-         <div className="flex items-center gap-4">
-            <Button asChild>
-              <Link href="/setlists/new">
-                <PlusCircle className="mr-2 h-4 w-4" /> Novo Repertório
-              </Link>
-            </Button>
-        </div>
-      </div>
-      {loading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="p-4 space-y-3">
-              <Skeleton className="h-5 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-              <Skeleton className="h-4 w-1/3" />
-            </Card>
-          ))}
-        </div>
-      ) : setlists.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm mt-8 py-24">
-          <div className="flex flex-col items-center gap-1 text-center">
-            <ListMusic className="h-12 w-12 text-muted-foreground" />
-            <h3 className="text-2xl font-bold tracking-tight">Você não tem nenhum repertório</h3>
-            <p className="text-sm text-muted-foreground">Comece criando um novo repertório para seus shows e ensaios.</p>
-            <Button className="mt-4" asChild>
-              <Link href="/setlists/new">
-                <PlusCircle className="mr-2 h-4 w-4" /> Criar Repertório
-              </Link>
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {setlists.map((setlist) => {
+  const renderSetlistGrid = (list: Setlist[], emptyMessage: string, icon: React.ReactNode) => {
+    if (list.length === 0) {
+        return (
+            <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm mt-4 py-24">
+              <div className="flex flex-col items-center gap-1 text-center">
+                <div className="text-muted-foreground mb-2">{icon}</div>
+                <h3 className="text-xl font-bold tracking-tight">{emptyMessage}</h3>
+                <Button className="mt-4" asChild>
+                  <Link href="/setlists/new">
+                    <PlusCircle className="mr-2 h-4 w-4" /> Criar Repertório
+                  </Link>
+                </Button>
+              </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
+          {list.map((setlist) => {
               const canDelete = appUser?.role === 'admin' || appUser?.id === setlist.creatorId;
               const hasSongs = (setlist.songs?.length || 0) > 0;
               const dateText = getEventDateText(setlist.eventDate);
@@ -229,6 +229,59 @@ export default function SetlistsPage() {
               </Card>
             )})}
         </div>
+    );
+  };
+
+  return (
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2 mb-6">
+        <h2 className="text-3xl font-bold font-headline tracking-tight">Repertórios</h2>
+         <div className="flex items-center gap-4">
+            <Button asChild>
+              <Link href="/setlists/new">
+                <PlusCircle className="mr-2 h-4 w-4" /> Novo Repertório
+              </Link>
+            </Button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="p-4 space-y-3">
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-4 w-1/3" />
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Tabs defaultValue="active" className="w-full">
+            <TabsList className="grid w-full max-w-[400px] grid-cols-2">
+                <TabsTrigger value="active" className="font-bold">
+                    Ativos ({activeSetlists.length})
+                </TabsTrigger>
+                <TabsTrigger value="expired" className="font-bold">
+                    Expirados ({expiredSetlists.length})
+                </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="active" className="border-none p-0 outline-none">
+                {renderSetlistGrid(
+                    activeSetlists, 
+                    "Nenhum repertório ativo encontrado", 
+                    <ListMusic className="h-12 w-12" />
+                )}
+            </TabsContent>
+            
+            <TabsContent value="expired" className="border-none p-0 outline-none">
+                {renderSetlistGrid(
+                    expiredSetlists, 
+                    "Nenhum repertório expirado", 
+                    <History className="h-12 w-12" />
+                )}
+            </TabsContent>
+        </Tabs>
       )}
     </div>
   );
